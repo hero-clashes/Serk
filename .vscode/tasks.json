@@ -1,0 +1,49 @@
+{
+	"version": "2.0.0",
+	"windows": {
+		"options": {
+		  "shell": {
+			"executable": "cmd.exe",
+			"args": [
+			  "/C",
+			  // The path to VsDevCmd.bat depends on the version of Visual Studio you have installed.
+			  "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvars64.bat",
+			]
+		  }
+		}
+	  },
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: cl.exe build active file",
+			"command": "clcache",
+			"args": [
+				"/Zi",
+				"/EHsc",
+				"/nologo",
+				"/std:c++17",
+				"/Fe:",
+				"${workspaceFolder}\\build\\main.exe",
+				"${workspaceFolder}\\src\\*.cpp",
+				"/I${workspaceFolder}\\src\\",
+				"/I${workspaceFolder}\\include\\",
+				// "/fsanitize=address",
+				"/link ole32.lib uuid.lib advapi32.lib shell32.lib LLVMX86Disassembler.lib LLVMX86AsmParser.lib LLVMX86CodeGen.lib LLVMCFGuard.lib LLVMGlobalISel.lib LLVMX86Desc.lib LLVMX86Info.lib LLVMMCDisassembler.lib LLVMSelectionDAG.lib LLVMAsmPrinter.lib LLVMDebugInfoMSF.lib LLVMDebugInfoDWARF.lib LLVMCodeGen.lib LLVMOrcJIT.lib LLVMPasses.lib LLVMObjCARCOpts.lib LLVMCoroutines.lib LLVMipo.lib LLVMInstrumentation.lib LLVMVectorize.lib LLVMScalarOpts.lib LLVMLinker.lib LLVMIRReader.lib LLVMAsmParser.lib LLVMInstCombine.lib LLVMFrontendOpenMP.lib LLVMBitWriter.lib LLVMAggressiveInstCombine.lib LLVMTransformUtils.lib LLVMJITLink.lib LLVMExecutionEngine.lib LLVMTarget.lib LLVMAnalysis.lib LLVMProfileData.lib LLVMRuntimeDyld.lib LLVMOrcTargetProcess.lib LLVMOrcShared.lib LLVMObject.lib LLVMTextAPI.lib LLVMMCParser.lib LLVMBitReader.lib LLVMMC.lib LLVMDebugInfoCodeView.lib LLVMCore.lib LLVMRemarks.lib LLVMBitstreamReader.lib LLVMBinaryFormat.lib LLVMSupport.lib LLVMDemangle.lib",
+				"/LIBPATH:C:/serk/lib",
+				"/subsystem:console"
+
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\build\\"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: cl.exe"
+		}
+	]
+}

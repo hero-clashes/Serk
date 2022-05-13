@@ -1,0 +1,46 @@
+#ifndef TOK
+#define TOK(ID)
+#endif
+#ifndef PUNCTUATOR
+#define PUNCTUATOR(ID, SP) TOK(ID)
+#endif
+#ifndef KEYWORD
+#define KEYWORD(ID, FLAG) TOK(kw_ ## ID)
+#endif
+
+
+
+// These define members of the tok::* namespace.
+
+TOK(unknown)             // Not a token.
+TOK(eof)                 // End of file.
+
+TOK(identifier)          // abcde123
+
+TOK(integer_literal)     // 123, 123B, 123H
+TOK(string_literal)      // "foo", 'foo'
+
+PUNCTUATOR(plus,                "+")
+PUNCTUATOR(minus,               "-")
+PUNCTUATOR(star,                "*")
+PUNCTUATOR(slash,               "/")
+PUNCTUATOR(period,              ".")
+PUNCTUATOR(comma,               ",")
+PUNCTUATOR(semi,                ";")
+PUNCTUATOR(equal,               "=")
+PUNCTUATOR(less,                "<")
+PUNCTUATOR(greater,             ">")
+PUNCTUATOR(lessequal,           "<=")
+PUNCTUATOR(greaterequal,        ">=")
+PUNCTUATOR(l_paren,             "(")
+PUNCTUATOR(r_paren,             ")")
+PUNCTUATOR(l_parth,             "{")
+PUNCTUATOR(r_parth,             "}")
+
+
+
+
+
+#undef KEYWORD
+#undef PUNCTUATOR
+#undef TOK

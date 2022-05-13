@@ -1,0 +1,6 @@
+/build/*
+/lib_release/*
+/lib_debug/*
+/include/*
+/.cache/*
+/src2/*
