@@ -1,3 +1,4 @@
+#pragma once
 #include "Token.hpp"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
@@ -56,6 +57,7 @@ public:
 
   /// Gets source code buffer.
   StringRef getBuffer() const { return CurBuf; }
+  Token peak(int n);
 
 private:
   void identifier(Token &Result);
@@ -67,4 +69,5 @@ private:
 
   void formToken(Token &Result, const char *TokEnd,
                  tok::TokenKind Kind);
+
 };

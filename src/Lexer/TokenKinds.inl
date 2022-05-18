@@ -38,7 +38,8 @@ PUNCTUATOR(l_parth,             "{")
 PUNCTUATOR(r_parth,             "}")
 
 
-
+KEYWORD(import                         , KEYALL)
+KEYWORD(return                         , KEYALL)
 
 
 #undef KEYWORD

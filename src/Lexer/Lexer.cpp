@@ -176,3 +176,16 @@ void Lexer::formToken(Token &Result, const char *TokEnd, tok::TokenKind Kind) {
   Result.Kind = Kind;
   CurPtr = TokEnd;
 }
+
+Token Lexer::peak(int n) {
+  auto Lexer_Copy = *this;
+  Token Tok;
+  Lexer_Copy.next(Tok);
+  for (int i = 0; i < n; i++) {
+    Lexer_Copy.next(Tok);
+    if (Tok.is(tok::eof)) {
+      return Tok;
+    }
+  }
+  return Tok;
+};
