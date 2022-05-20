@@ -53,6 +53,14 @@ public:
       StmtList& Stmts);
   bool parseReturnStatement(DeclList& Decls,
       StmtList& Stmts);
+  bool parseFunctionCallStatment(StmtList& Stmts);
+
+  bool parseExpList(ExprList &Exprs);
   bool parseExpression(Expr* &E);
   bool parseSimpleExpression(Expr*& E);
+  bool parseRelation(OperatorInfo &Op);
+  bool parseAddOperator(OperatorInfo &Op);
+  bool parseTerm(Expr *&E);
+  bool parseMulOperator(OperatorInfo &Op);
+  bool parseFactor(Expr *&E);
 };

@@ -1,6 +1,27 @@
 #include "Sema.hpp"
 #include "AST/AST.hpp"
 
+
+bool Sema::isOperatorForType(tok::TokenKind Op,
+                             TypeDeclaration *Ty) {
+  switch (Op) {
+  case tok::plus:
+  case tok::minus:
+  case tok::star:
+//   case tok::kw_DIV:
+//   case tok::kw_MOD:
+    return Ty == IntegerType;
+  case tok::slash:
+    return false; // REAL not implemented
+//   case tok::kw_AND:
+//   case tok::kw_OR:
+//   case tok::kw_NOT:
+//     return Ty == BoolType;
+  default:
+    llvm_unreachable("Unknown operator");
+  }
+}
+
 void Sema::enterScope(Decl *D) {
   CurrentScope = new Scope(CurrentScope);
   CurrentDecl = D;
@@ -34,7 +55,7 @@ FunctionDeclaration *P =
 };
 
 
-void Sema::actOnProcedureHeading(
+void Sema::actOnFunctionHeading(
     FunctionDeclaration* ProcDecl, ParamList& Params,
     Decl* RetType) {
     ProcDecl->setFormalParams(Params);
@@ -47,7 +68,7 @@ void Sema::actOnProcedureHeading(
         ProcDecl->setRetType(RetTypeDecl);
 }
 
-void Sema::actOnProcedureDeclaration(FunctionDeclaration* ProcDecl, SMLoc Loc, StringRef Name, DeclList& Decls, StmtList& Stmts)
+void Sema::actOnFunctionDeclaration(FunctionDeclaration* ProcDecl, SMLoc Loc, StringRef Name, DeclList& Decls, StmtList& Stmts)
 {
     if (Name != ProcDecl->getName()) {
        // Diags.report(Loc, diag::err_proc_identifier_not_equal);
@@ -70,9 +91,10 @@ TypeDeclaration*   Sema::actOnTypeRefernce(SMLoc Loc, StringRef Name) {
 ParameterDeclaration* Sema::actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type)
 {
     auto Type_as = dyn_cast_or_null<TypeDeclaration>(Type);
-    auto D = new ParameterDeclaration(CurrentDecl, Loc, Name, Type_as, true);
-    if (CurrentScope->insert(D)) {
+    auto D = new ParameterDeclaration(CurrentDecl, Loc, Name, Type_as, false);
+    if (!CurrentScope->insert(D)) {
         //TODO error it out if it didn't get inserted
+        errs() << "problem";
     }
     return D;
 }
@@ -100,10 +122,14 @@ void Sema::actOnReturnStatement(StmtList& Stmts, SMLoc Loc, Expr* RetVal)
 
     Stmts.push_back(new ReturnStatement(RetVal));
 }
-VariableDeclaration* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
+Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
 {
     if (auto D = dyn_cast_or_null<VariableDeclaration>(CurrentScope->lookup(Name))) {
         return D;
+    } else  if (auto D = dyn_cast_or_null<ParameterDeclaration>(CurrentScope->lookup(Name))) {
+        return D;
+    } else if (auto D =dyn_cast_or_null<FunctionDeclaration>(CurrentScope->lookup(Name))){
+      return D;
     };
     return nullptr;
 }
@@ -112,6 +138,8 @@ Expr* Sema::actOnDesignator(Decl* D)
     if (!D)
         return nullptr;
     if (auto* V = dyn_cast<VariableDeclaration>(D))
+        return new Designator(V);
+    if (auto* V = dyn_cast<ParameterDeclaration>(D))
         return new Designator(V);
     return nullptr;
 }
@@ -161,3 +189,145 @@ void Sema::actOnCompileUnitDeclaration(
   ModDecl->setDecls(Decls);
   ModDecl->setStmts(Stmts);
 }
+
+Expr *Sema::actOnExpression(Expr *Left, Expr *Right,
+                            const OperatorInfo &Op) {
+  // Relation
+  if (!Left)
+    return Right;
+  if (!Right)
+    return Left;
+
+  if (Left->getType() != Right->getType()) {
+    // Diags.report(
+    //     Op.getLocation(),
+    //     diag::err_types_for_operator_not_compatible,
+    //     tok::getPunctuatorSpelling(Op.getKind()));
+  }
+  bool IsConst = Left->isConst() && Right->isConst();
+  return new InfixExpression(Left, Right, Op, BoolType,
+                             IsConst);
+}
+
+Expr *Sema::actOnSimpleExpression(Expr *Left, Expr *Right,
+                                  const OperatorInfo &Op) {
+  // Addition
+  if (!Left)
+    return Right;
+  if (!Right)
+    return Left;
+
+  if (Left->getType() != Right->getType()) {
+    // Diags.report(
+    //     Op.getLocation(),
+    //     diag::err_types_for_operator_not_compatible,
+    //     tok::getPunctuatorSpelling(Op.getKind()));
+  }
+  TypeDeclaration *Ty = Left->getType();
+  bool IsConst = Left->isConst() && Right->isConst();
+//   if (IsConst && Op.getKind() == tok::kw_OR) {
+//     BooleanLiteral *L = dyn_cast<BooleanLiteral>(Left);
+//     BooleanLiteral *R = dyn_cast<BooleanLiteral>(Right);
+//     return L->getValue() || R->getValue() ? TrueLiteral
+//                                           : FalseLiteral;
+//   }
+  return new InfixExpression(Left, Right, Op, Ty, IsConst);
+}
+Expr *Sema::actOnTerm(Expr *Left, Expr *Right,
+                      const OperatorInfo &Op) {
+  // Multiplication
+  if (!Left)
+    return Right;
+  if (!Right)
+    return Left;
+
+  if (Left->getType() != Right->getType() ||
+      !isOperatorForType(Op.getKind(), Left->getType())) {
+    // Diags.report(
+    //     Op.getLocation(),
+    //     diag::err_types_for_operator_not_compatible,
+    //     tok::getPunctuatorSpelling(Op.getKind()));
+  }
+  TypeDeclaration *Ty = Left->getType();
+  bool IsConst = Left->isConst() && Right->isConst();
+//   if (IsConst && Op.getKind() == tok::kw_AND) {
+//     BooleanLiteral *L = dyn_cast<BooleanLiteral>(Left);
+//     BooleanLiteral *R = dyn_cast<BooleanLiteral>(Right);
+//     return L->getValue() && R->getValue() ? TrueLiteral
+//                                           : FalseLiteral;
+//   }
+  return new InfixExpression(Left, Right, Op, Ty, IsConst);
+}
+
+Expr *Sema::actOnPrefixExpression(Expr *E,
+                                  const OperatorInfo &Op) {
+  if (!E)
+    return nullptr;
+
+  if (!isOperatorForType(Op.getKind(), E->getType())) {
+    // Diags.report(
+    //     Op.getLocation(),
+    //     diag::err_types_for_operator_not_compatible,
+    //     tok::getPunctuatorSpelling(Op.getKind()));
+  }
+
+//   if (E->isConst() && Op.getKind() == tok::kw_NOT) {
+//     BooleanLiteral *L = dyn_cast<BooleanLiteral>(E);
+//     return L->getValue() ? FalseLiteral : TrueLiteral;
+//   }
+
+  if (Op.getKind() == tok::minus) {
+    bool Ambiguous = true;
+    if (isa<IntegerLiteral>(E) || isa<Designator>(E))
+      Ambiguous = false;
+    else if (auto *Infix = dyn_cast<InfixExpression>(E)) {
+      tok::TokenKind Kind =
+          Infix->getOperatorInfo().getKind();
+      if (Kind == tok::star || Kind == tok::slash)
+        Ambiguous = false;
+    }
+    if (Ambiguous) {
+    //   Diags.report(Op.getLocation(),
+    //                diag::warn_ambigous_negation);
+    }
+  }
+
+  return new PrefixExpression(E, Op, E->getType(),
+                              E->isConst());
+}
+
+FunctionCallStatement *Sema::actOnFunctionCallStatemnt(SMLoc Loc, Decl *D,
+                     ExprList &Params){
+
+   if (!D)
+    return nullptr;
+  if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
+    // checkFormalAndActualParameters(
+    //     D->getLocation(), P->getFormalParams(), Params);
+    // if (!P->getRetType())
+    //   Diags.report(D->getLocation(),
+    //                diag::err_function_call_on_nonfunction);
+    return new FunctionCallStatement(P, Params);
+  }
+  // Diags.report(D->getLocation(),
+  //              diag::err_function_call_on_nonfunction);
+  return nullptr;
+};
+Expr *Sema::actOnFunctionCallExpr(SMLoc Loc, Decl *D,
+                     ExprList &Params){
+
+   if (!D)
+    return nullptr;
+  if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
+    // checkFormalAndActualParameters(
+    //     D->getLocation(), P->getFormalParams(), Params);
+    // if (!P->getRetType())
+    //   Diags.report(D->getLocation(),
+    //                diag::err_function_call_on_nonfunction);
+    return new FunctionCallExpr(P, Params);
+  }
+  // Diags.report(D->getLocation(),
+  //              diag::err_function_call_on_nonfunction);
+  return nullptr;
+};
+

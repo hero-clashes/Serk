@@ -341,6 +341,23 @@ public:
   }
 };
 
+class FunctionCallExpr : public Expr {
+  FunctionDeclaration *Proc;
+  ExprList Params;
+
+public:
+  FunctionCallExpr(FunctionDeclaration *Proc,
+                   ExprList Params)
+      : Expr(EK_Func, Proc->getRetType(), false),
+        Proc(Proc), Params(Params) {}
+
+  FunctionDeclaration *geDecl() { return Proc; }
+  const ExprList &getParams() { return Params; }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == EK_Func;
+  }
+};
 
 class Stmt {
 public:

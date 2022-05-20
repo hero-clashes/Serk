@@ -1,11 +1,11 @@
 #pragma once
+#include "AST/AST.hpp"
 #include "Diag/Diagnostic.hpp"
 #include "Scope.hpp"
-#include "AST/AST.hpp"
+
 
 class Sema {
-  public:
-
+public:
   void enterScope(Decl *);
   void leaveScope();
   Scope *CurrentScope;
@@ -22,40 +22,46 @@ class Sema {
   void initialize();
 
   FunctionDeclaration *actOnFunctionDeclaration(SMLoc Loc, StringRef Name);
-  void actOnProcedureHeading(
-    FunctionDeclaration *ProcDecl, ParamList &Params,
-    Decl *RetType);
-  void actOnProcedureDeclaration(
-      FunctionDeclaration* ProcDecl, SMLoc Loc,
-      StringRef Name, DeclList& Decls, StmtList& Stmts);
+  void actOnFunctionHeading(FunctionDeclaration *ProcDecl, ParamList &Params,
+                            Decl *RetType);
+  void actOnFunctionDeclaration(FunctionDeclaration *ProcDecl, SMLoc Loc,
+                                StringRef Name, DeclList &Decls,
+                                StmtList &Stmts);
 
+  TypeDeclaration *actOnTypeRefernce(SMLoc Loc, StringRef Name);
+  ParameterDeclaration *actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type);
+  VariableDeclaration *actOnVarDeceleration(SMLoc Loc, StringRef Name,
+                                            Decl *Type);
+  void actOnReturnStatement(StmtList &Stmts, SMLoc Loc, Expr *RetVal);
+  Decl *actOnVarRefernce(SMLoc Loc, StringRef Name);
 
-  TypeDeclaration* actOnTypeRefernce(SMLoc Loc, StringRef Name);
-  ParameterDeclaration* actOnParmaDecl(SMLoc Loc, StringRef Name, Decl*Type);
-  VariableDeclaration* actOnVarDeceleration(SMLoc Loc, StringRef Name, Decl* Type);
-  void actOnReturnStatement(StmtList& Stmts, SMLoc Loc,
-      Expr* RetVal);
-  VariableDeclaration* actOnVarRefernce(SMLoc Loc, StringRef Name);
-  Expr* actOnDesignator(Decl* D);
-  Expr* actOnIntegerLiteral(SMLoc Loc, StringRef Literal);
-  void actOnAssignment(StmtList& Stmts, SMLoc Loc, Expr* D,
-      Expr* E);
+  void actOnAssignment(StmtList &Stmts, SMLoc Loc, Expr *D, Expr *E);
 
   CompileUnitDeclaration *actOnCompileUnitDeclaration(SMLoc Loc,
-                                            StringRef Name);
-  void actOnCompileUnitDeclaration(CompileUnitDeclaration *ModDecl,
-                              SMLoc Loc, StringRef Name,
-                              DeclList &Decls,
-                              StmtList &Stmts);
-};
+                                                      StringRef Name);
+  void actOnCompileUnitDeclaration(CompileUnitDeclaration *ModDecl, SMLoc Loc,
+                                   StringRef Name, DeclList &Decls,
+                                   StmtList &Stmts);
 
+  Expr *actOnDesignator(Decl *D);
+  Expr *actOnIntegerLiteral(SMLoc Loc, StringRef Literal);
+  Expr *actOnExpression(Expr *Left, Expr *Right, const OperatorInfo &Op);
+  Expr *actOnSimpleExpression(Expr *Left, Expr *Right, const OperatorInfo &Op);
+  Expr *actOnTerm(Expr *Left, Expr *Right, const OperatorInfo &Op);
+  Expr *actOnPrefixExpression(Expr *E, const OperatorInfo &Op);
+  bool isOperatorForType(tok::TokenKind Op,
+                             TypeDeclaration *Ty) ;
+  FunctionCallStatement *actOnFunctionCallStatemnt(SMLoc Loc, Decl *D,
+                     ExprList &Params);
+  Expr *actOnFunctionCallExpr(SMLoc Loc, Decl *D,
+                     ExprList &Params);
+};
 
 class EnterDeclScope {
   Sema &Semantics;
 
 public:
-  EnterDeclScope(Sema &Semantics, Decl *D)
-      : Semantics(Semantics) {
+  EnterDeclScope(Sema &Semantics, Decl *D) : Semantics(Semantics) {
     Semantics.enterScope(D);
   }
   ~EnterDeclScope() { Semantics.leaveScope(); }

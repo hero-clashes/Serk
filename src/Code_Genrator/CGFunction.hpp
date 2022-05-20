@@ -61,7 +61,7 @@ class CGFunction{
   llvm::Value *emitInfixExpr(InfixExpression *E);
   llvm::Value *emitPrefixExpr(PrefixExpression *E);
   llvm::Value *emitExpr(Expr *E);
-
+  llvm::Value *emitFunccall(FunctionCallExpr *E);
   void emitStmt(AssignmentStatement *Stmt);
   void emitStmt(FunctionCallStatement *Stmt);
   void emitStmt(IfStatement *Stmt);

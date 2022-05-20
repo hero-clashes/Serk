@@ -205,11 +205,22 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
                  llvm::dyn_cast<BooleanLiteral>(E)) {
     return llvm::ConstantInt::get(CGM.Int1Ty,
                                   BoolLit->getValue());}
-
+  else if (auto *FuncCall =llvm::dyn_cast<FunctionCallExpr>(E)) {
+    return emitFunccall(FuncCall);
+  }
   llvm::report_fatal_error("Unsupported expression");
 
 };
+llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
+   auto *F = CGM.getModule()->getFunction(E->geDecl()->getName());
 
+  std::vector<Value *> ArgsV;
+  for(auto expr:E->getParams()){
+    ArgsV.push_back(emitExpr(expr));
+  };
+  return Builder.CreateCall(F, ArgsV, "calltmp");
+  // llvm::report_fatal_error("not implemented");
+};
 
 void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
                                      Decl *Decl,
@@ -299,7 +310,14 @@ llvm::Value *CGFunction::readVariable(llvm::BasicBlock *BB,
     llvm::report_fatal_error("Unsupported declaration");
 }
 void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
-  llvm::report_fatal_error("not implemented");
+  auto *F = CGM.getModule()->getFunction(Stmt->getProc()->getName());
+
+  std::vector<Value *> ArgsV;
+  for(auto expr:Stmt->getParams()){
+    ArgsV.push_back(emitExpr(expr));
+  };
+   Builder.CreateCall(F, ArgsV, "calltmp");
+  // llvm::report_fatal_error("not implemented");
 }
 llvm::Value *
 CGFunction::emitInfixExpr(InfixExpression *E) {
@@ -322,7 +340,7 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
   // case tok::kw_MOD:
   //   Result = Builder.CreateSRem(Left, Right);
   //   break;
-  case tok::equal:
+  case tok::equal_equal:
     Result = Builder.CreateICmpEQ(Left, Right);
     break;
   // case tok::hash:
