@@ -41,8 +41,9 @@ PUNCTUATOR(r_parth,             "}")
 
 KEYWORD(import                         , KEYALL)
 KEYWORD(return                         , KEYALL)
-
-
+KEYWORD(if                             , KEYALL)
+KEYWORD(else                           , KEYALL)
+KEYWORD(while                          , KEYALL)
 #undef KEYWORD
 #undef PUNCTUATOR
 #undef TOK

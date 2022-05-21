@@ -1,4 +1,5 @@
 #include "CGFunction.hpp"
+#include "llvm/IR/Verifier.h"
 
 void CGFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
@@ -9,7 +10,6 @@ void CGFunction::run(FunctionDeclaration *Proc) {
   setCurr(BB);
 
     size_t Idx = 0;
-  auto &Defs = CurrentDef[BB];
   for (auto I = Fn->arg_begin(), E = Fn->arg_end(); I != E;
        ++I, ++Idx) {
     llvm::Argument *Arg = I;
@@ -18,17 +18,20 @@ void CGFunction::run(FunctionDeclaration *Proc) {
     // Create mapping FormalParameter -> llvm::Argument
     // for VAR parameters.
     FormalParams[FP] = Arg;
-    writeLocalVariable(Curr, FP, Arg);
+    llvm::Value *Alloca = Builder.CreateAlloca(Arg->getType());
+    auto ar = Builder.CreateStore(Arg, Alloca);
+    writeLocalVariable(Curr, FP, Alloca);
   }
 
   for (auto *D : Proc->getDecls()) {
     if (auto *Var =
             llvm::dyn_cast<VariableDeclaration>(D)) {
       llvm::Type *Ty = mapType(Var);
-      if (Ty->isAggregateType()) {
+      // if (Ty->isAggregateType()) {
         llvm::Value *Val = Builder.CreateAlloca(Ty);
+        // Defs[D] = Val;
         writeLocalVariable(Curr, Var, Val);
-      }
+      // }
     }
   }
 
@@ -37,7 +40,12 @@ void CGFunction::run(FunctionDeclaration *Proc) {
   if (!Curr->getTerminator()) {
     Builder.CreateRetVoid();
   }
-  sealBlock(Curr);
+  // // Validate the generated code, checking for consistency.
+  // verifyFunction(*Fn);
+
+    // Run the optimizer on the function.
+  CGM.FPM->run(*Fn);
+
   Fn->print(errs());
 }
 llvm::FunctionType *CGFunction::createFunctionType(FunctionDeclaration *Proc) {
@@ -65,7 +73,7 @@ llvm::Function *CGFunction::createFunction(FunctionDeclaration *Proc,
     llvm::Argument *Arg = I;
     ParameterDeclaration *FP =
         Proc->getFormalParams()[Idx];
-    if (FP->isVar()) {
+    if (FP->IsPassedbyReference()) {
       llvm::AttrBuilder Attr;
       llvm::TypeSize Sz =
           CGM.getModule()->getDataLayout().getTypeStoreSize(
@@ -81,7 +89,7 @@ llvm::Function *CGFunction::createFunction(FunctionDeclaration *Proc,
 llvm::Type *CGFunction::mapType(Decl *Decl) {
   if (auto *FP = llvm::dyn_cast<ParameterDeclaration>(Decl)) {
     llvm::Type *Ty = CGM.convertType(FP->getType());
-    if (FP->isVar())
+    if (FP->IsPassedbyReference())
       Ty = Ty->getPointerTo();
     return Ty;
   }
@@ -96,8 +104,8 @@ void CGFunction::emit(const StmtList &Stmts){
     else if (auto *Stmt =
                  llvm::dyn_cast<FunctionCallStatement>(S))
       emitStmt(Stmt);
-    // else if (auto *Stmt = llvm::dyn_cast<IfStatement>(S))
-    //   emitStmt(Stmt);
+    else if (auto *Stmt = llvm::dyn_cast<IfStatement>(S))
+      emitStmt(Stmt);
     // else if (auto *Stmt = llvm::dyn_cast<WhileStatement>(S))
     //   emitStmt(Stmt);
     else if (auto *Stmt =
@@ -231,7 +239,10 @@ void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
        llvm::isa<ParameterDeclaration>(Decl)) &&
       "Declaration must be variable or formal parameter");
   assert(Val && "Value is nullptr");
-  CurrentDef[BB].Defs[Decl] = Val;
+  if(Defs.find(Decl) == Defs.end()){
+    Defs[Decl] = Val;
+  } else
+  Builder.CreateStore(Val, Defs[Decl]);
 }
 
 llvm::Value *
@@ -242,21 +253,12 @@ CGFunction::readLocalVariable(llvm::BasicBlock *BB,
       (llvm::isa<VariableDeclaration>(Decl) ||
        llvm::isa<ParameterDeclaration>(Decl)) &&
       "Declaration must be variable or formal parameter");
-  auto Val = CurrentDef[BB].Defs.find(Decl);
-  if (Val != CurrentDef[BB].Defs.end())
-    return Val->second;
+  auto Val = Defs.find(Decl);
+  if (Val != Defs.end())
+    return Builder.CreateLoad(mapType(Decl), Val->second);
   // return readLocalVariableRecursive(BB, Decl);
 }
 
-void CGFunction::sealBlock(llvm::BasicBlock *BB) {
-  assert(!CurrentDef[BB].Sealed &&
-         "Attempt to seal already sealed block");
-  // for (auto PhiDecl : CurrentDef[BB].IncompletePhis) {
-  //   addPhiOperands(BB, PhiDecl.second, PhiDecl.first);
-  // }
-  CurrentDef[BB].IncompletePhis.clear();
-  CurrentDef[BB].Sealed = true;
-}
 
 void CGFunction::writeVariable(llvm::BasicBlock *BB,
                                 Decl *D, llvm::Value *Val) {
@@ -272,7 +274,7 @@ void CGFunction::writeVariable(llvm::BasicBlock *BB,
   } else if (auto *FP =
                  llvm::dyn_cast<ParameterDeclaration>(
                      D)) {
-    if (FP->isVar()) {
+    if (FP->IsPassedbyReference()) {
       Builder.CreateStore(Val, FormalParams[FP]);
     } else
       writeLocalVariable(BB, D, Val);
@@ -298,7 +300,7 @@ llvm::Value *CGFunction::readVariable(llvm::BasicBlock *BB,
   } else if (auto *FP =
                  llvm::dyn_cast<ParameterDeclaration>(
                      D)) {
-    if (FP->isVar()) {
+    if (FP->IsPassedbyReference()) {
       if (!LoadVal)
         return FormalParams[FP];
       return Builder.CreateLoad(
@@ -399,3 +401,34 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     Builder.CreateRetVoid();
   }
 }
+  void CGFunction::emitStmt(IfStatement *Stmt){
+    bool HasElse = Stmt->getElseStmts().size() > 0;
+
+  // Create the required basic blocks.
+  llvm::BasicBlock *IfBB = createBasicBlock("if.body");
+  llvm::BasicBlock *ElseBB =
+      HasElse ? createBasicBlock("else.body") : nullptr;
+  llvm::BasicBlock *AfterIfBB =
+      createBasicBlock("after.if");
+
+  llvm::Value *Cond = emitExpr(Stmt->getCond());
+  Builder.CreateCondBr(Cond, IfBB,
+                       HasElse ? ElseBB : AfterIfBB);
+
+  setCurr(IfBB);
+  emit(Stmt->getIfStmts());
+  if (!Curr->getTerminator()) {
+    Builder.CreateBr(AfterIfBB);
+  }
+  
+
+  if (HasElse) {
+    setCurr(ElseBB);
+    emit(Stmt->getElseStmts());
+    if (!Curr->getTerminator()) {
+      Builder.CreateBr(AfterIfBB);
+    }
+    
+  }
+  setCurr(AfterIfBB);
+  };

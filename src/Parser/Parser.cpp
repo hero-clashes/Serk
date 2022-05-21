@@ -116,7 +116,6 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
                                           Tok.getIdentifier(), type_D);
   Decls.push_back(Var);
   consume(tok::identifier);
-  // TODO add check for assiginment
   if (Tok.is(tok::equal)) {
     advance();
     auto Desig = Actions.actOnDesignator(Var);
@@ -138,7 +137,24 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
   case tok::identifier:
     if (Lex.peak(0).is(tok::l_paren)) {
       parseFunctionCallStatment(Stmts);
+    } else if (Lex.peak(0).is(tok::equal)) {
+      //TODO assginment
+      auto Var = Actions.actOnVarRefernce(Tok.getLocation(),
+                                          Tok.getIdentifier());
+        advance();// eat var
+        advance();// eat =
+      auto Desig = Actions.actOnDesignator(Var);
+      Expr *E;
+      parseExpression(E);
+      Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);
     }
+  break;
+  case tok::kw_if:
+    //parse if 
+    parseIfStatement(Decls, Stmts);
+  break;
+  case tok::kw_while:
+  //parse while
   default:
     break;
   }
@@ -272,7 +288,7 @@ bool Parser::parseFactor(Expr *&E) {
     D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
     advance();
     if (Tok.is(tok::l_paren)) {
-      //TODO add here function calls handling
+      // here function calls handling
           advance();
           if (Tok.isOneOf(tok::l_paren, tok::plus,
                           tok::minus,
@@ -288,6 +304,7 @@ bool Parser::parseFactor(Expr *&E) {
     } else {
       // D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
       // advance();
+      //here simple variable referencing
       E = Actions.actOnDesignator(D);
       // if (parseSelectors(E))
       //       // goto _error;
@@ -311,7 +328,7 @@ bool Parser::parseFactor(Expr *&E) {
 }
 
 bool Parser::parseRelation(OperatorInfo &Op) {
-  if (Tok.is(tok::equal)) {
+  if (Tok.is(tok::equal_equal)) {
     Op = fromTok(Tok);
     advance();
   } else if (Tok.is(tok::less)) {
@@ -378,3 +395,32 @@ bool Parser::parseAddOperator(OperatorInfo &Op) {
   }*/
   return false;
 }
+
+bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
+  Expr *E = nullptr;
+  StmtList IfStmts, ElseStmts;
+  SMLoc Loc = Tok.getLocation();
+  consume(tok::kw_if);
+
+  expect(tok::l_paren);
+  advance();
+
+  parseExpression(E);
+
+  expect(tok::r_paren);
+  advance();
+
+  expect(tok::l_parth);
+  advance();
+  parseStatementSequence(Decls, IfStmts);
+  expect(tok::r_parth);
+  advance();
+
+  if (Tok.is(tok::kw_else)) {
+    advance();
+    parseStatementSequence(Decls,ElseStmts);
+  }
+  Actions.actOnIfStatement(Stmts, Loc, E, IfStmts,
+                             ElseStmts);
+  return false;
+};

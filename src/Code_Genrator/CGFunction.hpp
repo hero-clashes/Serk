@@ -14,29 +14,13 @@ class CGFunction{
   llvm::FunctionType *Fty;
   llvm::Function *Fn;
 
-  struct BasicBlockDef {
-    // Maps the variable (or formal parameter) to its
-    // definition.
-    llvm::DenseMap<Decl *, llvm::TrackingVH<llvm::Value>>
-        Defs;
-    // Set of incompleted phi instructions.
-    llvm::DenseMap<llvm::PHINode *, Decl *> IncompletePhis;
-    // Block is sealed, that is, no more predecessors will
-    // be added.
-    unsigned Sealed : 1;
 
-    BasicBlockDef() : Sealed(0) {}
-  };
-  llvm::DenseMap<llvm::BasicBlock *, BasicBlockDef>
-      CurrentDef;
+  llvm::DenseMap<Decl *, llvm::TrackingVH<llvm::Value>>
+        Defs;
 
   llvm::DenseMap<ParameterDeclaration *,
                  llvm::Argument *>
       FormalParams;
-  llvm::DenseMap<Decl *, llvm::DILocalVariable *>
-      DIVariables;
-
-    
     llvm::FunctionType *
   createFunctionType(FunctionDeclaration *Proc);
   llvm::Function *createFunction(FunctionDeclaration *Proc,
@@ -56,7 +40,6 @@ class CGFunction{
   readLocalVariableRecursive(llvm::BasicBlock *BB,
                              Decl *Decl);
 
-  void sealBlock(llvm::BasicBlock *BB);
 
   llvm::Value *emitInfixExpr(InfixExpression *E);
   llvm::Value *emitPrefixExpr(PrefixExpression *E);

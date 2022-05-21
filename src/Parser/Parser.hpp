@@ -63,4 +63,6 @@ public:
   bool parseTerm(Expr *&E);
   bool parseMulOperator(OperatorInfo &Op);
   bool parseFactor(Expr *&E);
+  bool parseIfStatement(DeclList& Decls,
+      StmtList& Stmts);
 };

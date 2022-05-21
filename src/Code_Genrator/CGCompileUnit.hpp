@@ -3,7 +3,11 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/ADT/DenseMap.h"
-
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Utils.h"
 class CGCompileUnit{
 llvm::Module *M;
 
@@ -34,6 +38,6 @@ public:
   std::string mangleName(Decl *D);
 
   llvm::GlobalObject *getGlobal(Decl *);
-
+  std::unique_ptr<llvm::legacy::FunctionPassManager> FPM;
   void run(CompileUnitDeclaration *Mod);
 };

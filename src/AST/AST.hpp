@@ -171,7 +171,7 @@ public:
         IsVar(IsVar) {}
 
   TypeDeclaration *getType() const { return Ty; }
-  bool isVar() const { return IsVar; }
+  bool IsPassedbyReference() const { return IsVar; }
 
   static bool classof(const Decl *D) {
     return D->getKind() == DK_Param;

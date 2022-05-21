@@ -17,6 +17,22 @@ void CGCompileUnit::initialize()
   Int64Ty = llvm::Type::getInt64Ty(getLLVMCtx());
   Int32Zero =
       llvm::ConstantInt::get(Int32Ty, 0, /*isSigned*/ true);
+      // Create a new pass manager attached to it.
+  FPM =
+      std::make_unique<llvm::legacy::FunctionPassManager>(M);
+
+  // Promote allocas to registers.
+  FPM->add(createPromoteMemoryToRegisterPass());
+  // // Do simple "peephole" optimizations and bit-twiddling optzns.
+  // FPM->add(createInstructionCombiningPass());
+  // // Reassociate expressions.
+  // FPM->add(createReassociatePass());
+  // // Eliminate Common SubExpressions.
+  // FPM->add(createGVNPass());
+  // // Simplify the control flow graph (deleting unreachable blocks, etc).
+  // FPM->add(createCFGSimplificationPass());
+
+  FPM->doInitialization();
 }
 
 llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)

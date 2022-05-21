@@ -330,4 +330,15 @@ Expr *Sema::actOnFunctionCallExpr(SMLoc Loc, Decl *D,
   //              diag::err_function_call_on_nonfunction);
   return nullptr;
 };
+void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
+                        Expr *Cond, StmtList &IfStmts,
+                        StmtList &ElseStmts){
+// if (!Cond)
+//     Cond = FalseLiteral;
 
+  // if (Cond->getType() != BooleanType) {
+  //   Diags.report(Loc, diag::err_if_expr_must_be_bool);
+  // }
+  Stmts.push_back(
+      new IfStatement(Cond, IfStmts, ElseStmts));
+};
