@@ -418,7 +418,11 @@ bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
 
   if (Tok.is(tok::kw_else)) {
     advance();
+     expect(tok::l_parth);
+    advance();
     parseStatementSequence(Decls,ElseStmts);
+    expect(tok::r_parth);
+    advance();
   }
   Actions.actOnIfStatement(Stmts, Loc, E, IfStmts,
                              ElseStmts);
