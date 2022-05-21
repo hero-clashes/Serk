@@ -155,6 +155,7 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
   break;
   case tok::kw_while:
   //parse while
+    parseWhileStatement(Decls, Stmts);
   default:
     break;
   }
@@ -426,5 +427,27 @@ bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
   }
   Actions.actOnIfStatement(Stmts, Loc, E, IfStmts,
                              ElseStmts);
+  return false;
+};
+bool Parser::parseWhileStatement(DeclList &Decls, StmtList &Stmts) {
+  Expr *E = nullptr;
+  StmtList WhileStmts;
+  SMLoc Loc = Tok.getLocation();
+  consume(tok::kw_while);
+
+  expect(tok::l_paren);
+  advance();
+
+  parseExpression(E);
+
+  expect(tok::r_paren);
+  advance();
+
+  expect(tok::l_parth);
+  advance();
+  parseStatementSequence(Decls, WhileStmts);
+  expect(tok::r_parth);
+  advance();
+  Actions.actOnWhileStatement(Stmts, Loc, E, WhileStmts);
   return false;
 };

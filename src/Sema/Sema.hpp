@@ -58,6 +58,8 @@ public:
   void actOnIfStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &IfStmts,
                         StmtList &ElseStmts);
+  void actOnWhileStatement(StmtList &Stmts, SMLoc Loc,
+                        Expr *Cond, StmtList &WhileStmts);
 };
 
 class EnterDeclScope {

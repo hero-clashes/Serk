@@ -106,8 +106,8 @@ void CGFunction::emit(const StmtList &Stmts){
       emitStmt(Stmt);
     else if (auto *Stmt = llvm::dyn_cast<IfStatement>(S))
       emitStmt(Stmt);
-    // else if (auto *Stmt = llvm::dyn_cast<WhileStatement>(S))
-    //   emitStmt(Stmt);
+    else if (auto *Stmt = llvm::dyn_cast<WhileStatement>(S))
+      emitStmt(Stmt);
     else if (auto *Stmt =
                  llvm::dyn_cast<ReturnStatement>(S))
       emitStmt(Stmt);
@@ -431,4 +431,28 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     
   }
   setCurr(AfterIfBB);
+  };
+  void CGFunction::emitStmt(WhileStatement *Stmt) {
+    // The basic block for the condition.
+    llvm::BasicBlock *WhileCondBB;
+    // The basic block for the while body.
+    llvm::BasicBlock *WhileBodyBB = createBasicBlock("while.body");
+    // The basic block after the while statement.
+    llvm::BasicBlock *AfterWhileBB = createBasicBlock("after.while");
+
+    WhileCondBB = createBasicBlock("while.cond");
+    Builder.CreateBr(WhileCondBB);
+    setCurr(WhileCondBB);
+
+
+    llvm::Value *Cond = emitExpr(Stmt->getCond());
+    Builder.CreateCondBr(Cond, WhileBodyBB, AfterWhileBB);
+
+
+    setCurr(WhileBodyBB);
+    emit(Stmt->getWhileStmts());
+    Builder.CreateBr(WhileCondBB);
+
+
+    setCurr(AfterWhileBB);
   };

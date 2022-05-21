@@ -65,4 +65,6 @@ public:
   bool parseFactor(Expr *&E);
   bool parseIfStatement(DeclList& Decls,
       StmtList& Stmts);
+  bool parseWhileStatement(DeclList& Decls,
+      StmtList& Stmts);
 };

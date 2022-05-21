@@ -342,3 +342,9 @@ void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
   Stmts.push_back(
       new IfStatement(Cond, IfStmts, ElseStmts));
 };
+void Sema::actOnWhileStatement(StmtList &Stmts, SMLoc Loc,
+                        Expr *Cond, StmtList &WhileStmts){
+
+
+    Stmts.push_back(new WhileStatement(Cond,WhileStmts));
+                        };
