@@ -13,10 +13,10 @@ bool Sema::isOperatorForType(tok::TokenKind Op,
     return Ty == IntegerType;
   case tok::slash:
     return false; // REAL not implemented
-//   case tok::kw_AND:
-//   case tok::kw_OR:
-//   case tok::kw_NOT:
-//     return Ty == BoolType;
+  case tok::And:
+  case tok::Or:
+  case tok::Not:
+    return Ty == BoolType;
   default:
     llvm_unreachable("Unknown operator");
   }
@@ -347,4 +347,8 @@ void Sema::actOnWhileStatement(StmtList &Stmts, SMLoc Loc,
 
 
     Stmts.push_back(new WhileStatement(Cond,WhileStmts));
+                        };
+void Sema::actOnForStatement(StmtList &Stmts, SMLoc Loc,
+                        Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts){
+      Stmts.push_back(new ForStatement(Cond,Start_Val,ForStepStmts,ForBodyStmts));
                         };
