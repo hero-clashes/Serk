@@ -111,6 +111,9 @@ void CGFunction::emit(const StmtList &Stmts){
     else if (auto *Stmt =
                  llvm::dyn_cast<ReturnStatement>(S))
       emitStmt(Stmt);
+    else if (auto *Stmt =
+                 llvm::dyn_cast<ForStatement>(S))
+      emitStmt(Stmt);
     else
       llvm_unreachable("Unknown statement");
   }
@@ -345,9 +348,9 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
   case tok::equal_equal:
     Result = Builder.CreateICmpEQ(Left, Right);
     break;
-  // case tok::hash:
-  //   Result = Builder.CreateICmpNE(Left, Right);
-  //   break;
+  case tok::not_equal:
+    Result = Builder.CreateICmpNE(Left, Right);
+    break;
   case tok::less:
     Result = Builder.CreateICmpSLT(Left, Right);
     break;
@@ -360,12 +363,12 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
   case tok::greaterequal:
     Result = Builder.CreateICmpSGE(Left, Right);
     break;
-  // case tok::kw_AND:
-  //   Result = Builder.CreateAnd(Left, Right);
-  //   break;
-  // case tok::kw_OR:
-  //   Result = Builder.CreateOr(Left, Right);
-  //   break;
+  case tok::And:
+    Result = Builder.CreateAnd(Left, Right);
+    break;
+  case tok::Or:
+    Result = Builder.CreateOr(Left, Right);
+    break;
   case tok::slash:
     // Divide by real numbers not supported.
     LLVM_FALLTHROUGH;
@@ -385,9 +388,9 @@ CGFunction::emitPrefixExpr(PrefixExpression *E) {
   case tok::minus:
     Result = Builder.CreateNeg(Result);
     break;
-  // case tok::kw_NOT:
-  //   Result = Builder.CreateNot(Result);
-  //   break;
+  case tok::Not:
+    Result = Builder.CreateNot(Result);
+    break;
   default:
     llvm_unreachable("Wrong operator");
   }
@@ -456,3 +459,35 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
 
     setCurr(AfterWhileBB);
   };
+  void CGFunction::emitStmt(ForStatement *Stmt) {
+    llvm::BasicBlock *ForCondBB;
+    llvm::BasicBlock *ForIntailBB = createBasicBlock("For.initail");
+    // The basic block for the For body.
+    llvm::BasicBlock *ForBodyBB = createBasicBlock("For.body");
+    // The basic block after the For statement.
+    llvm::BasicBlock *AfterForBB = createBasicBlock("after.For");
+
+    llvm::BasicBlock *StepFor = createBasicBlock("For.Step");
+
+    ForCondBB = createBasicBlock("For.Cond");
+
+    Builder.CreateBr(ForIntailBB);
+    setCurr(ForIntailBB);
+    emit(Stmt->Start_Val);// emit each statment as the starting point
+    Builder.CreateBr(ForCondBB);
+
+    setCurr(ForCondBB);
+    llvm::Value *Cond = emitExpr(Stmt->getCond());
+    Builder.CreateCondBr(Cond, ForBodyBB, AfterForBB);
+
+
+    setCurr(ForBodyBB);
+    emit(Stmt->Body);
+    Builder.CreateBr(StepFor);
+  
+    setCurr(StepFor);
+    emit(Stmt->Step);
+    Builder.CreateBr(ForCondBB);
+
+    setCurr(AfterForBB);
+  }

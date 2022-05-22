@@ -50,6 +50,7 @@ class CGFunction{
   void emitStmt(IfStatement *Stmt);
   void emitStmt(WhileStatement *Stmt);
   void emitStmt(ReturnStatement *Stmt);
+  void emitStmt(ForStatement *Stmt);
   void emit(const StmtList &Stmts);
 public:
 

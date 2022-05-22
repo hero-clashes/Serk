@@ -73,6 +73,20 @@ void Lexer::next(Token &Result) {
       else
         formToken(Result, CurPtr + 1, tok::equal);
       break;
+      case '!':
+      if (*(CurPtr + 1) == '=')
+        formToken(Result, CurPtr + 2, tok::not_equal);
+      else
+        formToken(Result, CurPtr + 1, tok::Not);
+      break;
+      case '|':
+      if (*(CurPtr + 1) == '|')
+        formToken(Result, CurPtr + 2, tok::Or);
+      break;
+      case '&':
+      if (*(CurPtr + 1) == '&')
+        formToken(Result, CurPtr + 2, tok::And);
+      break;
       // CASE('=', tok::equal);
       CASE('+', tok::plus);
       CASE('-', tok::minus);

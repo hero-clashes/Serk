@@ -67,4 +67,6 @@ public:
       StmtList& Stmts);
   bool parseWhileStatement(DeclList& Decls,
       StmtList& Stmts);
+  bool parseForStatement(DeclList& Decls,
+      StmtList& Stmts);    
 };

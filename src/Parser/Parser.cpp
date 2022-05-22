@@ -156,6 +156,8 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
   case tok::kw_while:
   //parse while
     parseWhileStatement(Decls, Stmts);
+  case tok::kw_for:
+    parseForStatement(Decls, Stmts);
   default:
     break;
   }
@@ -228,7 +230,7 @@ bool Parser::parseExpList(ExprList &Exprs) {
 
 bool Parser::parseExpression(Expr *&E) {
   parseSimpleExpression(E);
-  if (Tok.isOneOf(tok::less, tok::lessequal, tok::equal_equal, tok::greater,
+  if (Tok.isOneOf(tok::less, tok::lessequal, tok::equal_equal, tok::greater, tok::not_equal,tok::Not,
                   tok::greaterequal)) {
     OperatorInfo Op;
     Expr *Right = nullptr;
@@ -316,12 +318,11 @@ bool Parser::parseFactor(Expr *&E) {
     //     // goto _error;
     consume(tok::r_paren);
     // goto _error;
-    // } else if (Tok.is(tok::kw_NOT)) {
-    //   OperatorInfo Op = fromTok(Tok);
-    //   advance();
-    //   if (parseFactor(E))
-    //     goto _error;
-    //   E = Actions.actOnPrefixExpression(E, Op);
+    } else if (Tok.is(tok::Not)) {
+      OperatorInfo Op = fromTok(Tok);
+      advance();
+      parseFactor(E);
+      E = Actions.actOnPrefixExpression(E, Op);
   } else {
     /*ERROR*/
   }
@@ -329,6 +330,14 @@ bool Parser::parseFactor(Expr *&E) {
 }
 
 bool Parser::parseRelation(OperatorInfo &Op) {
+   if (Tok.is(tok::Not)) {
+    Op = fromTok(Tok);
+    advance();
+  } else
+  if (Tok.is(tok::not_equal)) {
+    Op = fromTok(Tok);
+    advance();
+  } else   
   if (Tok.is(tok::equal_equal)) {
     Op = fromTok(Tok);
     advance();
@@ -366,10 +375,10 @@ bool Parser::parseMulOperator(OperatorInfo &Op) {
     //  Op = fromTok(Tok);
     // advance();
     //}
-    // else if (Tok.is(tok::kw_AND)) {
-    //  Op = fromTok(Tok);
-    // advance();
-    //}
+    else if (Tok.is(tok::And)) {
+     Op = fromTok(Tok);
+    advance();
+    }
     // else {
     /*ERROR*/
     //  goto _error;
@@ -386,14 +395,14 @@ bool Parser::parseAddOperator(OperatorInfo &Op) {
     Op = fromTok(Tok);
     advance();
   }
-  /*else if (Tok.is(tok::kw_OR)) {
+  else if (Tok.is(tok::Or)) {
       Op = fromTok(Tok);
       advance();
   }
-  else {
-      /*ERROR
-      goto _error;
-  }*/
+  // else {
+  //     ERROR
+  //     goto _error;
+  // }
   return false;
 }
 
@@ -421,7 +430,7 @@ bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
     advance();
      expect(tok::l_parth);
     advance();
-    parseStatementSequence(Decls,ElseStmts);
+    parseBlock(Decls,ElseStmts);
     expect(tok::r_parth);
     advance();
   }
@@ -445,9 +454,43 @@ bool Parser::parseWhileStatement(DeclList &Decls, StmtList &Stmts) {
 
   expect(tok::l_parth);
   advance();
-  parseStatementSequence(Decls, WhileStmts);
+  parseBlock(Decls, WhileStmts);
   expect(tok::r_parth);
   advance();
   Actions.actOnWhileStatement(Stmts, Loc, E, WhileStmts);
   return false;
 };
+bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
+  Expr *E = nullptr;
+  StmtList Start_Val;
+  StmtList ForStepStmts;
+  StmtList ForBodyStmts;
+
+
+  SMLoc Loc = Tok.getLocation();
+  consume(tok::kw_for);
+
+  expect(tok::l_paren);
+  advance();
+  parseVarDecleration(Decls,Start_Val);
+  
+  // expect(tok::semi);
+  // advance();
+
+  parseExpression(E);
+
+  expect(tok::semi);
+  advance();
+  parseStatementSequence(Decls, ForStepStmts);
+  
+  expect(tok::r_paren);
+  advance();
+
+  expect(tok::l_parth);
+  advance();
+  parseBlock(Decls, ForBodyStmts);
+  expect(tok::r_parth);
+  advance();
+  Actions.actOnForStatement(Stmts, Loc, E, Start_Val, ForStepStmts, ForBodyStmts);
+  return false;
+}

@@ -366,7 +366,8 @@ public:
         SK_ProcCall,
         SK_If,
         SK_While,
-        SK_Return
+        SK_Return,
+        SK_For,
     };
 
 private:
@@ -459,5 +460,24 @@ public:
 
     static bool classof(const Stmt* S) {
         return S->getKind() == SK_Return;
+    }
+};
+
+class ForStatement : public Stmt {
+public:
+    StmtList Start_Val;
+    Expr* Cond;
+    StmtList Step;
+
+    StmtList Body;
+
+    ForStatement(Expr *Cond, StmtList &Start_Val,StmtList &Step, StmtList &Body)
+        : Stmt(SK_For), Cond(Cond), Start_Val(Start_Val),Step(Step),Body(Body) {}
+
+    Expr* getCond() { return Cond; }
+    // const StmtList& getWhileStmts() { return Stmts; }
+
+    static bool classof(const Stmt* S) {
+        return S->getKind() == SK_For;
     }
 };

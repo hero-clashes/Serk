@@ -60,6 +60,8 @@ public:
                         StmtList &ElseStmts);
   void actOnWhileStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &WhileStmts);
+  void actOnForStatement(StmtList &Stmts, SMLoc Loc,
+                        Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts);
 };
 
 class EnterDeclScope {

@@ -29,6 +29,10 @@ PUNCTUATOR(comma,               ",")
 PUNCTUATOR(semi,                ";")
 PUNCTUATOR(equal,               "=")
 PUNCTUATOR(equal_equal,         "==")
+PUNCTUATOR(not_equal,           "!=")
+PUNCTUATOR(Not,                 "!")
+PUNCTUATOR(Or,                  "||")
+PUNCTUATOR(And,                 "&&")
 PUNCTUATOR(less,                "<")
 PUNCTUATOR(greater,             ">")
 PUNCTUATOR(lessequal,           "<=")
@@ -44,6 +48,7 @@ KEYWORD(return                         , KEYALL)
 KEYWORD(if                             , KEYALL)
 KEYWORD(else                           , KEYALL)
 KEYWORD(while                          , KEYALL)
+KEYWORD(for                            , KEYALL)
 #undef KEYWORD
 #undef PUNCTUATOR
 #undef TOK
