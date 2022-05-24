@@ -3,6 +3,7 @@
 #include "llvm/Support/SMLoc.h"
 #include "Lexer/TokenKinds.hpp"
 #include "llvm/ADT/APSInt.h"
+#include <vector>
 using namespace llvm;
 
 
@@ -28,6 +29,7 @@ public:
   enum DeclKind {
     DK_CompileUnit,
     DK_Alias,
+    DK_Class,
     DK_Base_Type,
     DK_Var,
     DK_Function,
@@ -178,6 +180,19 @@ public:
   }
 };
 
+class ClassDeclaration: public Decl{
+  public:
+  std::vector<Decl*> Decls;
+  StmtList Stmts;
+  ClassDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+                             StringRef Name):Decl(DK_Class, EnclosingDecL, Loc, Name){
+
+  };
+static bool classof(const Decl *D) {
+    return D->getKind() == DK_Class;
+  }
+};
+
 class OperatorInfo {
   SMLoc Loc;
   uint32_t Kind : 16;
@@ -208,6 +223,7 @@ public:
     EK_Designator,
     EK_Const,
     EK_Func,
+    EK_Meth,
   };
 
 private:
@@ -358,12 +374,31 @@ public:
     return E->getKind() == EK_Func;
   }
 };
+class MethodCallExpr :public Expr{
+   public:
+  VariableDeclaration *Var;
+  StringRef Function_Name;
+  ExprList Params;
+
+  MethodCallExpr(VariableDeclaration *Var, StringRef Function_Name,
+                   ExprList Params)
+      : Expr(EK_Meth, nullptr , false),Var(Var),//TODO fix returntype
+        Function_Name(Function_Name), Params(Params) {}
+
+  // FunctionDeclaration *geDecl() { return Proc; }
+  const ExprList &getParams() { return Params; }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == EK_Meth;
+  }
+};
 
 class Stmt {
 public:
     enum StmtKind {
         SK_Assign,
         SK_ProcCall,
+        Sk_MethodCall,
         SK_If,
         SK_While,
         SK_Return,
@@ -412,7 +447,25 @@ public:
         return S->getKind() == SK_ProcCall;
     }
 };
+class MethodCallStatement :public Stmt{
+  public:
+  VariableDeclaration *Var;
+  StringRef Function_Name;
+  ExprList Params;
 
+
+  MethodCallStatement(VariableDeclaration *Var, StringRef Function_Name,
+                   ExprList &Params)
+      : Stmt(Sk_MethodCall),Var(Var),
+        Function_Name(Function_Name), Params(Params) {}
+
+  // FunctionDeclaration *geDecl() { return Proc; }
+  const ExprList &getParams() { return Params; }
+
+  static bool classof(const Stmt *E) {
+    return E->getKind() == Sk_MethodCall;
+  }
+};
 class IfStatement : public Stmt {
     Expr* Cond;
     StmtList IfStmts;

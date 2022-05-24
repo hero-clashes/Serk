@@ -5,6 +5,7 @@
 #include "AST/AST.hpp"
 #include "CGCompileUnit.hpp"
 class CGFunction{
+  public:
   CGCompileUnit &CGM;
   llvm::IRBuilder<> Builder;
 
@@ -18,7 +19,7 @@ class CGFunction{
   llvm::DenseMap<Decl *, llvm::TrackingVH<llvm::Value>>
         Defs;
 
-  llvm::DenseMap<ParameterDeclaration *,
+  llvm::DenseMap<Decl *,
                  llvm::Argument *>
       FormalParams;
     llvm::FunctionType *
@@ -28,13 +29,13 @@ class CGFunction{
   llvm::Type *mapType(Decl *Decl);
 
 
-  void writeVariable(llvm::BasicBlock *BB, Decl *Decl,
+  virtual void writeVariable(llvm::BasicBlock *BB, Decl *Decl,
                      llvm::Value *Val);
-  llvm::Value *readVariable(llvm::BasicBlock *BB,
+  virtual llvm::Value *readVariable(llvm::BasicBlock *BB,
                             Decl *Decl, bool LoadVal = true);
-  void writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
+  virtual void writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
                           llvm::Value *Val);
-  llvm::Value *readLocalVariable(llvm::BasicBlock *BB,
+  virtual llvm::Value *readLocalVariable(llvm::BasicBlock *BB,
                                  Decl *Decl);
   llvm::Value *
   readLocalVariableRecursive(llvm::BasicBlock *BB,
@@ -45,8 +46,10 @@ class CGFunction{
   llvm::Value *emitPrefixExpr(PrefixExpression *E);
   llvm::Value *emitExpr(Expr *E);
   llvm::Value *emitFunccall(FunctionCallExpr *E);
+  llvm::Value *emitMethcall(MethodCallExpr *E);
   void emitStmt(AssignmentStatement *Stmt);
   void emitStmt(FunctionCallStatement *Stmt);
+  void emitStmt(MethodCallStatement *Stmt);
   void emitStmt(IfStatement *Stmt);
   void emitStmt(WhileStatement *Stmt);
   void emitStmt(ReturnStatement *Stmt);

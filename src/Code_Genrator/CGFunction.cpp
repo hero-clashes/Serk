@@ -1,5 +1,6 @@
 #include "CGFunction.hpp"
 #include "llvm/IR/Verifier.h"
+#include <string>
 
 void CGFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
@@ -46,7 +47,7 @@ void CGFunction::run(FunctionDeclaration *Proc) {
     // Run the optimizer on the function.
   CGM.FPM->run(*Fn);
 
-  Fn->print(errs());
+  // Fn->print(errs());
 }
 llvm::FunctionType *CGFunction::createFunctionType(FunctionDeclaration *Proc) {
   llvm::Type *ResultTy = nullptr;
@@ -113,6 +114,9 @@ void CGFunction::emit(const StmtList &Stmts){
       emitStmt(Stmt);
     else if (auto *Stmt =
                  llvm::dyn_cast<ForStatement>(S))
+      emitStmt(Stmt);
+    else if (auto *Stmt =
+                 llvm::dyn_cast<MethodCallStatement>(S))
       emitStmt(Stmt);
     else
       llvm_unreachable("Unknown statement");
@@ -218,6 +222,8 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
                                   BoolLit->getValue());}
   else if (auto *FuncCall =llvm::dyn_cast<FunctionCallExpr>(E)) {
     return emitFunccall(FuncCall);
+  } else if (auto *MethCall =llvm::dyn_cast<MethodCallExpr>(E)) {
+    return emitMethcall(MethCall);
   }
   llvm::report_fatal_error("Unsupported expression");
 
@@ -232,7 +238,17 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
   return Builder.CreateCall(F, ArgsV, "calltmp");
   // llvm::report_fatal_error("not implemented");
 };
-
+llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
+   std::string Method_Name = E->Var->getType()->getName().str() + "_" + E->Function_Name.str();
+  auto *F = CGM.getModule()->getFunction(Method_Name);
+  auto o = F->arg_size();
+  std::vector<Value *> ArgsV;
+  ArgsV.push_back(Defs[E->Var]);
+  for(auto expr:E->getParams()){
+    ArgsV.push_back(emitExpr(expr));
+  };
+  return Builder.CreateCall(F, ArgsV, "calltmp");
+};
 void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
                                      Decl *Decl,
                                      llvm::Value *Val) {
@@ -324,6 +340,18 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
    Builder.CreateCall(F, ArgsV, "calltmp");
   // llvm::report_fatal_error("not implemented");
 }
+void CGFunction::emitStmt(MethodCallStatement *Stmt){
+  std::string Method_Name = Stmt->Var->getType()->getName().str() + "_" + Stmt->Function_Name.str();
+  auto *F = CGM.getModule()->getFunction(Method_Name);
+  auto o = F->arg_size();
+  std::vector<Value *> ArgsV;
+  ArgsV.push_back(Defs[Stmt->Var]);
+  for(auto expr:Stmt->getParams()){
+    ArgsV.push_back(emitExpr(expr));
+  };
+  Builder.CreateCall(F, ArgsV, "calltmp");
+  // llvm::report_fatal_error("not implemented");
+};
 llvm::Value *
 CGFunction::emitInfixExpr(InfixExpression *E) {
   llvm::Value *Left = emitExpr(E->getLeft());

@@ -31,6 +31,9 @@ CompileUnitDeclaration *Parser::parse() {
         parseVarDecleration(Decls, Stmts);
       }
     }
+    if(Tok.is(tok::kw_class)){
+      ParseClass(Decls);
+    };
   }
 
   Actions.actOnCompileUnitDeclaration(module, SMLoc(), "Main", Decls, Stmts);
@@ -147,6 +150,8 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
       Expr *E;
       parseExpression(E);
       Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);
+    } else if (Lex.peak(0).is(tok::period)) {
+      ParseMethodCallStatment(Stmts);
     }
   break;
   case tok::kw_if:
@@ -196,6 +201,7 @@ bool Parser::parseFunctionCallStatment(StmtList &Stmts) {
   ExprList Exprs;
   Decl *D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
   auto loc = Tok.getLocation();
+  advance();
   if (Tok.is(tok::l_paren)) {
     advance();
     if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
@@ -304,7 +310,26 @@ bool Parser::parseFactor(Expr *&E) {
             // goto _error;
           E = Actions.actOnFunctionCallExpr(call.getLocation(),D,Exprs);
           advance();
-    } else {
+    } else if(Tok.is(tok::period)){
+      advance();
+
+      auto Method_name = Tok.getIdentifier();
+      ExprList Exprs;
+      advance();
+
+      if (Tok.is(tok::l_paren)) {
+        advance();
+        if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
+                        tok::integer_literal)) {
+          parseExpList(Exprs);
+          // goto _error;
+        }
+        expect(tok::r_paren);
+        // goto _error;
+        advance();
+      }
+      E = new MethodCallExpr(dyn_cast<VariableDeclaration>(D),Method_name,Exprs);
+        } else {
       // D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
       // advance();
       //here simple variable referencing
@@ -494,3 +519,60 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
   Actions.actOnForStatement(Stmts, Loc, E, Start_Val, ForStepStmts, ForBodyStmts);
   return false;
 }
+bool Parser::ParseClass(DeclList &ParentDecls){
+  advance(); // eat class
+  auto D =
+      Actions.actOnClassDeclaration(Tok.getLocation(), Tok.getIdentifier());
+  advance(); // eat class identifier
+
+  EnterDeclScope S(Actions, D);
+  DeclList Decls;
+  StmtList StartStmt;
+  expect(tok::l_parth);
+  advance();
+  while (Tok.isNot(tok::r_parth)) {
+    if (Lex.peak(1).is(tok::l_paren)) {
+        // handle function decleration
+        //
+        if (ParseFuction(Decls)) {
+        };
+    } else if (Lex.peak(0).is(tok::identifier)) {
+      // handle var decleration
+      parseVarDecleration(Decls, StartStmt);
+    }
+  }
+  expect(tok::r_parth);
+  advance();
+
+  Actions.actOnClassBody(D, Decls, StartStmt);
+  // D->Decls =Decls;
+  // D->Stmts = StartStmt;
+
+  ParentDecls.push_back(D);
+  return false;
+};
+bool Parser::ParseMethodCallStatment(StmtList& Stmts){
+  auto *D =dyn_cast_or_null<VariableDeclaration>(Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier()));
+  auto loc = Tok.getLocation();
+  advance();
+  
+  advance();
+
+  auto Method_name = Tok.getIdentifier();
+  ExprList Exprs;
+  advance();
+
+  if (Tok.is(tok::l_paren)) {
+    advance();
+    if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
+                    tok::integer_literal)) {
+      parseExpList(Exprs);
+      // goto _error;
+    }
+    expect(tok::r_paren);
+    // goto _error;
+    advance();
+  }
+  Stmts.push_back(new MethodCallStatement(D,Method_name,Exprs));
+  return false;
+};

@@ -69,4 +69,6 @@ public:
       StmtList& Stmts);
   bool parseForStatement(DeclList& Decls,
       StmtList& Stmts);    
+  bool ParseClass(DeclList &ParentDecls);
+  bool ParseMethodCallStatment(StmtList& Stmts);
 };

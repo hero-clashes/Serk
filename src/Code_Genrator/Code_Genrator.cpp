@@ -10,5 +10,6 @@ std::unique_ptr<llvm::Module> CodeGenerator::run(CompileUnitDeclaration* Mod, st
     M->setDataLayout(JIT.getDataLayout());
     CGCompileUnit CGM(M.get());
     CGM.run(Mod);
+    M->dump();
     return M;
 }

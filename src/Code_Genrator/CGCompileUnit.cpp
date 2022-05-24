@@ -4,6 +4,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Constants.h"
 #include "CGFunction.hpp"
+#include "CGClass.hpp"
 CGCompileUnit::CGCompileUnit(llvm::Module *M): M(M) {
   initialize();
     
@@ -45,6 +46,8 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
       return Int64Ty;
     if (Ty->getName() == "bool")
       return Int1Ty;
+  } else if(llvm::isa<ClassDeclaration>(Ty)){
+
   }
   // else if (auto *AliasTy =
   //                llvm::dyn_cast<AliasTypeDeclaration>(Ty)) {
@@ -112,6 +115,12 @@ void CGCompileUnit::run(CompileUnitDeclaration *Mod)
                        Decl)) {
       CGFunction CGP(*this);
       CGP.run(Proc);
+    } else if(auto *Proc =
+                   llvm::dyn_cast<ClassDeclaration>(
+                       Decl)){
+      CGClass CGC(*this);
+      auto Ty = CGC.run(Proc);
+      TypeCache[dyn_cast_or_null<TypeDeclaration>(Proc)] = Ty;
     }
   }
 }

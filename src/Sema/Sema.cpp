@@ -83,6 +83,8 @@ void Sema::actOnFunctionDeclaration(FunctionDeclaration* ProcDecl, SMLoc Loc, St
 TypeDeclaration*   Sema::actOnTypeRefernce(SMLoc Loc, StringRef Name) {
     if (auto D = dyn_cast_or_null<TypeDeclaration>(CurrentScope->lookup(Name))) {
         return D;
+    // } else if (auto D = dyn_cast_or_null<ClassDeclaration>(CurrentScope->lookup(Name))) {
+    //   return D;
     }
     else {
         Diags.report(Loc,diag::err_returntype_must_be_type);
@@ -352,3 +354,16 @@ void Sema::actOnForStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts){
       Stmts.push_back(new ForStatement(Cond,Start_Val,ForStepStmts,ForBodyStmts));
                         };
+ClassDeclaration *Sema::actOnClassDeclaration(SMLoc Loc, StringRef Name){
+  ClassDeclaration *P =
+      new ClassDeclaration(CurrentDecl, Loc, Name);
+  if (!CurrentScope->insert(P))
+    Diags.report(Loc, diag::err_symbold_declared, Name);
+  return P;
+};
+
+void Sema::actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start){
+  auto classd = dyn_cast_or_null<ClassDeclaration>(D);
+  classd->Decls = Decls;
+  classd->Stmts = Start;
+};

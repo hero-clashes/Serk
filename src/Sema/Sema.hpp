@@ -62,6 +62,8 @@ public:
                         Expr *Cond, StmtList &WhileStmts);
   void actOnForStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts);
+  ClassDeclaration *actOnClassDeclaration(SMLoc Loc, StringRef Name);
+  void actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start);
 };
 
 class EnterDeclScope {
