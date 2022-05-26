@@ -13,7 +13,7 @@ Parser::Parser(Lexer &Lex, Sema &Actions) : Lex(Lex), Actions(Actions) {
 CompileUnitDeclaration *Parser::parse() {
   CompileUnitDeclaration *module = nullptr;
   module = Actions.actOnCompileUnitDeclaration(SMLoc(), "Main");
-
+  EnterDeclScope S(Actions, module);
   DeclList Decls;
   StmtList Stmts;
   while (Tok.isNot(tok::eof)) {
@@ -141,7 +141,6 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
     if (Lex.peak(0).is(tok::l_paren)) {
       parseFunctionCallStatment(Stmts);
     } else if (Lex.peak(0).is(tok::equal)) {
-      //TODO assginment
       auto Var = Actions.actOnVarRefernce(Tok.getLocation(),
                                           Tok.getIdentifier());
         advance();// eat var
@@ -316,7 +315,7 @@ bool Parser::parseFactor(Expr *&E) {
       auto Method_name = Tok.getIdentifier();
       ExprList Exprs;
       advance();
-
+      //TODO add members access
       if (Tok.is(tok::l_paren)) {
         advance();
         if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
@@ -327,9 +326,12 @@ bool Parser::parseFactor(Expr *&E) {
         expect(tok::r_paren);
         // goto _error;
         advance();
+        E = new MethodCallExpr(dyn_cast<VariableDeclaration>(D),Method_name,Exprs);
+      } else {
+
       }
-      E = new MethodCallExpr(dyn_cast<VariableDeclaration>(D),Method_name,Exprs);
-        } else {
+      
+      } else {
       // D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
       // advance();
       //here simple variable referencing

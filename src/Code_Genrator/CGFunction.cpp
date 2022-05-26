@@ -32,10 +32,19 @@ void CGFunction::run(FunctionDeclaration *Proc) {
         llvm::Value *Val = Builder.CreateAlloca(Ty);
         // Defs[D] = Val;
         writeLocalVariable(Curr, Var, Val);
+        if(auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())){
+           auto real_pointer = Builder.CreateLoad(Val);
+          auto a = C->getName().str() + "_" + "Create_Default";
+          auto F = CGM.getModule()->getFunction(a);
+          Builder.CreateCall(F,{Val});
+        }
       // }
     }
   }
-
+  if(Proc->getName() == "main"){
+    Proc->getEnclosingDecl()->getName();
+    emit(dyn_cast_or_null<CompileUnitDeclaration>(Proc->getEnclosingDecl())->getStmts());
+  }
   auto Block = Proc->getStmts();
   emit(Proc->getStmts());
   if (!Curr->getTerminator()) {
@@ -96,6 +105,7 @@ llvm::Type *CGFunction::mapType(Decl *Decl) {
   }
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(Decl))
     return CGM.convertType(V->getType());
+  
   return CGM.convertType(llvm::cast<TypeDeclaration>(Decl));
 };
 void CGFunction::emit(const StmtList &Stmts){

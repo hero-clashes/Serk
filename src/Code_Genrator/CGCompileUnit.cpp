@@ -46,6 +46,8 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
       return Int64Ty;
     if (Ty->getName() == "bool")
       return Int1Ty;
+    if(Ty->getName() == "void")
+      return VoidTy;
   } else if(llvm::isa<ClassDeclaration>(Ty)){
 
   }

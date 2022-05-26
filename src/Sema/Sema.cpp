@@ -40,9 +40,10 @@ void Sema::initialize(){
     CurrentDecl = nullptr;
     IntegerType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "int");
     BoolType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "bool");
+    auto VoidType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void");
     CurrentScope->insert(IntegerType);
     CurrentScope->insert(BoolType);
-
+    CurrentScope->insert(VoidType);
 };
 
 

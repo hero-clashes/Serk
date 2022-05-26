@@ -21,5 +21,12 @@ StructType *CGClass::run(ClassDeclaration *Class) {
       CGP.run(Proc);
     }
   }
+  if(!CGM.getModule()->getFunction(Class->getName().str() + "_" + "Create_Default")){
+    ParamList a;
+    DeclList b;
+    auto F = new FunctionDeclaration(Class,SMLoc(), "Create_Default" ,a,nullptr,b,Class->Stmts);
+    CGMemberFunction CGP(CGM, *this);
+    CGP.run(F);
+  }
   return Type;
 };

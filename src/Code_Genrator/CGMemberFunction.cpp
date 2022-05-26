@@ -101,6 +101,8 @@ CGMemberFunction::createFunctionType(FunctionDeclaration *Proc) {
   llvm::Type *ResultTy = nullptr;
   if (Proc->getRetType()) {
     ResultTy = mapType(Proc->getRetType());
+  } else {
+    ResultTy = Type::getVoidTy(CGM.getLLVMCtx());
   }
   auto FormalParams = Proc->getFormalParams();
   llvm::SmallVector<llvm::Type *, 8> ParamTypes;
@@ -151,6 +153,9 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
   }
 
   auto Block = Proc->getStmts();
+  if(Proc->getName() == "Create_Default"){
+    emit(dyn_cast_or_null<ClassDeclaration>(Proc->getEnclosingDecl())->Stmts);
+  }
   emit(Proc->getStmts());
   if (!Curr->getTerminator()) {
     Builder.CreateRetVoid();
