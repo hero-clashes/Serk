@@ -55,6 +55,9 @@ class CGFunction{
   void emitStmt(ReturnStatement *Stmt);
   void emitStmt(ForStatement *Stmt);
   void emit(const StmtList &Stmts);
+
+  void InitDecls(FunctionDeclaration *Proc);
+  
 public:
 
   void setCurr(llvm::BasicBlock *BB) {

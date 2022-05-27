@@ -14,7 +14,7 @@ void CGCompileUnit::initialize()
 {
     VoidTy = llvm::Type::getVoidTy(getLLVMCtx());
   Int1Ty = llvm::Type::getInt1Ty(getLLVMCtx());
-  Str = llvm::Type::getInt8PtrTy(getLLVMCtx());
+  Int8PtrTy = llvm::Type::getInt8PtrTy(getLLVMCtx());
   Int32Ty = llvm::Type::getInt32Ty(getLLVMCtx());
   Int64Ty = llvm::Type::getInt64Ty(getLLVMCtx());
   Int32Zero =
@@ -52,21 +52,21 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
 
   if (llvm::isa<Base_TypeDeclaration>(Ty)) {
     if (Ty->getName() == "int")
-      return Int64Ty;
+      return Int32Ty;
     if (Ty->getName() == "bool")
       return Int1Ty;
     if(Ty->getName() == "void")
       return VoidTy;
-    if(Ty->getName() == "str")
-      return Str;
+    if(Ty->getName() == "Int8PtrTy" || Ty->getName() == "str")
+      return Int8PtrTy;
   } else if(llvm::isa<ClassDeclaration>(Ty)){
 
   }
-  // else if (auto *AliasTy =
-  //                llvm::dyn_cast<AliasTypeDeclaration>(Ty)) {
-  //   llvm::Type *T = convertType(AliasTy->getType());
-  //   return TypeCache[Ty] = T;
-  // } else if (auto *ArrayTy =
+  else if (auto *AliasTy =
+                 llvm::dyn_cast<Alias_TypeDeclaration>(Ty)) {
+    llvm::Type *T = convertType(AliasTy->Realone);
+    return TypeCache[Ty] = T;
+  } //else if (auto *ArrayTy =
   //                llvm::dyn_cast<ArrayTypeDeclaration>(Ty)) {
   //   llvm::Type *Component = convertType(ArrayTy->getType());
   //   Expr *Nums = ArrayTy->getNums();

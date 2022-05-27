@@ -157,7 +157,7 @@ Expr* Sema::actOnIntegerLiteral(SMLoc Loc, StringRef Literal)
         Literal = Literal.drop_back();
         Radix = 16;
     }
-    llvm::APInt Value(64, Literal, Radix);
+    llvm::APInt Value(32, Literal, Radix);
     return new IntegerLiteral(Loc, llvm::APSInt(Value, false),
         IntegerType);
 }

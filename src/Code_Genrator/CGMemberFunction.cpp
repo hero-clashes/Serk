@@ -141,16 +141,7 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
     writeLocalVariable(Curr, FP, Alloca);
   }
 
-  for (auto *D : Proc->getDecls()) {
-    if (auto *Var = llvm::dyn_cast<VariableDeclaration>(D)) {
-      llvm::Type *Ty = mapType(Var);
-      // if (Ty->isAggregateType()) {
-      llvm::Value *Val = Builder.CreateAlloca(Ty);
-      // Defs[D] = Val;
-      writeLocalVariable(Curr, Var, Val);
-      // }
-    }
-  }
+  InitDecls(Proc);
 
   auto Block = Proc->getStmts();
   if(Proc->getName() == "Create_Default"){

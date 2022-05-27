@@ -24,23 +24,8 @@ void CGFunction::run(FunctionDeclaration *Proc) {
     writeLocalVariable(Curr, FP, Alloca);
   }
 
-  for (auto *D : Proc->getDecls()) {
-    if (auto *Var =
-            llvm::dyn_cast<VariableDeclaration>(D)) {
-      llvm::Type *Ty = mapType(Var);
-      // if (Ty->isAggregateType()) {
-        llvm::Value *Val = Builder.CreateAlloca(Ty);
-        // Defs[D] = Val;
-        writeLocalVariable(Curr, Var, Val);
-        if(auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())){
-           auto real_pointer = Builder.CreateLoad(Val);
-          auto a = C->getName().str() + "_" + "Create_Default";
-          auto F = CGM.getModule()->getFunction(a);
-          Builder.CreateCall(F,{Val});
-        }
-      // }
-    }
-  }
+  InitDecls(Proc);
+
   if(Proc->getName() == "main"){
     Proc->getEnclosingDecl()->getName();
     emit(dyn_cast_or_null<CompileUnitDeclaration>(Proc->getEnclosingDecl())->getStmts());
@@ -224,7 +209,7 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     return Val;
       } else if (auto *IntLit =
                  llvm::dyn_cast<IntegerLiteral>(E)) {
-    return llvm::ConstantInt::get(CGM.Int64Ty,
+    return llvm::ConstantInt::get(CGM.Int32Ty,
                                   IntLit->getValue());
   } else if (auto *BoolLit =
                  llvm::dyn_cast<BooleanLiteral>(E)) {
@@ -532,4 +517,24 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     Builder.CreateBr(ForCondBB);
 
     setCurr(AfterForBB);
+  }
+  void CGFunction::InitDecls(FunctionDeclaration *Proc){
+    for (auto *D : Proc->getDecls()) {
+    if (auto *Var =
+            llvm::dyn_cast<VariableDeclaration>(D)) {
+      llvm::Type *Ty = mapType(Var);
+      // if (Ty->isAggregateType()) {
+        llvm::Value *Val = Builder.CreateAlloca(Ty);
+        // Defs[D] = Val;
+        writeLocalVariable(Curr, Var, Val);
+        //TODO add constructors
+        if(auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())){
+           auto real_pointer = Builder.CreateLoad(Val);
+          auto a = C->getName().str() + "_" + "Create_Default";
+          auto F = CGM.getModule()->getFunction(a);
+          Builder.CreateCall(F,{Val});
+        }
+      // }
+    }
+  }
   }

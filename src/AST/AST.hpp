@@ -106,7 +106,17 @@ public:
     return D->getKind() == DK_Base_Type;
   }
 };
+class Alias_TypeDeclaration : public Decl {
+public:
+  TypeDeclaration *Realone;
+  Alias_TypeDeclaration(Decl *EnclosingDecL, SMLoc Loc, StringRef Name,
+                        TypeDeclaration *Realone)
+      : Decl(DK_Alias, EnclosingDecL, Loc, Name), Realone(Realone) {}
 
+  TypeDeclaration *getType() { return Realone; }
+
+  static bool classof(const Decl *D) { return D->getKind() == DK_Alias; };
+};
 class VariableDeclaration : public Decl {
   TypeDeclaration *Ty;
 
