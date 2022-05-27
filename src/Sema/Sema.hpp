@@ -14,6 +14,7 @@ public:
 
   TypeDeclaration *IntegerType;
   TypeDeclaration *BoolType;
+  TypeDeclaration *StrType;
   Sema(DiagnosticsEngine &Diags)
       : CurrentScope(nullptr), CurrentDecl(nullptr), Diags(Diags) {
     initialize();
@@ -64,6 +65,7 @@ public:
                         Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts);
   ClassDeclaration *actOnClassDeclaration(SMLoc Loc, StringRef Name);
   void actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start);
+  Expr *actOnStringLiteral(SMLoc Loc, StringRef Literal);
 };
 
 class EnterDeclScope {

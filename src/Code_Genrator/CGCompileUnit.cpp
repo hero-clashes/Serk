@@ -14,6 +14,7 @@ void CGCompileUnit::initialize()
 {
     VoidTy = llvm::Type::getVoidTy(getLLVMCtx());
   Int1Ty = llvm::Type::getInt1Ty(getLLVMCtx());
+  Str = llvm::Type::getInt8PtrTy(getLLVMCtx());
   Int32Ty = llvm::Type::getInt32Ty(getLLVMCtx());
   Int64Ty = llvm::Type::getInt64Ty(getLLVMCtx());
   Int32Zero =
@@ -34,6 +35,14 @@ void CGCompileUnit::initialize()
   // FPM->add(createCFGSimplificationPass());
 
   FPM->doInitialization();
+  M->getOrInsertFunction(
+  "printf",
+  FunctionType::get(
+    IntegerType::getInt32Ty(getLLVMCtx()),
+    Type::getInt8Ty(getLLVMCtx())->getPointerTo(),
+    true /* this is variadic func */
+  )
+);
 }
 
 llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
@@ -48,6 +57,8 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
       return Int1Ty;
     if(Ty->getName() == "void")
       return VoidTy;
+    if(Ty->getName() == "str")
+      return Str;
   } else if(llvm::isa<ClassDeclaration>(Ty)){
 
   }

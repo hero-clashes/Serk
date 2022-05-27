@@ -234,6 +234,10 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     return emitFunccall(FuncCall);
   } else if (auto *MethCall =llvm::dyn_cast<MethodCallExpr>(E)) {
     return emitMethcall(MethCall);
+  } else if (auto *Str = llvm::dyn_cast<String_Literal>(E)){
+    Str->Value.consume_back("\"");
+    Str->Value.consume_front("\"");
+    return Builder.CreateGlobalStringPtr(Str->Value);
   }
   llvm::report_fatal_error("Unsupported expression");
 

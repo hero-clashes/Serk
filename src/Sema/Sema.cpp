@@ -41,9 +41,13 @@ void Sema::initialize(){
     IntegerType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "int");
     BoolType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "bool");
     auto VoidType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void");
+    StrType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "str");
+    auto printf_f = new FunctionDeclaration(CurrentDecl,SMLoc(),"printf");
     CurrentScope->insert(IntegerType);
     CurrentScope->insert(BoolType);
     CurrentScope->insert(VoidType);
+    CurrentScope->insert(StrType);
+    CurrentScope->insert(printf_f);
 };
 
 
@@ -367,4 +371,8 @@ void Sema::actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start){
   auto classd = dyn_cast_or_null<ClassDeclaration>(D);
   classd->Decls = Decls;
   classd->Stmts = Start;
+};
+Expr *Sema::actOnStringLiteral(SMLoc Loc, StringRef Literal){
+  return new String_Literal(Loc, Literal,
+        StrType);
 };

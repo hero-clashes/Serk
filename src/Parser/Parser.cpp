@@ -350,6 +350,10 @@ bool Parser::parseFactor(Expr *&E) {
       advance();
       parseFactor(E);
       E = Actions.actOnPrefixExpression(E, Op);
+  }else if (Tok.is(tok::string_literal)) {
+    //todo move stuff to the sema
+    E = Actions.actOnStringLiteral(Tok.getLocation(), Tok.getLiteralData());
+    advance();
   } else {
     /*ERROR*/
   }

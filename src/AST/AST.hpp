@@ -224,6 +224,7 @@ public:
     EK_Const,
     EK_Func,
     EK_Meth,
+    EK_String,
   };
 
 private:
@@ -354,6 +355,20 @@ public:
 
   static bool classof(const Expr *E) {
     return E->getKind() == EK_Bool;
+  }
+};
+
+class String_Literal : public Expr {
+  public:
+  SMLoc Loc;
+  StringRef Value;
+  
+  String_Literal(SMLoc Loc,StringRef Value, TypeDeclaration *Ty)
+      : Expr(EK_String, Ty, true), Value(Value),Loc(Loc) {}
+  StringRef getValue() { return Value; }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == EK_String;
   }
 };
 
