@@ -80,6 +80,7 @@ bool Parser::parseParameters(ParamList &Params) {
     if (!Tok.isOneOf(tok::comma, tok::r_paren)) {
       // TODO error out
     }
+    consume(tok::comma);
     if (Tok.is(tok::r_paren)) {
       break;
     }
@@ -235,7 +236,7 @@ bool Parser::parseExpList(ExprList &Exprs) {
 
 bool Parser::parseExpression(Expr *&E) {
   parseSimpleExpression(E);
-  if (Tok.isOneOf(tok::less, tok::lessequal, tok::equal_equal, tok::greater, tok::not_equal,tok::Not,
+  if (Tok.isOneOf(tok::less, tok::lessequal, tok::equal_equal, tok::greater, tok::not_equal,tok::Not,tok::And,tok::Or,
                   tok::greaterequal)) {
     OperatorInfo Op;
     Expr *Right = nullptr;
@@ -384,6 +385,12 @@ bool Parser::parseRelation(OperatorInfo &Op) {
   } else if (Tok.is(tok::greaterequal)) {
     Op = fromTok(Tok);
     advance();
+  } else if (Tok.is(tok::Or)) {
+    Op = fromTok(Tok);
+    advance();
+  } else if (Tok.is(tok::And)) {
+    Op = fromTok(Tok);
+    advance();  
   } else {
     /*ERROR*/
   }
