@@ -20,16 +20,18 @@ CompileUnitDeclaration *Parser::parse() {
     while (Tok.is(tok::kw_import)) {
       // handle_import()
     };
-    if (Tok.is(tok::identifier)) {
-      if (Lex.peak(1).is(tok::l_paren)) {
+    if (Tok.is(tok::kw_fn)) {
+      // if (Lex.peak(1).is(tok::l_paren)) {
         // handle function decleration
         //
         if (ParseFuction(Decls)) {
         };
-      } else if (Lex.peak(0).is(tok::identifier)) {
+      // } else if (Lex.peak(0).is(tok::identifier)) {
         // handle var decleration
-        parseVarDecleration(Decls, Stmts);
-      }
+      // }
+    }
+    if(Tok.is(tok::kw_var)){
+      parseVarDecleration(Decls, Stmts);
     }
     if(Tok.is(tok::kw_class)){
       ParseClass(Decls);
@@ -42,6 +44,7 @@ CompileUnitDeclaration *Parser::parse() {
 };
 
 bool Parser::ParseFuction(DeclList &ParentDecls) {
+  advance(); // eat fn
   auto type = Tok.getIdentifier();
   auto RetType =
       Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
@@ -101,7 +104,7 @@ bool Parser::parseParameter(ParamList &Params) {
 bool Parser::parseBlock(DeclList &Decls, StmtList &Stmts) {
 
   while (Tok.isNot(tok::r_parth)) {
-    if (Tok.is(tok::identifier) && Lex.peak(0).is(tok::identifier)) {
+    if (Tok.is(tok::kw_var)) {
       // parse var defintion
       parseVarDecleration(Decls, Stmts);
 
@@ -113,24 +116,39 @@ bool Parser::parseBlock(DeclList &Decls, StmtList &Stmts) {
   return false;
 }
 bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
-  auto type_D =
+  advance(); // eat var
+  auto var = Tok;
+  // auto type_D =
+  //     Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+  consume(tok::identifier);
+  TypeDeclaration *type_D = nullptr;
+  if(Tok.is(tok::colon)){
+    advance();
+    type_D =
       Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
-  consume(tok::identifier);
-  auto Var = Actions.actOnVarDeceleration(Tok.getLocation(),
-                                          Tok.getIdentifier(), type_D);
-  Decls.push_back(Var);
-  consume(tok::identifier);
+    consume(tok::identifier);
+
+  };
+  
+  Expr *Desig = nullptr;
+  Expr *E = nullptr;
   if (Tok.is(tok::equal)) {
     advance();
-    auto Desig = Actions.actOnDesignator(Var);
-    Expr *E;
     parseExpression(E);
-    Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);
   }
   expect(tok::semi);
 
   advance();
-
+  if(!type_D){
+    type_D = E->getType();
+  }
+  auto Var = Actions.actOnVarDeceleration(var.getLocation(),
+                                          var.getIdentifier(), type_D);
+  if (E) {
+    Desig = Actions.actOnDesignator(Var);
+    Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);
+  }
+  Decls.push_back(Var);
   return false;
 }
 bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
@@ -205,7 +223,7 @@ bool Parser::parseFunctionCallStatment(StmtList &Stmts) {
   if (Tok.is(tok::l_paren)) {
     advance();
     if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
-                    tok::integer_literal)) {
+                    tok::integer_literal,tok::string_literal)) {
       parseExpList(Exprs);
       // goto _error;
     }

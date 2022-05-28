@@ -106,6 +106,7 @@ void Lexer::next(Token &Result) {
       CASE(')', tok::r_paren);
       CASE('{', tok::l_parth);
       CASE('}', tok::r_parth);
+      CASE(':', tok::colon);
 #undef CASE
     case '<':
       if (*(CurPtr + 1) == '=')
