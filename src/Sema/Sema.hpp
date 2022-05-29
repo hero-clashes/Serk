@@ -30,7 +30,7 @@ public:
                                 StmtList &Stmts);
 
   TypeDeclaration *actOnTypeRefernce(SMLoc Loc, StringRef Name);
-  ParameterDeclaration *actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type);
+  ParameterDeclaration *actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type,bool by_ref);
   VariableDeclaration *actOnVarDeceleration(SMLoc Loc, StringRef Name,
                                             Decl *Type);
   void actOnReturnStatement(StmtList &Stmts, SMLoc Loc, Expr *RetVal);

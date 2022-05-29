@@ -78,7 +78,7 @@ bool Parser::ParseFuction(DeclList &ParentDecls) {
 
 bool Parser::parseParameters(ParamList &Params) {
   consume(tok::l_paren);
-  while (Tok.is(tok::identifier)) {
+  while (Tok.isOneOf(tok::identifier,tok::kw_ref)) {
     parseParameter(Params);
     if (!Tok.isOneOf(tok::comma, tok::r_paren)) {
       // TODO error out
@@ -92,11 +92,16 @@ bool Parser::parseParameters(ParamList &Params) {
   return false;
 };
 bool Parser::parseParameter(ParamList &Params) {
+  bool by_refernce = false;
+  if(Tok.is(tok::kw_ref)){
+    by_refernce = true;
+    advance();
+  }
   auto type_D =
       Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
   consume(tok::identifier);
   auto Parem =
-      Actions.actOnParmaDecl(Tok.getLocation(), Tok.getIdentifier(), type_D);
+      Actions.actOnParmaDecl(Tok.getLocation(), Tok.getIdentifier(), type_D,by_refernce);
   consume(tok::identifier);
   Params.push_back(Parem);
   return false;

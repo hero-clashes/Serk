@@ -95,10 +95,10 @@ TypeDeclaration*   Sema::actOnTypeRefernce(SMLoc Loc, StringRef Name) {
         Diags.report(Loc,diag::err_returntype_must_be_type);
     };
 }
-ParameterDeclaration* Sema::actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type)
+ParameterDeclaration* Sema::actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type,bool by_ref)
 {
     auto Type_as = dyn_cast_or_null<TypeDeclaration>(Type);
-    auto D = new ParameterDeclaration(CurrentDecl, Loc, Name, Type_as, false);
+    auto D = new ParameterDeclaration(CurrentDecl, Loc, Name, Type_as, by_ref);
     if (!CurrentScope->insert(D)) {
         //TODO error it out if it didn't get inserted
         errs() << "problem";

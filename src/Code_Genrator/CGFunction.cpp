@@ -333,10 +333,19 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
   auto *F = CGM.getModule()->getFunction(Stmt->getProc()->getName());
 
   std::vector<Value *> ArgsV;
+  int index  =0;
   for(auto expr:Stmt->getParams()){
+    if (!Stmt->getProc()->getFormalParams().empty() && Stmt->getProc()->getFormalParams()[index]->IsPassedbyReference()) {
+      Value* val;
+     auto a =dyn_cast_or_null<Designator>(expr);
+     val = Defs[a->getDecl()];
+     ArgsV.push_back(val);
+     val->dump();
+    }else
     ArgsV.push_back(emitExpr(expr));
+    index++;
   };
-   Builder.CreateCall(F, ArgsV, "calltmp");
+   Builder.CreateCall(F, ArgsV);
   // llvm::report_fatal_error("not implemented");
 }
 void CGFunction::emitStmt(MethodCallStatement *Stmt){
