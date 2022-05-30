@@ -342,7 +342,7 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
      auto a =dyn_cast_or_null<Designator>(expr);
      val = Defs[a->getDecl()];
      ArgsV.push_back(val);
-     val->dump();
+    //  val->dump();
     }else
     ArgsV.push_back(emitExpr(expr));
     index++;
@@ -535,7 +535,7 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
             llvm::dyn_cast<VariableDeclaration>(D)) {
       llvm::Type *Ty = mapType(Var);
       // if (Ty->isAggregateType()) {
-        llvm::Value *Val = Builder.CreateAlloca(Ty);
+        llvm::Value *Val = Builder.CreateAlloca(Ty,nullptr,Var->getName());
         // Defs[D] = Val;
         writeLocalVariable(Curr, Var, Val);
         //TODO add constructors

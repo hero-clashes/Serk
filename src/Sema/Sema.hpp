@@ -75,6 +75,8 @@ public:
                                     SMLoc Loc,
                                     StringRef Name,
                                     Expr *E);
+  void actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
+                                 StringRef Name, Decl *D);
 };
 
 class EnterDeclScope {

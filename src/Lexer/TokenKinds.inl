@@ -43,6 +43,7 @@ PUNCTUATOR(r_paren,             ")")
 PUNCTUATOR(l_parth,             "{")
 PUNCTUATOR(r_parth,             "}")
 
+KEYWORD(using                          , KEYALL)
 KEYWORD(enum                           , KEYALL)
 KEYWORD(ref                            , KEYALL)
 KEYWORD(fn                             , KEYALL)

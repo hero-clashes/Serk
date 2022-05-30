@@ -73,4 +73,5 @@ public:
   bool ParseMethodCallStatment(StmtList& Stmts);
   bool ParseEnum(DeclList &ParentDecls,
       StmtList& Stmts);
+  bool ParseUsing(DeclList &ParentDecls);
 };

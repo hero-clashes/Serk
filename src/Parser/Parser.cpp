@@ -40,6 +40,11 @@ CompileUnitDeclaration *Parser::parse() {
     if (Tok.is(tok::kw_enum)) {
       ParseEnum(Decls,  Stmts);
     }
+    if(Tok.is(tok::kw_using)){
+      ParseUsing(Decls);
+      expect(tok::semi);
+      advance();
+    }
   }
 
   Actions.actOnCompileUnitDeclaration(module, SMLoc(), "Main", Decls, Stmts);
@@ -116,7 +121,8 @@ bool Parser::parseBlock(DeclList &Decls, StmtList &Stmts) {
     if (Tok.is(tok::kw_var)) {
       // parse var defintion
       parseVarDecleration(Decls, Stmts);
-
+    } else if (Tok.is(tok::kw_enum)) {
+      ParseEnum(Decls,  Stmts);
     } else {
       // parse statements
       parseStatementSequence(Decls, Stmts);
@@ -645,3 +651,21 @@ bool Parser::ParseEnum(DeclList &ParentDecls,StmtList& Stmts){
   advance();
   return false;
 }
+
+bool Parser::ParseUsing(DeclList &ParentDecls){
+  advance(); // eat using
+
+  expect(tok::identifier);
+  auto Aliased_name = Tok; 
+  advance();
+
+  expect(tok::equal);
+  advance();
+
+  auto Type = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+
+  expect(tok::identifier);
+  Actions.actOnAliasTypeDeclaration(ParentDecls, Aliased_name.getLocation(), Aliased_name.getIdentifier(), Type);
+  advance();
+  return false;
+};

@@ -1,6 +1,9 @@
 DONE change how everything is declared
-TODO add alias 
+DONE add alias 
 TODO add members access
 TODO add include handling
 TODO add error messeges for everything
 TODO port raylib
+TODO implent inheritance 
+TODO implment destructors
+TODO add scopes 

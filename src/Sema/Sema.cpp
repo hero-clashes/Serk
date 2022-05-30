@@ -410,3 +410,19 @@ Expr *Sema::actOnStringLiteral(SMLoc Loc, StringRef Literal){
   return new String_Literal(Loc, Literal,
         StrType);
 };
+void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
+                                 StringRef Name, Decl *D){
+  assert(CurrentScope && "CurrentScope not set");
+  if (TypeDeclaration *Ty = dyn_cast<TypeDeclaration>(D)) {
+    Alias_TypeDeclaration *Decl = new Alias_TypeDeclaration(
+        CurrentDecl, Loc, Name, Ty);
+    if (CurrentScope->insert(Decl))
+      Decls.push_back(Decl);
+    else
+      Diags.report(Loc, diag::err_symbold_declared, Name);
+  } else {
+    //Diags.report(Loc,
+               //  diag::err_vardecl_requires_type); // TODO
+  }
+
+  };
