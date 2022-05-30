@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include <vector>
 
 namespace {
 OperatorInfo fromTok(Token Tok) {
@@ -36,6 +37,9 @@ CompileUnitDeclaration *Parser::parse() {
     if(Tok.is(tok::kw_class)){
       ParseClass(Decls);
     };
+    if (Tok.is(tok::kw_enum)) {
+      ParseEnum(Decls,  Stmts);
+    }
   }
 
   Actions.actOnCompileUnitDeclaration(module, SMLoc(), "Main", Decls, Stmts);
@@ -612,3 +616,32 @@ bool Parser::ParseMethodCallStatment(StmtList& Stmts){
   Stmts.push_back(new MethodCallStatement(D,Method_name,Exprs));
   return false;
 };
+bool Parser::ParseEnum(DeclList &ParentDecls,StmtList& Stmts){
+  advance(); //eat enum
+  TypeDeclaration* Ty = Actions.IntegerType;
+  if(Tok.is(tok::colon)){
+    advance();
+    Ty =
+      Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+    consume(tok::identifier);
+
+  };
+  expect(tok::l_parth);
+  advance();
+  std::vector<Token> idents;
+  while (Tok.is(tok::identifier)) {
+    idents.push_back(Tok);
+    advance();
+    expect(tok::comma);
+    advance();
+  }
+  int num = 0;
+  for (auto iden : idents) {
+    Actions.actOnConstantDeclaration(ParentDecls,iden.getLocation(),
+                                          iden.getIdentifier(), Actions.actOnIntegerLiteral(iden.getLocation(), num));
+    num++;
+  }
+  expect(tok::r_parth);
+  advance();
+  return false;
+}

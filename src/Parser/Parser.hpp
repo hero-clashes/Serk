@@ -71,4 +71,6 @@ public:
       StmtList& Stmts);    
   bool ParseClass(DeclList &ParentDecls);
   bool ParseMethodCallStatment(StmtList& Stmts);
+  bool ParseEnum(DeclList &ParentDecls,
+      StmtList& Stmts);
 };

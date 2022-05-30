@@ -28,6 +28,7 @@ class Decl {
 public:
   enum DeclKind {
     DK_CompileUnit,
+    DK_Const,
     DK_Alias,
     DK_Class,
     DK_Base_Type,
@@ -93,8 +94,20 @@ public:
            D->getKind() <= DK_Base_Type;
   }
 };
+class ConstantDeclaration : public Decl {
+  Expr *E;
 
+public:
+  ConstantDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+                      StringRef Name, Expr *E)
+      : Decl(DK_Const, EnclosingDecL, Loc, Name), E(E) {}
 
+  Expr *getExpr() { return E; }
+
+  static bool classof(const Decl *D) {
+    return D->getKind() == DK_Const;
+  }
+};
 class Base_TypeDeclaration : public TypeDeclaration {
 public:
   Base_TypeDeclaration(Decl *EnclosingDecL, SMLoc Loc,
@@ -558,4 +571,18 @@ public:
     static bool classof(const Stmt* S) {
         return S->getKind() == SK_For;
     }
+};
+class ConstantAccess : public Expr {
+  ConstantDeclaration *Const;
+
+public:
+  ConstantAccess(ConstantDeclaration *Const)
+      : Expr(EK_Const, Const->getExpr()->getType(), true),
+        Const(Const) {}
+
+  ConstantDeclaration *getDecl() { return Const; }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == EK_Const;
+  }
 };

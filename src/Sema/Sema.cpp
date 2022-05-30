@@ -43,6 +43,12 @@ void Sema::initialize(){
     auto VoidType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void");
     StrType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "str");
     auto printf_f = new FunctionDeclaration(CurrentDecl,SMLoc(),"printf");
+    TrueLiteral = new BooleanLiteral(true, BoolType);
+    FalseLiteral = new BooleanLiteral(false, BoolType);
+    TrueConst = new ConstantDeclaration(CurrentDecl, SMLoc(),
+                                      "true", TrueLiteral);
+    FalseConst = new ConstantDeclaration(
+      CurrentDecl, SMLoc(), "false", FalseLiteral);
     CurrentScope->insert(IntegerType);
     CurrentScope->insert(BoolType);
     CurrentScope->insert(VoidType);
@@ -137,18 +143,39 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
         return D;
     } else if (auto D =dyn_cast_or_null<FunctionDeclaration>(CurrentScope->lookup(Name))){
       return D;
+    } else if (auto D =dyn_cast_or_null<ConstantDeclaration>(CurrentScope->lookup(Name))){
+      return D;
     };
     return nullptr;
 }
-Expr* Sema::actOnDesignator(Decl* D)
-{
-    if (!D)
-        return nullptr;
-    if (auto* V = dyn_cast<VariableDeclaration>(D))
-        return new Designator(V);
-    if (auto* V = dyn_cast<ParameterDeclaration>(D))
-        return new Designator(V);
+Expr *Sema::actOnDesignator(Decl *D) {
+  if (!D)
     return nullptr;
+  if (auto *V = dyn_cast<VariableDeclaration>(D))
+    return new Designator(V);
+  if (auto *V = dyn_cast<ParameterDeclaration>(D))
+    return new Designator(V);
+  else if (auto *C = dyn_cast<ConstantDeclaration>(D)) {
+    if (C == TrueConst)
+      return TrueLiteral;
+    if (C == FalseConst) {
+      return FalseLiteral;
+    }
+    return new ConstantAccess(C);
+  }
+  return nullptr;
+}
+void Sema::actOnConstantDeclaration(DeclList &Decls,
+                                    SMLoc Loc,
+                                    StringRef Name,
+                                    Expr *E) {
+  assert(CurrentScope && "CurrentScope not set");
+  ConstantDeclaration *Decl =
+      new ConstantDeclaration(CurrentDecl, Loc, Name, E);
+  if (CurrentScope->insert(Decl))
+    Decls.push_back(Decl);
+  else
+    Diags.report(Loc, diag::err_symbold_declared, Name);
 }
 Expr* Sema::actOnIntegerLiteral(SMLoc Loc, StringRef Literal)
 {
@@ -157,6 +184,13 @@ Expr* Sema::actOnIntegerLiteral(SMLoc Loc, StringRef Literal)
         Literal = Literal.drop_back();
         Radix = 16;
     }
+    llvm::APInt Value(32, Literal, Radix);
+    return new IntegerLiteral(Loc, llvm::APSInt(Value, false),
+        IntegerType);
+}
+Expr* Sema::actOnIntegerLiteral(SMLoc Loc, int Literal)
+{
+    uint8_t Radix = 10;
     llvm::APInt Value(32, Literal, Radix);
     return new IntegerLiteral(Loc, llvm::APSInt(Value, false),
         IntegerType);

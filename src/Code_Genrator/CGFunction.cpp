@@ -223,7 +223,9 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     Str->Value.consume_back("\"");
     Str->Value.consume_front("\"");
     return Builder.CreateGlobalStringPtr(Str->Value);
-  }
+  }  else if (auto *Const =
+               llvm::dyn_cast<ConstantAccess>(E)) {
+    return emitExpr(Const->getDecl()->getExpr());}
   llvm::report_fatal_error("Unsupported expression");
 
 };

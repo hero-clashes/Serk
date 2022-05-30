@@ -15,6 +15,10 @@ public:
   TypeDeclaration *IntegerType;
   TypeDeclaration *BoolType;
   TypeDeclaration *StrType;
+  BooleanLiteral *TrueLiteral;
+  BooleanLiteral *FalseLiteral;
+  ConstantDeclaration *TrueConst;
+  ConstantDeclaration *FalseConst;
   Sema(DiagnosticsEngine &Diags)
       : CurrentScope(nullptr), CurrentDecl(nullptr), Diags(Diags) {
     initialize();
@@ -46,6 +50,7 @@ public:
 
   Expr *actOnDesignator(Decl *D);
   Expr *actOnIntegerLiteral(SMLoc Loc, StringRef Literal);
+  Expr *actOnIntegerLiteral(SMLoc Loc, int Literal);
   Expr *actOnExpression(Expr *Left, Expr *Right, const OperatorInfo &Op);
   Expr *actOnSimpleExpression(Expr *Left, Expr *Right, const OperatorInfo &Op);
   Expr *actOnTerm(Expr *Left, Expr *Right, const OperatorInfo &Op);
@@ -66,6 +71,10 @@ public:
   ClassDeclaration *actOnClassDeclaration(SMLoc Loc, StringRef Name);
   void actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start);
   Expr *actOnStringLiteral(SMLoc Loc, StringRef Literal);
+  void actOnConstantDeclaration(DeclList &Decls,
+                                    SMLoc Loc,
+                                    StringRef Name,
+                                    Expr *E);
 };
 
 class EnterDeclScope {
