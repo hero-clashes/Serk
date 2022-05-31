@@ -426,3 +426,36 @@ void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
   }
 
   };
+  void Sema::actOnIndexSelector(Expr *Desig, SMLoc Loc,
+                              Expr *E) {
+  // if (auto *D = dyn_cast<Designator>(Desig)) {
+  //   if (auto *Ty = dyn_cast<ArrayTypeDeclaration>(D->getType())) {
+  //     D->addSelector(new IndexSelector(E, Ty->getType()));
+  //   }
+  // // TODO Error message
+  // }
+  // // TODO Error message
+}
+
+void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
+                              StringRef Name) {
+  // TODO Implement
+  if (auto *D = dyn_cast<Designator>(Desig)) {
+    if (auto *R =
+            dyn_cast<ClassDeclaration>(D->getType())) {
+      uint32_t Index = 0;
+      for (const auto &F : R->Decls) {
+        auto F_V = dyn_cast_or_null<VariableDeclaration>(F);
+        if (F->getName() == Name) {
+          D->addSelector(
+              new FieldSelector(Index, Name, F_V->getType()));
+          return;
+        }
+        ++Index;
+      }
+      // TODO Error message
+    }
+    // TODO Error message
+  }
+  // TODO Error message
+}

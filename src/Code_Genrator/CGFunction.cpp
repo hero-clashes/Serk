@@ -123,37 +123,37 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
   auto &Selectors = Desig->getSelectors();
   if (Selectors.empty())
     writeVariable(Curr, Desig->getDecl(), Val);
-  // else {
-    // llvm::SmallVector<llvm::Value *, 4> IdxList;
-    // // First index for GEP.
-    // IdxList.push_back(
-    //     llvm::ConstantInt::get(CGM.Int32Ty, 0));
-    // auto *Base =
-    //     readVariable(Curr, Desig->getDecl(), false);
-    // for (auto I = Selectors.begin(), E = Selectors.end();
-    //      I != E; ++I) {
-    //   if (auto *IdxSel =
-    //           llvm::dyn_cast<IndexSelector>(*I)) {
-    //     IdxList.push_back(emitExpr(IdxSel->getIndex()));
-    //   } else if (auto *FieldSel =
-    //                  llvm::dyn_cast<FieldSelector>(*I)) {
-    //     llvm::Value *V = llvm::ConstantInt::get(
-    //         CGM.Int32Ty, FieldSel->getIndex());
-    //     IdxList.push_back(V);
-    //   } else {
-    //     llvm::report_fatal_error("not implemented");
-    //   }
-    // }
-  //   if (!IdxList.empty()) {
-  //     if (Base->getType()->isPointerTy()) {
-  //       Base = Builder.CreateInBoundsGEP(Base, IdxList);
-  //       Builder.CreateStore(Val, Base);
-  //     }
-  //     else {
-  //       llvm::report_fatal_error("should not happen");
-  //     }
-  //   }
-  // }
+  else {
+    llvm::SmallVector<llvm::Value *, 4> IdxList;
+    // First index for GEP.
+    IdxList.push_back(
+        llvm::ConstantInt::get(CGM.Int32Ty, 0));
+    auto *Base =
+        readVariable(Curr, Desig->getDecl(), false);
+    for (auto I = Selectors.begin(), E = Selectors.end();
+         I != E; ++I) {
+      if (auto *IdxSel =
+              llvm::dyn_cast<IndexSelector>(*I)) {
+        IdxList.push_back(emitExpr(IdxSel->getIndex()));
+      } else if (auto *FieldSel =
+                     llvm::dyn_cast<FieldSelector>(*I)) {
+        llvm::Value *V = llvm::ConstantInt::get(
+            CGM.Int32Ty, FieldSel->getIndex());
+        IdxList.push_back(V);
+      } else {
+        llvm::report_fatal_error("not implemented");
+      }
+    }
+    if (!IdxList.empty()) {
+      if (Base->getType()) {
+        Base = Builder.CreateInBoundsGEP(Base, IdxList);
+        Builder.CreateStore(Val, Base);
+      }
+      else {
+        llvm::report_fatal_error("should not happen");
+      }
+    }
+  }
 };
 llvm::Value *CGFunction::emitExpr(Expr *E){
   if (auto *Infix = llvm::dyn_cast<InfixExpression>(E)) {
@@ -307,7 +307,11 @@ llvm::Value *CGFunction::readVariable(llvm::BasicBlock *BB,
                                        bool LoadVal) {
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(D)) {
     if (V->getEnclosingDecl() == Proc)
-      return readLocalVariable(BB, D);
+      if(LoadVal)
+      {
+        return readLocalVariable(BB, D);
+      }else 
+      return Defs[D];
     else if (V->getEnclosingDecl() ==
              CGM.getModuleDeclaration()) {
       auto *Global = CGM.getGlobal(D);
@@ -538,9 +542,7 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
         llvm::Value *Val = Builder.CreateAlloca(Ty,nullptr,Var->getName());
         // Defs[D] = Val;
         writeLocalVariable(Curr, Var, Val);
-        //TODO add constructors
         if(auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())){
-           auto real_pointer = Builder.CreateLoad(Val);
           auto a = C->getName().str() + "_" + "Create_Default";
           auto F = CGM.getModule()->getFunction(a);
           Builder.CreateCall(F,{Val});

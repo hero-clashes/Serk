@@ -77,6 +77,9 @@ public:
                                     Expr *E);
   void actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
                                  StringRef Name, Decl *D);
+  void actOnIndexSelector(Expr *Desig, SMLoc Loc, Expr *E);
+  void actOnFieldSelector(Expr *Desig, SMLoc Loc, StringRef Name);
+                                 
 };
 
 class EnterDeclScope {

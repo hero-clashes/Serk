@@ -174,13 +174,14 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
   case tok::identifier:
     if (Lex.peak(0).is(tok::l_paren)) {
       parseFunctionCallStatment(Stmts);
-    } else if (Lex.peak(0).is(tok::equal)) {
+    } else if (Lex.peak(0).is(tok::equal) || Lex.peak(2).is(tok::equal)) {
       auto Var = Actions.actOnVarRefernce(Tok.getLocation(),
                                           Tok.getIdentifier());
-        advance();// eat var
-        advance();// eat =
+      advance();// eat var
       auto Desig = Actions.actOnDesignator(Var);
+      parseSelectors(Desig);
       Expr *E;
+      advance();// eat =
       parseExpression(E);
       Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);
     } else if (Lex.peak(0).is(tok::period)) {
@@ -343,7 +344,7 @@ bool Parser::parseFactor(Expr *&E) {
             // goto _error;
           E = Actions.actOnFunctionCallExpr(call.getLocation(),D,Exprs);
           advance();
-    } else if(Tok.is(tok::period)){
+    } else if(Tok.is(tok::period) && Lex.peak(1).is(tok::l_paren)){
       advance();
 
       auto Method_name = Tok.getIdentifier();
@@ -370,7 +371,7 @@ bool Parser::parseFactor(Expr *&E) {
       // advance();
       //here simple variable referencing
       E = Actions.actOnDesignator(D);
-      // if (parseSelectors(E))
+      parseSelectors(E);
       //       // goto _error;
     }
   } else if (Tok.is(tok::l_paren)) {
@@ -669,3 +670,24 @@ bool Parser::ParseUsing(DeclList &ParentDecls){
   advance();
   return false;
 };
+bool Parser::parseSelectors(Expr *&E) 
+  {
+    while (Tok.isOneOf(tok::period, tok::l_square)) {
+      if (Tok.is(tok::l_square)) {
+        SMLoc Loc = Tok.getLocation();
+        Expr *IndexE = nullptr;
+        advance();
+        parseExpression(IndexE);
+        expect(tok::r_square);
+        Actions.actOnIndexSelector(E, Loc, IndexE);
+        advance();
+      } else if (Tok.is(tok::period)) {
+        advance();
+        expect(tok::identifier);
+        Actions.actOnFieldSelector(E, Tok.getLocation(),
+                                   Tok.getIdentifier());
+        advance();
+      }
+    }
+    return false;
+  }

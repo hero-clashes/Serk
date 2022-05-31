@@ -74,4 +74,5 @@ public:
   bool ParseEnum(DeclList &ParentDecls,
       StmtList& Stmts);
   bool ParseUsing(DeclList &ParentDecls);
+  bool parseSelectors(Expr *&E);
 };

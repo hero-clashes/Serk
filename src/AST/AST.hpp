@@ -267,26 +267,58 @@ public:
 };
 class Selector {
 public:
-    enum SelectorKind {
-        SK_Index,
-        SK_Field,
-        SK_Dereference,
-    };
+  enum SelectorKind {
+    SK_Index,
+    SK_Field,
+    SK_Dereference,
+  };
 
 private:
-    const SelectorKind Kind;
+  const SelectorKind Kind;
 
-    // The type decribes the base type.
-    // E.g. the component type of an index selector
-    TypeDeclaration* Type;
+  // The type decribes the base type.
+  // E.g. the component type of an index selector
+  TypeDeclaration *Type;
 
 protected:
-    Selector(SelectorKind Kind, TypeDeclaration* Type)
-        : Kind(Kind), Type(Type) {}
+  Selector(SelectorKind Kind, TypeDeclaration *Type)
+      : Kind(Kind), Type(Type) {}
 
 public:
-    SelectorKind getKind() const { return Kind; }
-    TypeDeclaration* getType() const { return Type; }
+  SelectorKind getKind() const { return Kind; }
+  TypeDeclaration *getType() const { return Type; }
+};
+
+class IndexSelector : public Selector {
+  Expr *Index;
+
+public:
+  IndexSelector(Expr *Index, TypeDeclaration *Type)
+      : Selector(SK_Index, Type), Index(Index) {}
+
+  Expr *getIndex() const { return Index; }
+
+  static bool classof(const Selector *Sel) {
+    return Sel->getKind() == SK_Index;
+  }
+};
+
+class FieldSelector : public Selector {
+  uint32_t Index;
+  StringRef Name;
+
+public:
+  FieldSelector(uint32_t Index, StringRef Name,
+                TypeDeclaration *Type)
+      : Selector(SK_Field, Type), Index(Index), Name(Name) {
+  }
+
+  uint32_t getIndex() const { return Index; }
+  const StringRef &getname() const { return Name; }
+
+  static bool classof(const Selector *Sel) {
+    return Sel->getKind() == SK_Field;
+  }
 };
 
 class Designator : public Expr {
