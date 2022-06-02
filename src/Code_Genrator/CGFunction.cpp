@@ -166,46 +166,47 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     llvm::Value *Val = readVariable(Curr, Decl);
     // With more languages features in place, here you
     // need to add array and record support.
-    // auto &Selectors = Var->getSelectors();
-    // for (auto I = Selectors.begin(), E = Selectors.end();
-    //      I != E;
-    //      /* no increment */) {
-    //   if (auto *IdxSel =
-    //           llvm::dyn_cast<IndexSelector>(*I)) {
-    //     llvm::SmallVector<llvm::Value *, 4> IdxList;
-    //     while (I != E) {
-    //       if (auto *Sel =
-    //               llvm::dyn_cast<IndexSelector>(*I)) {
-    //         IdxList.push_back(emitExpr(Sel->getIndex()));
-    //         ++I;
-    //       } else
-    //         break;
-    //     }
-    //     Val = Builder.CreateInBoundsGEP(Val, IdxList);
-    //     Val = Builder.CreateLoad(
-    //         Val->getType()->getPointerElementType(), Val);
-    //   } else if (auto *FieldSel =
-    //                  llvm::dyn_cast<FieldSelector>(*I)) {
-    //     llvm::SmallVector<llvm::Value *, 4> IdxList;
-    //     while (I != E) {
-    //       if (auto *Sel =
-    //               llvm::dyn_cast<FieldSelector>(*I)) {
-    //         llvm::Value *V = llvm::ConstantInt::get(
-    //             CGM.Int64Ty, Sel->getIndex());
-    //         IdxList.push_back(V);
-    //         ++I;
-    //       } else
-    //         break;
-    //     }
-    //     Val = Builder.CreateInBoundsGEP(Val, IdxList);
-    //     Val = Builder.CreateLoad(
-    //         Val->getType()->getPointerElementType(), Val);
-    //   } else if (auto *DerefSel =
-    //                  llvm::dyn_cast<DereferenceSelector>(
-    //                      *I)) {
-    //     Val = Builder.CreateLoad(
-    //         Val->getType()->getPointerElementType(), Val);
-    //     ++I;
+    auto &Selectors = Var->getSelectors();
+    for (auto I = Selectors.begin(), E = Selectors.end();
+         I != E;
+         /* no increment */) {
+      if (auto *IdxSel =
+              llvm::dyn_cast<IndexSelector>(*I)) {
+        llvm::SmallVector<llvm::Value *, 4> IdxList;
+        while (I != E) {
+          if (auto *Sel =
+                  llvm::dyn_cast<IndexSelector>(*I)) {
+            IdxList.push_back(emitExpr(Sel->getIndex()));
+            ++I;
+          } else
+            break;
+        }
+        Val = Builder.CreateInBoundsGEP(Val, IdxList);
+        Val = Builder.CreateLoad(
+            Val->getType()->getPointerElementType(), Val);
+      } else if (auto *FieldSel =
+                     llvm::dyn_cast<FieldSelector>(*I)) {
+        llvm::SmallVector<llvm::Value *, 4> IdxList;
+        while (I != E) {
+          if (auto *Sel =
+                  llvm::dyn_cast<FieldSelector>(*I)) {
+            llvm::Value *V = llvm::ConstantInt::get(
+                CGM.Int64Ty, Sel->getIndex());
+            IdxList.push_back(V);
+            ++I;
+          } else
+            break;
+        }
+        Val = Builder.CreateInBoundsGEP(Val, IdxList);
+        Val = Builder.CreateLoad(
+            Val->getType()->getPointerElementType(), Val);
+      }// else if (auto *DerefSel =
+        //              llvm::dyn_cast<DereferenceSelector>(
+        //                  *I)) {
+        // Val = Builder.CreateLoad(
+        //     Val->getType()->getPointerElementType(), Val);
+        // ++I;}}
+      }
     return Val;
       } else if (auto *IntLit =
                  llvm::dyn_cast<IntegerLiteral>(E)) {
