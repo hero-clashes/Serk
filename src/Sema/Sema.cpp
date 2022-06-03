@@ -81,12 +81,6 @@ void Sema::actOnFunctionHeading(
 
 void Sema::actOnFunctionDeclaration(FunctionDeclaration* ProcDecl, SMLoc Loc, StringRef Name, DeclList& Decls, StmtList& Stmts)
 {
-    if (Name != ProcDecl->getName()) {
-       // Diags.report(Loc, diag::err_proc_identifier_not_equal);
-        //Diags.report(ProcDecl->getLocation(),
-          //  diag::note_proc_identifier_declaration);
-        llvm::errs() << "sad";
-    }
     ProcDecl->setDecls(Decls);
     ProcDecl->setStmts(Stmts);
 }
@@ -439,7 +433,6 @@ void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
 
 void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
                               StringRef Name) {
-  // TODO Implement
   if (auto *D = dyn_cast<Designator>(Desig)) {
     if (auto *R =
             dyn_cast<ClassDeclaration>(D->getType())) {
