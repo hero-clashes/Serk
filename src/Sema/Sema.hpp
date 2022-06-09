@@ -79,6 +79,7 @@ public:
                                  StringRef Name, Decl *D);
   void actOnIndexSelector(Expr *Desig, SMLoc Loc, Expr *E);
   void actOnFieldSelector(Expr *Desig, SMLoc Loc, StringRef Name);
+  ArrayTypeDeclaration *actOnArrayTypeDeclaration(DeclList &Decls, SMLoc Loc,Expr *E,Decl *D);
   void Create_Genric_type();       
   ClassDeclaration *init_genric_class(DeclList &Decls,Decl *T,Decl* inited_Type);   
   TypeDeclaration *Get_type(TypeDeclaration* Type);                    

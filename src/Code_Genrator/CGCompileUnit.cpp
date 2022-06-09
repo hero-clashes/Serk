@@ -66,15 +66,19 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
                  llvm::dyn_cast<Alias_TypeDeclaration>(Ty)) {
     llvm::Type *T = convertType(AliasTy->Realone);
     return TypeCache[Ty] = T;
-  } //else if (auto *ArrayTy =
-  //                llvm::dyn_cast<ArrayTypeDeclaration>(Ty)) {
-  //   llvm::Type *Component = convertType(ArrayTy->getType());
-  //   Expr *Nums = ArrayTy->getNums();
-  //   uint64_t NumElements = 5; // TODO Eval Nums
-  //   llvm::Type *T =
-  //       llvm::ArrayType::get(Component, NumElements);
-  //   return TypeCache[Ty] = T;
-  // } else if (auto *RecordTy =
+  } else if (auto *ArrayTy =
+                  llvm::dyn_cast<ArrayTypeDeclaration>(Ty)) {
+     llvm::Type *Component = convertType(ArrayTy->getType());
+     Expr *Nums = ArrayTy->getNums();
+     //auto val = 
+     uint64_t NumElements;
+     if(auto Const = dyn_cast_or_null<IntegerLiteral>(Nums)){
+       NumElements = Const->getValue().getExtValue();
+     }
+     llvm::Type *T =
+         llvm::ArrayType::get(Component, NumElements);
+     return TypeCache[Ty] = T;
+   }// else if (auto *RecordTy =
   //                llvm ::dyn_cast<RecordTypeDeclaration>(
   //                    Ty)) {
   //   llvm::SmallVector<llvm::Type *, 4> Elements;

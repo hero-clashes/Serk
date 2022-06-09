@@ -149,6 +149,13 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
       type_D = (TypeDeclaration *)Actions.init_genric_class(Decls,type_D, intited_type);
       expect(tok::greater);
       advance();
+    } else if (Tok.is(tok::l_square)) {
+      advance();
+      Expr *E = nullptr;
+      parseExpression(E);
+      type_D = Actions.actOnArrayTypeDeclaration(Decls,Tok.getLocation(),E,type_D);
+      expect(tok::r_square);
+      advance();
     }
   };
   

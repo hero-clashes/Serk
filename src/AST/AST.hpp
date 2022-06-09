@@ -33,6 +33,7 @@ public:
     DK_Const,
     DK_Alias,
     DK_Class,
+    DK_Array,
     DK_Base_Type,
     DK_Var,
     DK_Function,
@@ -132,6 +133,27 @@ public:
 
   static bool classof(const Decl *D) { return D->getKind() == DK_Alias; };
 };
+
+class ArrayTypeDeclaration : public TypeDeclaration {
+  Expr *Nums;
+  TypeDeclaration *Type;
+
+public:
+  ArrayTypeDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+                       StringRef Name, Expr *Nums,
+                       TypeDeclaration *Type)
+      : TypeDeclaration(DK_Array, EnclosingDecL, Loc,
+                        Name),
+        Nums(Nums), Type(Type) {}
+
+  Expr *getNums() const { return Nums; }
+  TypeDeclaration *getType() const { return Type; }
+
+  static bool classof(const Decl *D) {
+    return D->getKind() == DK_Array;
+  }
+};
+
 class VariableDeclaration : public Decl {
   TypeDeclaration *Ty;
 

@@ -423,13 +423,13 @@ void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
   };
   void Sema::actOnIndexSelector(Expr *Desig, SMLoc Loc,
                               Expr *E) {
-  // if (auto *D = dyn_cast<Designator>(Desig)) {
-  //   if (auto *Ty = dyn_cast<ArrayTypeDeclaration>(D->getType())) {
-  //     D->addSelector(new IndexSelector(E, Ty->getType()));
-  //   }
-  // // TODO Error message
-  // }
-  // // TODO Error message
+  if (auto *D = dyn_cast<Designator>(Desig)) {
+     if (auto *Ty = dyn_cast<ArrayTypeDeclaration>(D->getType())) {
+       D->addSelector(new IndexSelector(E, Ty->getType()));
+    }
+  // TODO Error message
+  }
+  // TODO Error message
 }
 
 void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
@@ -474,4 +474,23 @@ TypeDeclaration *Sema::Get_type(TypeDeclaration* Type){
   if(auto Alias = dyn_cast_or_null<Alias_TypeDeclaration>(Type)){
     return Get_type(Alias->Realone);
   }else return Type;
+};
+
+ArrayTypeDeclaration *Sema::actOnArrayTypeDeclaration(DeclList &Decls, SMLoc Loc,Expr *E,Decl *D){
+  assert(CurrentScope && "CurrentScope not set");
+  if (E && E->isConst() &&
+      E->getType() == IntegerType) {
+    if (TypeDeclaration *Ty =
+            dyn_cast<TypeDeclaration>(D)) {
+      auto str = new std::string(Ty->Name.str() + "Array");
+      ArrayTypeDeclaration *Decl = new ArrayTypeDeclaration(
+          CurrentDecl, Loc,StringRef(*str), E, Ty);
+        return Decl;
+      //else
+        //Diags.report(Loc, diag::err_symbold_declared, Name);
+    } else {
+      //Diags.report(Loc,
+        //           diag::err_vardecl_requires_type); // TODO
+    }
+  }
 };
