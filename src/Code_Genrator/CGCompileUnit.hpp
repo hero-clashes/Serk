@@ -9,6 +9,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
 class CGCompileUnit{
+  public:
 llvm::Module *M;
 
 CompileUnitDeclaration *Mod;

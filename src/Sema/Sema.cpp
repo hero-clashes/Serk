@@ -1,5 +1,6 @@
 #include "Sema.hpp"
 #include "AST/AST.hpp"
+#include <string>
 
 
 bool Sema::isOperatorForType(tok::TokenKind Op,
@@ -123,7 +124,7 @@ void Sema::actOnReturnStatement(StmtList& Stmts, SMLoc Loc, Expr* RetVal)
 {
     auto* Proc = dyn_cast<FunctionDeclaration>(CurrentDecl);
     if (Proc->getRetType() && RetVal) {
-        if (Proc->getRetType() != RetVal->getType())
+        if (Get_type(Proc->getRetType()) != Get_type(RetVal->getType()))
             Diags.report(Loc, diag::err_function_and_return_type);
     }
 
@@ -192,7 +193,7 @@ Expr* Sema::actOnIntegerLiteral(SMLoc Loc, int Literal)
 void Sema::actOnAssignment(StmtList& Stmts, SMLoc Loc, Expr* D, Expr* E)
 {
     if (auto Var = dyn_cast<Designator>(D)) {
-        if (Var->getType() != E->getType()) {
+        if (Get_type(Var->getType()) != Get_type(E->getType())) {
             //Diags.report(
               //  Loc, diag::err_types_for_operator_not_compatible,
                 //tok::getPunctuatorSpelling(tok::equal));
@@ -233,7 +234,7 @@ Expr *Sema::actOnExpression(Expr *Left, Expr *Right,
   if (!Right)
     return Left;
 
-  if (Left->getType() != Right->getType()) {
+  if (Get_type(Left->getType()) != Get_type(Right->getType())) {
     // Diags.report(
     //     Op.getLocation(),
     //     diag::err_types_for_operator_not_compatible,
@@ -252,13 +253,13 @@ Expr *Sema::actOnSimpleExpression(Expr *Left, Expr *Right,
   if (!Right)
     return Left;
 
-  if (Left->getType() != Right->getType()) {
+  if (Get_type(Left->getType()) != Get_type(Right->getType())) {
     // Diags.report(
     //     Op.getLocation(),
     //     diag::err_types_for_operator_not_compatible,
     //     tok::getPunctuatorSpelling(Op.getKind()));
   }
-  TypeDeclaration *Ty = Left->getType();
+  TypeDeclaration *Ty = Get_type(Left->getType());
   bool IsConst = Left->isConst() && Right->isConst();
 //   if (IsConst && Op.getKind() == tok::kw_OR) {
 //     BooleanLiteral *L = dyn_cast<BooleanLiteral>(Left);
@@ -276,14 +277,14 @@ Expr *Sema::actOnTerm(Expr *Left, Expr *Right,
   if (!Right)
     return Left;
 
-  if (Left->getType() != Right->getType() ||
-      !isOperatorForType(Op.getKind(), Left->getType())) {
+  if (Get_type(Left->getType()) != Get_type(Right->getType()) ||
+      !isOperatorForType(Op.getKind(), Get_type(Left->getType()))) {
     // Diags.report(
     //     Op.getLocation(),
     //     diag::err_types_for_operator_not_compatible,
     //     tok::getPunctuatorSpelling(Op.getKind()));
   }
-  TypeDeclaration *Ty = Left->getType();
+  TypeDeclaration *Ty = Get_type(Left->getType());
   bool IsConst = Left->isConst() && Right->isConst();
 //   if (IsConst && Op.getKind() == tok::kw_AND) {
 //     BooleanLiteral *L = dyn_cast<BooleanLiteral>(Left);
@@ -299,7 +300,7 @@ Expr *Sema::actOnPrefixExpression(Expr *E,
   if (!E)
     return nullptr;
 
-  if (!isOperatorForType(Op.getKind(), E->getType())) {
+  if (!isOperatorForType(Op.getKind(), Get_type(E->getType()))) {
     // Diags.report(
     //     Op.getLocation(),
     //     diag::err_types_for_operator_not_compatible,
@@ -327,7 +328,7 @@ Expr *Sema::actOnPrefixExpression(Expr *E,
     }
   }
 
-  return new PrefixExpression(E, Op, E->getType(),
+  return new PrefixExpression(E, Op, Get_type(E->getType()),
                               E->isConst());
 }
 
@@ -387,9 +388,9 @@ void Sema::actOnForStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts){
       Stmts.push_back(new ForStatement(Cond,Start_Val,ForStepStmts,ForBodyStmts));
                         };
-ClassDeclaration *Sema::actOnClassDeclaration(SMLoc Loc, StringRef Name){
+ClassDeclaration *Sema::actOnClassDeclaration(SMLoc Loc, StringRef Name,bool Is_Genric){
   ClassDeclaration *P =
-      new ClassDeclaration(CurrentDecl, Loc, Name);
+      new ClassDeclaration(CurrentDecl, Loc, Name,Is_Genric);
   if (!CurrentScope->insert(P))
     Diags.report(Loc, diag::err_symbold_declared, Name);
   return P;
@@ -433,15 +434,16 @@ void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
 
 void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
                               StringRef Name) {
+                                //TODO replace all get types by function that check for alias and replace it by actual type
   if (auto *D = dyn_cast<Designator>(Desig)) {
     if (auto *R =
-            dyn_cast<ClassDeclaration>(D->getType())) {
+            dyn_cast<ClassDeclaration>(Get_type(D->getType()))) {
       uint32_t Index = 0;
       for (const auto &F : R->Decls) {
         auto F_V = dyn_cast_or_null<VariableDeclaration>(F);
         if (F->getName() == Name) {
           D->addSelector(
-              new FieldSelector(Index, Name, F_V->getType()));
+              new FieldSelector(Index, Name, Get_type(F_V->getType())));
           return;
         }
         ++Index;
@@ -452,3 +454,24 @@ void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
   }
   // TODO Error message
 }
+void Sema::Create_Genric_type(){
+  auto Genric = new Alias_TypeDeclaration(CurrentDecl,SMLoc(),"T",nullptr);
+  dyn_cast_or_null<ClassDeclaration>(CurrentDecl)->T = Genric;
+  CurrentScope->insert(Genric);
+};
+ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,Decl* inited_Type){
+  auto Class = dyn_cast_or_null<ClassDeclaration>(T);
+  auto Class_Copy = new ClassDeclaration(*Class);
+  Class_Copy->is_genric = false;
+  auto new_name =new std::string(Class_Copy->Name.str() + inited_Type->getName().str());
+  Class_Copy->Name=StringRef(*new_name);
+  dyn_cast_or_null<Alias_TypeDeclaration>(Class_Copy->T)->Realone = (TypeDeclaration *)inited_Type;
+  CurrentScope->insert(Class_Copy);
+  Decls.push_back(Class_Copy);
+  return Class_Copy;
+}
+TypeDeclaration *Sema::Get_type(TypeDeclaration* Type){
+  if(auto Alias = dyn_cast_or_null<Alias_TypeDeclaration>(Type)){
+    return Get_type(Alias->Realone);
+  }else return Type;
+};

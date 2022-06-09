@@ -68,7 +68,7 @@ public:
                         Expr *Cond, StmtList &WhileStmts);
   void actOnForStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts);
-  ClassDeclaration *actOnClassDeclaration(SMLoc Loc, StringRef Name);
+  ClassDeclaration *actOnClassDeclaration(SMLoc Loc, StringRef Name,bool Is_Genric);
   void actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start);
   Expr *actOnStringLiteral(SMLoc Loc, StringRef Literal);
   void actOnConstantDeclaration(DeclList &Decls,
@@ -79,7 +79,9 @@ public:
                                  StringRef Name, Decl *D);
   void actOnIndexSelector(Expr *Desig, SMLoc Loc, Expr *E);
   void actOnFieldSelector(Expr *Desig, SMLoc Loc, StringRef Name);
-                                 
+  void Create_Genric_type();       
+  ClassDeclaration *init_genric_class(DeclList &Decls,Decl *T,Decl* inited_Type);   
+  TypeDeclaration *Get_type(TypeDeclaration* Type);                    
 };
 
 class EnterDeclScope {

@@ -3,7 +3,9 @@
 #include "llvm/Support/SMLoc.h"
 #include "Lexer/TokenKinds.hpp"
 #include "llvm/ADT/APSInt.h"
+#include <optional>
 #include <vector>
+#include "Lexer/Lexer.hpp"
 using namespace llvm;
 
 
@@ -40,7 +42,7 @@ public:
 private:
   const DeclKind Kind;
 
-protected:
+public:
   Decl *EnclosingDecL;
   SMLoc Loc;
   StringRef Name;
@@ -207,8 +209,10 @@ class ClassDeclaration: public Decl{
   public:
   std::vector<Decl*> Decls;
   StmtList Stmts;
+  bool is_genric;
+  Decl *T = nullptr;
   ClassDeclaration(Decl *EnclosingDecL, SMLoc Loc,
-                             StringRef Name):Decl(DK_Class, EnclosingDecL, Loc, Name){
+                             StringRef Name,bool is_genric):Decl(DK_Class, EnclosingDecL, Loc, Name),is_genric(is_genric) {
 
   };
 static bool classof(const Decl *D) {
@@ -519,12 +523,12 @@ public:
 };
 class MethodCallStatement :public Stmt{
   public:
-  VariableDeclaration *Var;
+  Expr *Var;
   StringRef Function_Name;
   ExprList Params;
 
 
-  MethodCallStatement(VariableDeclaration *Var, StringRef Function_Name,
+  MethodCallStatement(Expr *Var, StringRef Function_Name,
                    ExprList &Params)
       : Stmt(Sk_MethodCall),Var(Var),
         Function_Name(Function_Name), Params(Params) {}

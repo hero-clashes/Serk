@@ -1,6 +1,7 @@
 #include "CGFunction.hpp"
 #include "llvm/IR/Verifier.h"
 #include <string>
+#include "CGClass.hpp"
 
 void CGFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
@@ -130,6 +131,7 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
         llvm::ConstantInt::get(CGM.Int32Ty, 0));
     auto *Base =
         readVariable(Curr, Desig->getDecl(), false);
+    // errs() << Selectors.size();
     for (auto I = Selectors.begin(), E = Selectors.end();
          I != E; ++I) {
       if (auto *IdxSel =
@@ -147,6 +149,9 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
     if (!IdxList.empty()) {
       if (Base->getType()) {
         Base = Builder.CreateInBoundsGEP(Base, IdxList);
+        // Base->dump();
+        // Base->getType()->dump();
+        // Val->dump();
         Builder.CreateStore(Val, Base);
       }
       else {
@@ -163,7 +168,7 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     return emitPrefixExpr(Prefix);
   } else if (auto *Var = llvm::dyn_cast<Designator>(E)) {
     auto *Decl = Var->getDecl();
-    llvm::Value *Val = readVariable(Curr, Decl);
+    llvm::Value *Val = readVariable(Curr, Decl,false);
     // With more languages features in place, here you
     // need to add array and record support.
     auto &Selectors = Var->getSelectors();
@@ -197,6 +202,7 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
           } else
             break;
         }
+        // Val->dump();
         Val = Builder.CreateInBoundsGEP(Val, IdxList);
         Val = Builder.CreateLoad(
             Val->getType()->getPointerElementType(), Val);
@@ -360,7 +366,7 @@ void CGFunction::emitStmt(MethodCallStatement *Stmt){
   auto *F = CGM.getModule()->getFunction(Method_Name);
   auto o = F->arg_size();
   std::vector<Value *> ArgsV;
-  ArgsV.push_back(Defs[Stmt->Var]);
+  ArgsV.push_back(emitExpr(Stmt->Var));
   for(auto expr:Stmt->getParams()){
     ArgsV.push_back(emitExpr(expr));
   };
@@ -536,19 +542,25 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
   }
   void CGFunction::InitDecls(FunctionDeclaration *Proc){
     for (auto *D : Proc->getDecls()) {
-    if (auto *Var =
-            llvm::dyn_cast<VariableDeclaration>(D)) {
-      llvm::Type *Ty = mapType(Var);
-      // if (Ty->isAggregateType()) {
-        llvm::Value *Val = Builder.CreateAlloca(Ty,nullptr,Var->getName());
+      if (auto *Var = llvm::dyn_cast<VariableDeclaration>(D)) {
+        llvm::Type *Ty = mapType(Var);
+        // if (Ty->isAggregateType()) {
+        llvm::Value *Val = Builder.CreateAlloca(Ty, nullptr, Var->getName());
         // Defs[D] = Val;
         writeLocalVariable(Curr, Var, Val);
-        if(auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())){
+        if (auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())) {
           auto a = C->getName().str() + "_" + "Create_Default";
           auto F = CGM.getModule()->getFunction(a);
-          Builder.CreateCall(F,{Val});
+          Builder.CreateCall(F, {Val});
         }
-      // }
+        // }
+      }
+      if (auto *classs = llvm::dyn_cast<ClassDeclaration>(D)) {
+        if (classs->is_genric)
+          continue;
+        CGClass CGC(CGM);
+        auto Ty = CGC.run(classs);
+        CGM.TypeCache[dyn_cast_or_null<TypeDeclaration>(classs)] = Ty;
+      }
     }
-  }
   }

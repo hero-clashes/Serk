@@ -142,7 +142,14 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
     type_D =
       Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
     consume(tok::identifier);
-
+    if(Tok.is(tok::less)){
+      advance();
+      auto intited_type = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+      advance();
+      type_D = (TypeDeclaration *)Actions.init_genric_class(Decls,type_D, intited_type);
+      expect(tok::greater);
+      advance();
+    }
   };
   
   Expr *Desig = nullptr;
@@ -174,18 +181,19 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
   case tok::identifier:
     if (Lex.peak(0).is(tok::l_paren)) {
       parseFunctionCallStatment(Stmts);
-    } else if (Lex.peak(0).is(tok::equal) || Lex.peak(2).is(tok::equal)) {
+    } else {
       auto Var = Actions.actOnVarRefernce(Tok.getLocation(),
                                           Tok.getIdentifier());
       advance();// eat var
       auto Desig = Actions.actOnDesignator(Var);
       parseSelectors(Desig);
       Expr *E;
+      if(Tok.is(tok::period)){
+        ParseMethodCallStatment(Stmts,E);
+      } else{
       advance();// eat =
       parseExpression(E);
-      Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);
-    } else if (Lex.peak(0).is(tok::period)) {
-      ParseMethodCallStatment(Stmts);
+      Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);}
     }
   break;
   case tok::kw_if:
@@ -344,36 +352,42 @@ bool Parser::parseFactor(Expr *&E) {
             // goto _error;
           E = Actions.actOnFunctionCallExpr(call.getLocation(),D,Exprs);
           advance();
-    } else if(Tok.is(tok::period) && Lex.peak(1).is(tok::l_paren)){
-      advance();
-
-      auto Method_name = Tok.getIdentifier();
-      ExprList Exprs;
-      advance();
-      //TODO add members access
-      if (Tok.is(tok::l_paren)) {
-        advance();
-        if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
-                        tok::integer_literal)) {
-          parseExpList(Exprs);
-          // goto _error;
-        }
-        expect(tok::r_paren);
-        // goto _error;
-        advance();
-        E = new MethodCallExpr(dyn_cast<VariableDeclaration>(D),Method_name,Exprs);
-      } else {
-
+    } else {
+      E = Actions.actOnDesignator(D);
+      parseSelectors(E);
+      //Expr *E;
+      if(Tok.is(tok::period)){
+        //ParseMethodCallStatment(Stmts,E);
       }
+      //advance();
+    //TODO fix method calls handling
+      // auto Method_name = Tok.getIdentifier();
+      // ExprList Exprs;
+      // advance();
+      // //TODO add members access
+      // if (Tok.is(tok::l_paren)) {
+      //   advance();
+      //   if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
+      //                   tok::integer_literal)) {
+      //     parseExpList(Exprs);
+      //     // goto _error;
+      //   }
+      //   expect(tok::r_paren);
+      //   // goto _error;
+      //   advance();
+      // //   E = new MethodCallExpr(dyn_cast<VariableDeclaration>(D),Method_name,Exprs);
+      // } else {
+
+      // }
       
-      } else {
+      } //else {
       // D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
       // advance();
       //here simple variable referencing
-      E = Actions.actOnDesignator(D);
-      parseSelectors(E);
-      //       // goto _error;
-    }
+    //   E = Actions.actOnDesignator(D);
+    //   parseSelectors(E);
+    //   //       // goto _error;
+    // }
   } else if (Tok.is(tok::l_paren)) {
     advance();
     parseExpression(E);
@@ -567,14 +581,32 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
   return false;
 }
 bool Parser::ParseClass(DeclList &ParentDecls){
+  bool Genric = false;
   advance(); // eat class
-  auto D =
-      Actions.actOnClassDeclaration(Tok.getLocation(), Tok.getIdentifier());
-  advance(); // eat class identifier
+  auto Class_Name = Tok;
+  advance();
+  Decl *D;
+  if (Tok.is(tok::less)) {
+    advance();
+    expect(tok::identifier);
+    advance();
+    expect(tok::greater);
+    advance();
+    D = Actions.actOnClassDeclaration(Class_Name.getLocation(),
+                                      Class_Name.getIdentifier(), true);
+    Genric = true;
+  } else {
+    D = Actions.actOnClassDeclaration(Class_Name.getLocation(),
+                                      Class_Name.getIdentifier(), false);
+  };
 
   EnterDeclScope S(Actions, D);
   DeclList Decls;
   StmtList StartStmt;
+  if (Genric) {
+    Actions.Create_Genric_type();
+  }
+  
   expect(tok::l_parth);
   advance();
   while (Tok.isNot(tok::r_parth)) {
@@ -598,14 +630,9 @@ bool Parser::ParseClass(DeclList &ParentDecls){
   ParentDecls.push_back(D);
   return false;
 };
-bool Parser::ParseMethodCallStatment(StmtList& Stmts){
-  auto *D =dyn_cast_or_null<VariableDeclaration>(Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier()));
-  auto loc = Tok.getLocation();
-  advance();
-  
-  advance();
-
+bool Parser::ParseMethodCallStatment(StmtList& Stmts,Expr *E){
   auto Method_name = Tok.getIdentifier();
+  auto loc = Tok.getLocation();
   ExprList Exprs;
   advance();
 
@@ -620,7 +647,7 @@ bool Parser::ParseMethodCallStatment(StmtList& Stmts){
     // goto _error;
     advance();
   }
-  Stmts.push_back(new MethodCallStatement(D,Method_name,Exprs));
+  Stmts.push_back(new MethodCallStatement(E,Method_name,Exprs));
   return false;
 };
 bool Parser::ParseEnum(DeclList &ParentDecls,StmtList& Stmts){
@@ -684,6 +711,7 @@ bool Parser::parseSelectors(Expr *&E)
       } else if (Tok.is(tok::period)) {
         advance();
         expect(tok::identifier);
+        if(Lex.peak(0).is(tok::l_paren)) return false;
         Actions.actOnFieldSelector(E, Tok.getLocation(),
                                    Tok.getIdentifier());
         advance();

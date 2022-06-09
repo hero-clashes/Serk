@@ -131,6 +131,7 @@ void CGCompileUnit::run(CompileUnitDeclaration *Mod)
     } else if(auto *Proc =
                    llvm::dyn_cast<ClassDeclaration>(
                        Decl)){
+      if(Proc->is_genric) continue;
       CGClass CGC(*this);
       auto Ty = CGC.run(Proc);
       TypeCache[dyn_cast_or_null<TypeDeclaration>(Proc)] = Ty;

@@ -70,7 +70,7 @@ public:
   bool parseForStatement(DeclList& Decls,
       StmtList& Stmts);    
   bool ParseClass(DeclList &ParentDecls);
-  bool ParseMethodCallStatment(StmtList& Stmts);
+  bool ParseMethodCallStatment(StmtList& Stmts,Expr *E);
   bool ParseEnum(DeclList &ParentDecls,
       StmtList& Stmts);
   bool ParseUsing(DeclList &ParentDecls);
