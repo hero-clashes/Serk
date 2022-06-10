@@ -155,12 +155,13 @@ public:
 };
 
 class VariableDeclaration : public Decl {
+public:  
   TypeDeclaration *Ty;
-
+  bool is_initlezed;
 public:
   VariableDeclaration(Decl *EnclosingDecL, SMLoc Loc,
-                      StringRef Name, TypeDeclaration *Ty)
-      : Decl(DK_Var, EnclosingDecL, Loc, Name), Ty(Ty) {}
+                      StringRef Name, TypeDeclaration *Ty, bool is_initlezed)
+      : Decl(DK_Var, EnclosingDecL, Loc, Name), Ty(Ty), is_initlezed(is_initlezed) {}
 
   TypeDeclaration *getType() { return Ty; }
 

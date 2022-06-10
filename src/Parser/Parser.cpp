@@ -172,7 +172,7 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
     type_D = E->getType();
   }
   auto Var = Actions.actOnVarDeceleration(var.getLocation(),
-                                          var.getIdentifier(), type_D);
+                                          var.getIdentifier(), type_D, E ? true: false);
   if (E) {
     Desig = Actions.actOnDesignator(Var);
     Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);

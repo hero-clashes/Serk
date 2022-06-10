@@ -106,13 +106,13 @@ ParameterDeclaration* Sema::actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type
     }
     return D;
 }
-VariableDeclaration* Sema::actOnVarDeceleration(SMLoc Loc, StringRef Name, Decl* Type)
+VariableDeclaration* Sema::actOnVarDeceleration(SMLoc Loc, StringRef Name, Decl* Type, bool is_initlezed = false)
 {
 
     assert(CurrentScope && "CurrentScope not set");
     if (TypeDeclaration* Ty = dyn_cast<TypeDeclaration>(Type)) {
         VariableDeclaration* Decl = new VariableDeclaration(
-            CurrentDecl, Loc, Name, Ty);
+            CurrentDecl, Loc, Name, Ty, is_initlezed);
         if (CurrentScope->insert(Decl))
             return Decl;
         else

@@ -602,9 +602,11 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
         // Defs[D] = Val;
         writeLocalVariable(Curr, Var, Val);
         if (auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())) {
-          auto a = C->getName().str() + "_" + "Create_Default";
-          auto F = CGM.getModule()->getFunction(a);
-          Builder.CreateCall(F, {Val});
+          if(!Var->is_initlezed){
+            auto a = C->getName().str() + "_" + "Create_Default";
+            auto F = CGM.getModule()->getFunction(a);
+            Builder.CreateCall(F, {Val});
+          }
         }
         // }
       }

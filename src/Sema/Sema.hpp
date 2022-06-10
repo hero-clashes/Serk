@@ -36,7 +36,7 @@ public:
   TypeDeclaration *actOnTypeRefernce(SMLoc Loc, StringRef Name);
   ParameterDeclaration *actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type,bool by_ref);
   VariableDeclaration *actOnVarDeceleration(SMLoc Loc, StringRef Name,
-                                            Decl *Type);
+                                            Decl *Type, bool is_initlezed);
   void actOnReturnStatement(StmtList &Stmts, SMLoc Loc, Expr *RetVal);
   Decl *actOnVarRefernce(SMLoc Loc, StringRef Name);
 
