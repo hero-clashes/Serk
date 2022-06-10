@@ -15,6 +15,9 @@ class CGFunction{
   llvm::FunctionType *Fty;
   llvm::Function *Fn;
 
+  bool AggregateReturnType = false;
+  Decl *Current_Var_Decl = nullptr;
+  llvm::Value *Current_Var_Value = nullptr;
 
   llvm::DenseMap<Decl *, llvm::TrackingVH<llvm::Value>>
         Defs;

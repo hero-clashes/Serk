@@ -12,6 +12,20 @@ void CGFunction::run(FunctionDeclaration *Proc) {
   setCurr(BB);
 
     size_t Idx = 0;
+  if(AggregateReturnType){
+    for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E;
+       ++I, ++Idx) {
+    llvm::Argument *Arg = I;
+    ParameterDeclaration *FP =
+        Proc->getFormalParams()[Idx];
+    // Create mapping FormalParameter -> llvm::Argument
+    // for VAR parameters.
+    FormalParams[FP] = Arg;
+    llvm::Value *Alloca = Builder.CreateAlloca(Arg->getType());
+    auto ar = Builder.CreateStore(Arg, Alloca);
+    writeLocalVariable(Curr, FP, Alloca);
+  }
+  } else
   for (auto I = Fn->arg_begin(), E = Fn->arg_end(); I != E;
        ++I, ++Idx) {
     llvm::Argument *Arg = I;
@@ -51,6 +65,11 @@ llvm::FunctionType *CGFunction::createFunctionType(FunctionDeclaration *Proc) {
   }
   auto FormalParams = Proc->getFormalParams();
   llvm::SmallVector<llvm::Type *, 8> ParamTypes;
+  if(ResultTy->isAggregateType()){
+    AggregateReturnType = true;
+    ParamTypes.push_back(ResultTy->getPointerTo());
+    ResultTy = CGM.VoidTy;
+  }
   for (auto FP : FormalParams) {
     llvm::Type *Ty = mapType(FP);
     ParamTypes.push_back(Ty);
@@ -64,6 +83,24 @@ llvm::Function *CGFunction::createFunction(FunctionDeclaration *Proc,
       Fty, llvm::GlobalValue::ExternalLinkage,
       Proc->getName(), CGM.getModule());
       size_t Idx = 0;
+  if(AggregateReturnType){
+      for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E;
+        ++I, ++Idx) {
+      llvm::Argument *Arg = I;
+      ParameterDeclaration *FP =
+          Proc->getFormalParams()[Idx];
+      if (FP->IsPassedbyReference()) {
+        llvm::AttrBuilder Attr;
+        llvm::TypeSize Sz =
+            CGM.getModule()->getDataLayout().getTypeStoreSize(
+                CGM.convertType(FP->getType()));
+        Attr.addDereferenceableAttr(Sz);
+        Attr.addAttribute(llvm::Attribute::NoCapture);
+        Arg->addAttrs(Attr);
+      }
+      Arg->setName(FP->getName());
+    }
+  } else
   for (auto I = Fn->arg_begin(), E = Fn->arg_end(); I != E;
        ++I, ++Idx) {
     llvm::Argument *Arg = I;
@@ -119,11 +156,18 @@ void CGFunction::emit(const StmtList &Stmts){
   }
 };
 void CGFunction::emitStmt(AssignmentStatement *Stmt){
-  auto *Val = emitExpr(Stmt->getExpr());
+  Current_Var_Decl = nullptr;
+  Current_Var_Value = nullptr;
   Designator *Desig = Stmt->getVar();
   auto &Selectors = Desig->getSelectors();
   if (Selectors.empty())
-    writeVariable(Curr, Desig->getDecl(), Val);
+    {
+      Current_Var_Decl = Desig->getDecl();
+      auto *Val = emitExpr(Stmt->getExpr());
+      if (!Val->getType()->isVoidTy()) {
+        writeVariable(Curr, Desig->getDecl(), Val);
+      }  
+    }
   else {
     llvm::SmallVector<llvm::Value *, 4> IdxList;
     // First index for GEP.
@@ -149,9 +193,9 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
     if (!IdxList.empty()) {
       if (Base->getType()) {
         Base = Builder.CreateInBoundsGEP(Base, IdxList);
-        // Base->dump();
-        // Base->getType()->dump();
-        // Val->dump();
+        Current_Var_Value = Base;
+        auto *Val = emitExpr(Stmt->getExpr());
+        if(Val->getType()->isVoidTy()) return;
         Builder.CreateStore(Val, Base);
       }
       else {
@@ -238,12 +282,15 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
 };
 llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
    auto *F = CGM.getModule()->getFunction(E->geDecl()->getName());
-
   std::vector<Value *> ArgsV;
+  if(E->getParams().empty() && !F->empty()){
+    Value* v = Current_Var_Decl ? readVariable(Curr, Current_Var_Decl,false): Current_Var_Value;
+    ArgsV.push_back(v);
+  } else
   for(auto expr:E->getParams()){
     ArgsV.push_back(emitExpr(expr));
   };
-  return Builder.CreateCall(F, ArgsV, "calltmp");
+  return Builder.CreateCall(F, ArgsV, F->getReturnType()->isVoidTy()? "" :"calltmp");
   // llvm::report_fatal_error("not implemented");
 };
 llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
@@ -448,7 +495,13 @@ CGFunction::emitPrefixExpr(PrefixExpression *E) {
 void CGFunction::emitStmt(ReturnStatement *Stmt) {
   if (Stmt->getRetVal()) {
     llvm::Value *RetVal = emitExpr(Stmt->getRetVal());
-    Builder.CreateRet(RetVal);
+    if(AggregateReturnType){
+      auto AggregateTypePointer = Fn->getArg(0);
+      auto Val_not_Pointer = Builder.CreateLoad(RetVal);
+      Builder.CreateStore(Val_not_Pointer, AggregateTypePointer);
+      Builder.CreateRetVoid();  
+    } else 
+      Builder.CreateRet(RetVal);
   } else {
     Builder.CreateRetVoid();
   }

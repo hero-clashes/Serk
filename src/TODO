@@ -2,6 +2,8 @@ DONE change how everything is declared
 DONE add alias 
 DONE add members access
 DONE add genrics
+DONE add arrays support
+TODO add Var in templetes
 TODO add include handling
 TODO add error messeges for everything
 TODO port raylib
