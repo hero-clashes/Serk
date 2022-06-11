@@ -397,7 +397,7 @@ void CGFunction::emitStmt(MethodCallStatement *Stmt){
   for(auto expr:Stmt->getParams()){
     ArgsV.push_back(emitExpr(expr));
   };
-  Builder.CreateCall(F, ArgsV, "calltmp");
+  Builder.CreateCall(F, ArgsV, F->getReturnType()->isVoidTy()? "" : "calltmp");
   // llvm::report_fatal_error("not implemented");
 };
 llvm::Value *

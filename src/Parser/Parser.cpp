@@ -375,37 +375,25 @@ bool Parser::parseFactor(Expr *&E) {
       parseSelectors(E);
       //Expr *E;
       if(Tok.is(tok::period)){
-        //ParseMethodCallStatment(Stmts,E);
+        advance();
+        auto Method_name = Tok.getIdentifier();
+        ExprList Exprs;
+        advance();
+        //TODO add members access
+        if (Tok.is(tok::l_paren)) {
+          advance();
+          if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
+                          tok::integer_literal)) {
+            parseExpList(Exprs);
+            // goto _error;
+          }
+          expect(tok::r_paren);
+          // goto _error;
+          advance();
+          E = new MethodCallExpr((VariableDeclaration*)D,Method_name,Exprs);
+        }
       }
-      //advance();
-    //TODO fix method calls handling
-      // auto Method_name = Tok.getIdentifier();
-      // ExprList Exprs;
-      // advance();
-      // //TODO add members access
-      // if (Tok.is(tok::l_paren)) {
-      //   advance();
-      //   if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
-      //                   tok::integer_literal)) {
-      //     parseExpList(Exprs);
-      //     // goto _error;
-      //   }
-      //   expect(tok::r_paren);
-      //   // goto _error;
-      //   advance();
-      // //   E = new MethodCallExpr(dyn_cast<VariableDeclaration>(D),Method_name,Exprs);
-      // } else {
-
-      // }
-      
-      } //else {
-      // D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
-      // advance();
-      //here simple variable referencing
-    //   E = Actions.actOnDesignator(D);
-    //   parseSelectors(E);
-    //   //       // goto _error;
-    // }
+      }
   } else if (Tok.is(tok::l_paren)) {
     advance();
     parseExpression(E);
