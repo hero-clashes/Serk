@@ -75,4 +75,5 @@ public:
       StmtList& Stmts);
   bool ParseUsing(DeclList &ParentDecls);
   bool parseSelectors(Expr *&E);
+  bool ParseTempleteArgs(std::vector<std::tuple<int, StringRef,TypeDeclaration *>> &Decls);
 };

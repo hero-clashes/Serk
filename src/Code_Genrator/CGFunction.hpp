@@ -39,7 +39,7 @@ class CGFunction{
   virtual void writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
                           llvm::Value *Val);
   virtual llvm::Value *readLocalVariable(llvm::BasicBlock *BB,
-                                 Decl *Decl);
+                                 Decl *Decl,bool LoadVal);
   llvm::Value *
   readLocalVariableRecursive(llvm::BasicBlock *BB,
                              Decl *Decl);

@@ -57,6 +57,7 @@ KEYWORD(else                           , KEYALL)
 KEYWORD(while                          , KEYALL)
 KEYWORD(for                            , KEYALL)
 KEYWORD(class                          , KEYALL)
+KEYWORD(type                           , KEYALL)
 #undef KEYWORD
 #undef PUNCTUATOR
 #undef TOK

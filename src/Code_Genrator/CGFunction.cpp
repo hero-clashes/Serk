@@ -192,6 +192,8 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
     }
     if (!IdxList.empty()) {
       if (Base->getType()) {
+        // Base->dump();
+        // for(auto val:IdxList) val->dump();
         Base = Builder.CreateInBoundsGEP(Base, IdxList);
         Current_Var_Value = Base;
         auto *Val = emitExpr(Stmt->getExpr());
@@ -212,71 +214,49 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     return emitPrefixExpr(Prefix);
   } else if (auto *Var = llvm::dyn_cast<Designator>(E)) {
     auto *Decl = Var->getDecl();
-    llvm::Value *Val = readVariable(Curr, Decl,false);
+    llvm::Value *Val = readVariable(Curr, Decl, false);
     // With more languages features in place, here you
     // need to add array and record support.
     auto &Selectors = Var->getSelectors();
-    for (auto I = Selectors.begin(), E = Selectors.end();
-         I != E;
-         /* no increment */) {
-      if (auto *IdxSel =
-              llvm::dyn_cast<IndexSelector>(*I)) {
-        llvm::SmallVector<llvm::Value *, 4> IdxList;
-        while (I != E) {
-          if (auto *Sel =
-                  llvm::dyn_cast<IndexSelector>(*I)) {
-            IdxList.push_back(emitExpr(Sel->getIndex()));
-            ++I;
-          } else
-            break;
+    if (Selectors.empty()) {
+      return Val;
+    } else {
+      llvm::SmallVector<llvm::Value *, 4> IdxList;
+      // First index for GEP.
+      IdxList.push_back(llvm::ConstantInt::get(CGM.Int32Ty, 0));
+      
+      for (auto I = Selectors.begin(), E = Selectors.end(); I != E; ++I) {
+        if (auto *IdxSel = llvm::dyn_cast<IndexSelector>(*I)) {
+          IdxList.push_back(emitExpr(IdxSel->getIndex()));
+        } else if (auto *FieldSel = llvm::dyn_cast<FieldSelector>(*I)) {
+          llvm::Value *V =
+              llvm::ConstantInt::get(CGM.Int32Ty, FieldSel->getIndex());
+          IdxList.push_back(V);
+        } else {
+          llvm::report_fatal_error("not implemented");
         }
-        Val = Builder.CreateInBoundsGEP(Val, IdxList);
-        Val = Builder.CreateLoad(
-            Val->getType()->getPointerElementType(), Val);
-      } else if (auto *FieldSel =
-                     llvm::dyn_cast<FieldSelector>(*I)) {
-        llvm::SmallVector<llvm::Value *, 4> IdxList;
-        while (I != E) {
-          if (auto *Sel =
-                  llvm::dyn_cast<FieldSelector>(*I)) {
-            llvm::Value *V = llvm::ConstantInt::get(
-                CGM.Int64Ty, Sel->getIndex());
-            IdxList.push_back(V);
-            ++I;
-          } else
-            break;
-        }
-        // Val->dump();
-        Val = Builder.CreateInBoundsGEP(Val, IdxList);
-        Val = Builder.CreateLoad(
-            Val->getType()->getPointerElementType(), Val);
-      }// else if (auto *DerefSel =
-        //              llvm::dyn_cast<DereferenceSelector>(
-        //                  *I)) {
-        // Val = Builder.CreateLoad(
-        //     Val->getType()->getPointerElementType(), Val);
-        // ++I;}}
       }
-    return Val;
-      } else if (auto *IntLit =
-                 llvm::dyn_cast<IntegerLiteral>(E)) {
+      Val = Builder.CreateInBoundsGEP(Val, IdxList);
+      Val = Builder.CreateLoad(Val);
+      return Val;
+    }
+  } else if (auto *IntLit = llvm::dyn_cast<IntegerLiteral>(E)) {
     return llvm::ConstantInt::get(CGM.Int32Ty,
                                   IntLit->getValue());
-  } else if (auto *BoolLit =
-                 llvm::dyn_cast<BooleanLiteral>(E)) {
+  } else if (auto *BoolLit = llvm::dyn_cast<BooleanLiteral>(E)) {
     return llvm::ConstantInt::get(CGM.Int1Ty,
-                                  BoolLit->getValue());}
-  else if (auto *FuncCall =llvm::dyn_cast<FunctionCallExpr>(E)) {
+                                  BoolLit->getValue());
+  } else if (auto *FuncCall = llvm::dyn_cast<FunctionCallExpr>(E)) {
     return emitFunccall(FuncCall);
-  } else if (auto *MethCall =llvm::dyn_cast<MethodCallExpr>(E)) {
+  } else if (auto *MethCall = llvm::dyn_cast<MethodCallExpr>(E)) {
     return emitMethcall(MethCall);
-  } else if (auto *Str = llvm::dyn_cast<String_Literal>(E)){
+  } else if (auto *Str = llvm::dyn_cast<String_Literal>(E)) {
     Str->Value.consume_back("\"");
     Str->Value.consume_front("\"");
     return Builder.CreateGlobalStringPtr(Str->Value);
-  }  else if (auto *Const =
-               llvm::dyn_cast<ConstantAccess>(E)) {
-    return emitExpr(Const->getDecl()->getExpr());}
+  } else if (auto *Const = llvm::dyn_cast<ConstantAccess>(E)) {
+    return emitExpr(Const->getDecl()->getExpr());
+  }
   llvm::report_fatal_error("Unsupported expression");
 
 };
@@ -321,7 +301,7 @@ void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
 
 llvm::Value *
 CGFunction::readLocalVariable(llvm::BasicBlock *BB,
-                               Decl *Decl) {
+                               Decl *Decl,bool LoadVal = true) {
   assert(BB && "Basic block is nullptr");
   assert(
       (llvm::isa<VariableDeclaration>(Decl) ||

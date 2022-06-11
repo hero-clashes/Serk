@@ -74,6 +74,10 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
      uint64_t NumElements;
      if(auto Const = dyn_cast_or_null<IntegerLiteral>(Nums)){
        NumElements = Const->getValue().getExtValue();
+     } else if(auto dec = dyn_cast_or_null<ConstantAccess>(Nums)){
+      if(auto ints = dyn_cast_or_null<IntegerLiteral>(dec->getDecl()->E)){
+       NumElements = ints->getValue().getExtValue();
+      }
      }
      llvm::Type *T =
          llvm::ArrayType::get(Component, NumElements);

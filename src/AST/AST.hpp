@@ -98,6 +98,8 @@ public:
   }
 };
 class ConstantDeclaration : public Decl {
+public:
+
   Expr *E;
 
 public:
@@ -233,7 +235,7 @@ class ClassDeclaration: public Decl{
   std::vector<Decl*> Decls;
   StmtList Stmts;
   bool is_genric;
-  Decl *T = nullptr;
+  DeclList TempleteArg;
   ClassDeclaration(Decl *EnclosingDecL, SMLoc Loc,
                              StringRef Name,bool is_genric):Decl(DK_Class, EnclosingDecL, Loc, Name),is_genric(is_genric) {
 
@@ -281,8 +283,7 @@ private:
   const ExprKind Kind;
   TypeDeclaration *Ty;
   bool IsConstant;
-
-protected:
+public:
   Expr(ExprKind Kind, TypeDeclaration *Ty, bool IsConst)
       : Kind(Kind), Ty(Ty), IsConstant(IsConst) {}
 

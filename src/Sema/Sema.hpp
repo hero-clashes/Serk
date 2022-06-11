@@ -2,6 +2,7 @@
 #include "AST/AST.hpp"
 #include "Diag/Diagnostic.hpp"
 #include "Scope.hpp"
+#include <variant>
 
 
 class Sema {
@@ -80,8 +81,9 @@ public:
   void actOnIndexSelector(Expr *Desig, SMLoc Loc, Expr *E);
   void actOnFieldSelector(Expr *Desig, SMLoc Loc, StringRef Name);
   ArrayTypeDeclaration *actOnArrayTypeDeclaration(DeclList &Decls, SMLoc Loc,Expr *E,Decl *D);
-  void Create_Genric_type();       
-  ClassDeclaration *init_genric_class(DeclList &Decls,Decl *T,Decl* inited_Type);   
+  void Create_Genric_type(StringRef Name,SMLoc loc);
+  void Create_Genric_Var(DeclList Decls,StringRef Name,SMLoc loc, TypeDeclaration* Ty);     
+  ClassDeclaration *init_genric_class(DeclList &Decls,Decl *T,std::vector<std::variant<TypeDeclaration*,Expr *>> Args);   
   TypeDeclaration *Get_type(TypeDeclaration* Type);                    
 };
 

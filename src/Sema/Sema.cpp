@@ -1,7 +1,8 @@
 #include "Sema.hpp"
 #include "AST/AST.hpp"
 #include <string>
-
+#include <vector>
+#include <variant>
 
 bool Sema::isOperatorForType(tok::TokenKind Op,
                              TypeDeclaration *Ty) {
@@ -454,18 +455,47 @@ void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
   }
   // TODO Error message
 }
-void Sema::Create_Genric_type(){
-  auto Genric = new Alias_TypeDeclaration(CurrentDecl,SMLoc(),"T",nullptr);
-  dyn_cast_or_null<ClassDeclaration>(CurrentDecl)->T = Genric;
+void Sema::Create_Genric_type(StringRef Name,SMLoc loc){
+  auto Genric = new Alias_TypeDeclaration(CurrentDecl,loc,Name,nullptr);
+  dyn_cast_or_null<ClassDeclaration>(CurrentDecl)->TempleteArg.push_back(Genric);
   CurrentScope->insert(Genric);
 };
-ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,Decl* inited_Type){
+void Sema::Create_Genric_Var(DeclList Decls,StringRef Name,SMLoc loc,TypeDeclaration* Ty){
+  auto Genric = new ConstantDeclaration(CurrentDecl,loc,Name,new Expr(Expr::ExprKind::EK_Const,Ty,true));
+  dyn_cast_or_null<ClassDeclaration>(CurrentDecl)->TempleteArg.push_back(Genric);
+  CurrentScope->insert(Genric);
+  Decls.push_back(Genric);
+};
+ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,std::vector<std::variant<TypeDeclaration*,Expr *>> Args){
   auto Class = dyn_cast_or_null<ClassDeclaration>(T);
   auto Class_Copy = new ClassDeclaration(*Class);
   Class_Copy->is_genric = false;
-  auto new_name =new std::string(Class_Copy->Name.str() + inited_Type->getName().str());
+  auto new_name =new std::string(Class_Copy->Name.str());
+  if(Args.size() != Class_Copy->TempleteArg.size()){
+    //TODO error out
+  }
+  int index = 0;
+  for(auto V:Args){
+    switch(V.index()){
+      case 0:
+      {
+        auto Ty = std::get<TypeDeclaration*>(V);
+        dyn_cast_or_null<Alias_TypeDeclaration>(Class_Copy->TempleteArg[index])->Realone = Ty;
+      }
+      break;
+      case 1:
+      {
+        auto Exp = std::get<Expr*>(V);
+        dyn_cast_or_null<ConstantDeclaration>(Class_Copy->TempleteArg[index])->E = Exp;
+      }
+      break;
+    };
+    index++;
+  };
   Class_Copy->Name=StringRef(*new_name);
-  dyn_cast_or_null<Alias_TypeDeclaration>(Class_Copy->T)->Realone = (TypeDeclaration *)inited_Type;
+
+
+  // dyn_cast_or_null<Alias_TypeDeclaration>(Class_Copy->T)->Realone = (TypeDeclaration *)inited_Type;
   CurrentScope->insert(Class_Copy);
   Decls.push_back(Class_Copy);
   return Class_Copy;

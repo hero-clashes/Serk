@@ -48,15 +48,20 @@ llvm::Value *CGMemberFunction::readVariable(llvm::BasicBlock *BB,
                                        Decl *D,
                                        bool LoadVal) {
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(D)) {
-    if (V->getEnclosingDecl() == CGC.Class)
-      return readLocalVariable(BB, D);
-    else if (V->getEnclosingDecl() ==
+    // if (V->getEnclosingDecl() == CGC.Class)
+      
+    if (V->getEnclosingDecl() ==
              CGM.getModuleDeclaration()) {
       auto *Global = CGM.getGlobal(D);
       if (!LoadVal)
         return Global;
       return Builder.CreateLoad(mapType(D), Global);
-    } else
+    }
+    //  if(LoadVal)
+    //   {
+        return readLocalVariable(BB, D,LoadVal);
+      // }else 
+      // return Defs[D];
       llvm::report_fatal_error(
           "Nested procedures not yet supported");
   } else if (auto *FP =
@@ -69,12 +74,12 @@ llvm::Value *CGMemberFunction::readVariable(llvm::BasicBlock *BB,
           mapType(FP)->getPointerElementType(),
           FormalParams[FP]);
     } else
-      return readLocalVariable(BB, D);
+      return readLocalVariable(BB, D,LoadVal);
   } else
     llvm::report_fatal_error("Unsupported declaration");
 }
 llvm::Value *CGMemberFunction::readLocalVariable(llvm::BasicBlock *BB,
-                                                 Decl *Decl) {
+                                                 Decl *Decl,bool LoadVal = true) {
   assert(BB && "Basic block is nullptr");
   //   assert((llvm::isa<VariableDeclaration>(Decl) ||
   //           llvm::isa<ParameterDeclaration>(Decl)) &&
@@ -90,7 +95,10 @@ llvm::Value *CGMemberFunction::readLocalVariable(llvm::BasicBlock *BB,
 
             auto real_pointer = Builder.CreateLoad(Defs[CGC.Class]);
             auto pointer = Builder.CreateStructGEP(real_pointer,index);
+            if(LoadVal)
             return Builder.CreateLoad(mapType(Decl),pointer);
+            else
+             return pointer;
     }
   }
   // return readLocalVariableRecursive(BB, Decl);

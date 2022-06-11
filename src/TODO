@@ -3,8 +3,12 @@ DONE add alias
 DONE add members access
 DONE add genrics
 DONE add arrays support
-TODO add Var in templetes
+DONE add Var in templetes
+TODO add genrators
+TODO add continuers
+TODO add malloc
 TODO add include handling
+TODO implment paremters for constructrs
 TODO add error messeges for everything
 TODO port raylib
 TODO implent inheritance 

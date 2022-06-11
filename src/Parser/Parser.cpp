@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include <utility>
 #include <vector>
 
 namespace {
@@ -144,11 +145,21 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
     consume(tok::identifier);
     if(Tok.is(tok::less)){
       advance();
-      auto intited_type = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+      std::vector<std::variant<TypeDeclaration *, Expr *>> Args;
+      do {
+        if(Tok.is(tok::identifier)){
+          Args.push_back(Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier()));
+          advance();
+        } else {
+          Expr *EXP;
+          parseSimpleExpression(EXP);
+          Args.push_back(EXP);
+        }
+        if(Tok.is(tok::comma)) advance();
+      } while (Tok.isNot(tok::greater));
+      // auto intited_type = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
       advance();
-      type_D = (TypeDeclaration *)Actions.init_genric_class(Decls,type_D, intited_type);
-      expect(tok::greater);
-      advance();
+      type_D = (TypeDeclaration *)Actions.init_genric_class(Decls,type_D, Args);
     } else if (Tok.is(tok::l_square)) {
       advance();
       Expr *E = nullptr;
@@ -196,7 +207,7 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
       parseSelectors(Desig);
       Expr *E;
       if(Tok.is(tok::period)){
-        ParseMethodCallStatment(Stmts,E);
+        ParseMethodCallStatment(Stmts,Desig);
       } else{
       advance();// eat =
       parseExpression(E);
@@ -593,12 +604,14 @@ bool Parser::ParseClass(DeclList &ParentDecls){
   auto Class_Name = Tok;
   advance();
   Decl *D;
+  std::vector<std::tuple<int, StringRef,TypeDeclaration *>> List;
   if (Tok.is(tok::less)) {
-    advance();
-    expect(tok::identifier);
-    advance();
-    expect(tok::greater);
-    advance();
+    
+    // expect(tok::identifier);
+    // advance();
+    
+    ParseTempleteArgs(List);
+
     D = Actions.actOnClassDeclaration(Class_Name.getLocation(),
                                       Class_Name.getIdentifier(), true);
     Genric = true;
@@ -611,18 +624,32 @@ bool Parser::ParseClass(DeclList &ParentDecls){
   DeclList Decls;
   StmtList StartStmt;
   if (Genric) {
-    Actions.Create_Genric_type();
+    for(auto D :List){
+      switch (std::get<0>(D)) {
+      case 0:
+      {
+        Actions.Create_Genric_type(std::get<1>(D),SMLoc());
+      }
+      break;
+      case 1:
+      {
+        Actions.Create_Genric_Var(Decls,std::get<1>(D),SMLoc(),std::get<2>(D));
+      }
+      break;
+      }
+    }
+    
   }
   
   expect(tok::l_parth);
   advance();
   while (Tok.isNot(tok::r_parth)) {
-    if (Lex.peak(1).is(tok::l_paren)) {
+    if (Tok.is(tok::kw_fn)) {
         // handle function decleration
         //
         if (ParseFuction(Decls)) {
         };
-    } else if (Lex.peak(0).is(tok::identifier)) {
+    } else if (Tok.is(tok::kw_var)) {
       // handle var decleration
       parseVarDecleration(Decls, StartStmt);
     }
@@ -638,6 +665,7 @@ bool Parser::ParseClass(DeclList &ParentDecls){
   return false;
 };
 bool Parser::ParseMethodCallStatment(StmtList& Stmts,Expr *E){
+  advance();
   auto Method_name = Tok.getIdentifier();
   auto loc = Tok.getLocation();
   ExprList Exprs;
@@ -716,9 +744,9 @@ bool Parser::parseSelectors(Expr *&E)
         Actions.actOnIndexSelector(E, Loc, IndexE);
         advance();
       } else if (Tok.is(tok::period)) {
+        if(Lex.peak(1).is(tok::l_paren)) return false;
         advance();
         expect(tok::identifier);
-        if(Lex.peak(0).is(tok::l_paren)) return false;
         Actions.actOnFieldSelector(E, Tok.getLocation(),
                                    Tok.getIdentifier());
         advance();
@@ -726,3 +754,35 @@ bool Parser::parseSelectors(Expr *&E)
     }
     return false;
   }
+  bool Parser::ParseTempleteArgs(std::vector<std::tuple<int, StringRef,TypeDeclaration *>> &Decls) {
+  consume(tok::less);
+  while (Tok.isOneOf(tok::kw_var,tok::kw_type)) {
+    if(Tok.is(tok::kw_type)){
+        advance();
+        expect(tok::identifier);
+        Decls.push_back({0,Tok.getIdentifier(),nullptr});
+        advance();
+      } else if (tok::kw_var) {
+        advance();
+        expect(tok::identifier);
+        auto name = Tok.getIdentifier();
+        
+        advance();
+
+        consume(tok::colon);
+        auto Ty =
+      Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+        advance();
+        Decls.push_back({1,name,Ty});
+      }
+    if (!Tok.isOneOf(tok::comma, tok::greater)) {
+      // TODO error out
+    }
+    consume(tok::comma);
+    if (Tok.is(tok::greater)) {
+      break;
+    }
+  };
+  consume(tok::greater);
+  return false;
+  };

@@ -13,7 +13,7 @@ void writeVariable(llvm::BasicBlock *BB, Decl *Decl,
   void writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
                           llvm::Value *Val);
   llvm::Value *readLocalVariable(llvm::BasicBlock *BB,
-                                 Decl *Decl);
+                                 Decl *Decl,bool );
   llvm::Value *
   readLocalVariableRecursive(llvm::BasicBlock *BB,
                              Decl *Decl);
