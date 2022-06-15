@@ -214,3 +214,11 @@ llvm::DebugLoc CGDebugInfo::getDebugLoc(SMLoc Loc) {
 }
 
 void CGDebugInfo::finalize() { DBuilder.finalize(); }
+void CGDebugInfo::SetLoc(llvm::Instruction *Inst,SMLoc Loc){
+  auto DLoc = getDebugLoc(Loc);
+  // DBuilder.insertLabel()
+  Inst->setDebugLoc(DLoc);
+  // DBuilder.SetCurrentDebugLocation(
+  //     DILocation::get(Scope->getContext(), AST->getLine(), AST->getCol(), Scope));
+
+};

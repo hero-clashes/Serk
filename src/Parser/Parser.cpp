@@ -169,8 +169,9 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
     } else if (Tok.is(tok::l_square)) {
       advance();
       Expr *E = nullptr;
+      auto Loc = Tok.getLocation();
       parseExpression(E);
-      type_D = Actions.actOnArrayTypeDeclaration(Decls,Tok.getLocation(),E,type_D);
+      type_D = Actions.actOnArrayTypeDeclaration(Decls,Loc,E,type_D);
       expect(tok::r_square);
       advance();
     }
@@ -178,8 +179,11 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
   
   Expr *Desig = nullptr;
   Expr *E = nullptr;
+  SMLoc Loc; 
   if (Tok.is(tok::equal)) {
     advance();
+      Loc = Tok.getLocation();
+
     parseExpression(E);
   }
   expect(tok::semi);
@@ -192,7 +196,7 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
                                           var.getIdentifier(), type_D, E ? true: false);
   if (E) {
     Desig = Actions.actOnDesignator(Var);
-    Actions.actOnAssignment(Stmts, Tok.getLocation(), Desig, E);
+    Actions.actOnAssignment(Stmts, Loc, Desig, E);
   }
   Decls.push_back(Var);
   return false;
@@ -676,7 +680,7 @@ bool Parser::ParseMethodCallStatment(StmtList& Stmts,Expr *E){
     // goto _error;
     advance();
   }
-  Stmts.push_back(new MethodCallStatement(E,Method_name,Exprs));
+  Stmts.push_back(new MethodCallStatement(E,Method_name,Exprs,loc));
   return false;
 };
 bool Parser::ParseEnum(DeclList &ParentDecls,StmtList& Stmts){

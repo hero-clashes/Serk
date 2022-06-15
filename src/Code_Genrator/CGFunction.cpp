@@ -215,6 +215,8 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
       }
     }
   }
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
 };
 llvm::Value *CGFunction::emitExpr(Expr *E){
   if (auto *Infix = llvm::dyn_cast<InfixExpression>(E)) {
@@ -406,6 +408,8 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
     index++;
   };
    Builder.CreateCall(F, ArgsV);
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
   // llvm::report_fatal_error("not implemented");
 }
 void CGFunction::emitStmt(MethodCallStatement *Stmt){
@@ -418,12 +422,21 @@ void CGFunction::emitStmt(MethodCallStatement *Stmt){
     ArgsV.push_back(emitExpr(expr));
   };
   Builder.CreateCall(F, ArgsV, F->getReturnType()->isVoidTy()? "" : "calltmp");
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
   // llvm::report_fatal_error("not implemented");
 };
 llvm::Value *
 CGFunction::emitInfixExpr(InfixExpression *E) {
   llvm::Value *Left = emitExpr(E->getLeft());
+  if(Left->getType()->isPointerTy())
+    Left = Builder.CreateLoad(Left);
+  Left->dump();
   llvm::Value *Right = emitExpr(E->getRight());
+  if(Right->getType()->isPointerTy())
+    Right = Builder.CreateLoad(Left);
+  Right->dump();
+
   llvm::Value *Result = nullptr;
   switch (E->getOperatorInfo().getKind()) {
   case tok::plus:
@@ -505,6 +518,8 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
   } else {
     Builder.CreateRetVoid();
   }
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
 }
   void CGFunction::emitStmt(IfStatement *Stmt){
     bool HasElse = Stmt->getElseStmts().size() > 0;
@@ -525,6 +540,8 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
   if (!Curr->getTerminator()) {
     Builder.CreateBr(AfterIfBB);
   }
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
   
 
   if (HasElse) {
@@ -552,7 +569,8 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
 
     llvm::Value *Cond = emitExpr(Stmt->getCond());
     Builder.CreateCondBr(Cond, WhileBodyBB, AfterWhileBB);
-
+    if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
 
     setCurr(WhileBodyBB);
     emit(Stmt->getWhileStmts());
@@ -581,7 +599,8 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     setCurr(ForCondBB);
     llvm::Value *Cond = emitExpr(Stmt->getCond());
     Builder.CreateCondBr(Cond, ForBodyBB, AfterForBB);
-
+    if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
 
     setCurr(ForBodyBB);
     emit(Stmt->Body);

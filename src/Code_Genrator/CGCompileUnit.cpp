@@ -165,4 +165,6 @@ void CGCompileUnit::run(CompileUnitDeclaration *Mod)
       TypeCache[dyn_cast_or_null<TypeDeclaration>(Proc)] = Ty;
     }
   }
+  if(auto Dbg = getDbgInfo())
+    Dbg->finalize();
 }

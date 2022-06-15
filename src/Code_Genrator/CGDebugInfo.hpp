@@ -50,6 +50,6 @@ public:
                  llvm::BasicBlock *BB);
 
   llvm::DebugLoc getDebugLoc(SMLoc Loc);
-
+  void SetLoc(llvm::Instruction *Inst,SMLoc Loc);
   void finalize();
 };

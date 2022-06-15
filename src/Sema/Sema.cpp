@@ -131,7 +131,7 @@ void Sema::actOnReturnStatement(StmtList& Stmts, SMLoc Loc, Expr* RetVal)
             Diags.report(Loc, diag::err_function_and_return_type);
     }
 
-    Stmts.push_back(new ReturnStatement(RetVal));
+    Stmts.push_back(new ReturnStatement(RetVal,Loc));
 }
 Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
 {
@@ -202,7 +202,7 @@ void Sema::actOnAssignment(StmtList& Stmts, SMLoc Loc, Expr* D, Expr* E)
                 //tok::getPunctuatorSpelling(tok::equal));
             errs() << "error";
         }
-        Stmts.push_back(new AssignmentStatement(Var, E));
+        Stmts.push_back(new AssignmentStatement(Var, E,Loc));
     }
     else if (D) {
         // TODO Emit error
@@ -346,7 +346,7 @@ FunctionCallStatement *Sema::actOnFunctionCallStatemnt(SMLoc Loc, Decl *D,
     // if (!P->getRetType())
     //   Diags.report(D->getLocation(),
     //                diag::err_function_call_on_nonfunction);
-    return new FunctionCallStatement(P, Params);
+    return new FunctionCallStatement(P, Params,Loc);
   }
   // Diags.report(D->getLocation(),
   //              diag::err_function_call_on_nonfunction);
@@ -379,17 +379,17 @@ void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
   //   Diags.report(Loc, diag::err_if_expr_must_be_bool);
   // }
   Stmts.push_back(
-      new IfStatement(Cond, IfStmts, ElseStmts));
+      new IfStatement(Cond, IfStmts, ElseStmts,Loc));
 };
 void Sema::actOnWhileStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &WhileStmts){
 
 
-    Stmts.push_back(new WhileStatement(Cond,WhileStmts));
+    Stmts.push_back(new WhileStatement(Cond,WhileStmts,Loc));
                         };
 void Sema::actOnForStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts){
-      Stmts.push_back(new ForStatement(Cond,Start_Val,ForStepStmts,ForBodyStmts));
+      Stmts.push_back(new ForStatement(Cond,Start_Val,ForStepStmts,ForBodyStmts,Loc));
                         };
 ClassDeclaration *Sema::actOnClassDeclaration(SMLoc Loc, StringRef Name,bool Is_Genric){
   ClassDeclaration *P =

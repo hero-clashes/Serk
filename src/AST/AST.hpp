@@ -505,12 +505,12 @@ public:
 
 private:
     const StmtKind Kind;
-
+    SMLoc Loc;
 protected:
-    Stmt(StmtKind Kind) : Kind(Kind) {}
-
+    Stmt(StmtKind Kind,SMLoc Loc) : Kind(Kind),Loc(Loc) {}
 public:
     StmtKind getKind() const { return Kind; }
+    SMLoc getLoc() const {return Loc;}
 };
 
 class AssignmentStatement : public Stmt {
@@ -518,8 +518,8 @@ class AssignmentStatement : public Stmt {
     Expr* E;
 
 public:
-    AssignmentStatement(Designator* Var, Expr* E)
-        : Stmt(SK_Assign), Var(Var), E(E) {}
+    AssignmentStatement(Designator* Var, Expr* E,SMLoc Loc)
+        : Stmt(SK_Assign,Loc), Var(Var), E(E) {}
 
     Designator* getVar() { return Var; }
     Expr* getExpr() { return E; }
@@ -535,8 +535,8 @@ class FunctionCallStatement : public Stmt {
 
 public:
     FunctionCallStatement(FunctionDeclaration* Proc,
-        ExprList& Params)
-        : Stmt(SK_ProcCall), Proc(Proc), Params(Params) {}
+        ExprList& Params,SMLoc Loc)
+        : Stmt(SK_ProcCall,Loc), Proc(Proc), Params(Params) {}
 
     FunctionDeclaration* getProc() { return Proc; }
     const ExprList& getParams() { return Params; }
@@ -553,8 +553,8 @@ class MethodCallStatement :public Stmt{
 
 
   MethodCallStatement(Expr *Var, StringRef Function_Name,
-                   ExprList &Params)
-      : Stmt(Sk_MethodCall),Var(Var),
+                   ExprList &Params,SMLoc Loc)
+      : Stmt(Sk_MethodCall,Loc),Var(Var),
         Function_Name(Function_Name), Params(Params) {}
 
   // FunctionDeclaration *geDecl() { return Proc; }
@@ -571,8 +571,8 @@ class IfStatement : public Stmt {
 
 public:
     IfStatement(Expr* Cond, StmtList& IfStmts,
-        StmtList& ElseStmts)
-        : Stmt(SK_If), Cond(Cond), IfStmts(IfStmts),
+        StmtList& ElseStmts,SMLoc Loc)
+        : Stmt(SK_If,Loc), Cond(Cond), IfStmts(IfStmts),
         ElseStmts(ElseStmts) {}
 
     Expr* getCond() { return Cond; }
@@ -589,8 +589,8 @@ class WhileStatement : public Stmt {
     StmtList Stmts;
 
 public:
-    WhileStatement(Expr* Cond, StmtList& Stmts)
-        : Stmt(SK_While), Cond(Cond), Stmts(Stmts) {}
+    WhileStatement(Expr* Cond, StmtList& Stmts,SMLoc Loc)
+        : Stmt(SK_While,Loc), Cond(Cond), Stmts(Stmts) {}
 
     Expr* getCond() { return Cond; }
     const StmtList& getWhileStmts() { return Stmts; }
@@ -604,8 +604,8 @@ class ReturnStatement : public Stmt {
     Expr* RetVal;
 
 public:
-    ReturnStatement(Expr* RetVal)
-        : Stmt(SK_Return), RetVal(RetVal) {}
+    ReturnStatement(Expr* RetVal,SMLoc Loc)
+        : Stmt(SK_Return,Loc), RetVal(RetVal) {}
 
     Expr* getRetVal() { return RetVal; }
 
@@ -622,8 +622,8 @@ public:
 
     StmtList Body;
 
-    ForStatement(Expr *Cond, StmtList &Start_Val,StmtList &Step, StmtList &Body)
-        : Stmt(SK_For), Cond(Cond), Start_Val(Start_Val),Step(Step),Body(Body) {}
+    ForStatement(Expr *Cond, StmtList &Start_Val,StmtList &Step, StmtList &Body,SMLoc Loc)
+        : Stmt(SK_For,Loc), Cond(Cond), Start_Val(Start_Val),Step(Step),Body(Body) {}
 
     Expr* getCond() { return Cond; }
     // const StmtList& getWhileStmts() { return Stmts; }
