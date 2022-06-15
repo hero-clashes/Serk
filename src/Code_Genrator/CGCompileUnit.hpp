@@ -8,10 +8,14 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
+#include "CGDebugInfo.hpp"
 class CGCompileUnit{
   public:
 llvm::Module *M;
 
+SourceMgr& mgr;
+bool Debug = true;
+std::unique_ptr<CGDebugInfo> DebugInfo;
 CompileUnitDeclaration *Mod;
 
 llvm::DenseMap<TypeDeclaration *, llvm::Type *> TypeCache;
@@ -27,11 +31,14 @@ public:
   // Repository of global objects.
   llvm::DenseMap<Decl *, llvm::GlobalObject *> Globals;
 public:
-  CGCompileUnit( llvm::Module *M);
+  CGCompileUnit( llvm::Module *M,SourceMgr& mgr);
   void initialize();
 
   llvm::LLVMContext &getLLVMCtx() {
     return M->getContext();
+  }
+  CGDebugInfo *getDbgInfo() {
+    return DebugInfo.get();
   }
   llvm::Module *getModule() { return M; }
   CompileUnitDeclaration *getModuleDeclaration() { return Mod; }

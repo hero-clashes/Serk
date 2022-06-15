@@ -31,7 +31,7 @@ int main() {
   auto TheContext = std::make_unique<LLVMContext>();
   auto JIT = orc::KaleidoscopeJIT::Create();
   auto Genrator = CodeGenerator::create(*TheContext,*JIT->get());
-  auto M = Genrator->run(outputast, "main.serk");
+  auto M = Genrator->run(outputast, "main.serk",mgr);
 
   auto RT = JIT->get()->getMainJITDylib().createResourceTracker();
 

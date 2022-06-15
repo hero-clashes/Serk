@@ -45,6 +45,7 @@ void Sema::initialize(){
     auto VoidType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void");
     StrType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "str");
     auto printf_f = new FunctionDeclaration(CurrentDecl,SMLoc(),"printf");
+    auto Sizeof = new FunctionDeclaration(CurrentDecl,SMLoc(),"sizeof");
     TrueLiteral = new BooleanLiteral(true, BoolType);
     FalseLiteral = new BooleanLiteral(false, BoolType);
     TrueConst = new ConstantDeclaration(CurrentDecl, SMLoc(),
@@ -56,6 +57,7 @@ void Sema::initialize(){
     CurrentScope->insert(VoidType);
     CurrentScope->insert(StrType);
     CurrentScope->insert(printf_f);
+    CurrentScope->insert(Sizeof);
 };
 
 

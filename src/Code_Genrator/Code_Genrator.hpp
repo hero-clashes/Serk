@@ -34,5 +34,5 @@ protected:
 public:
 	static CodeGenerator* create(llvm::LLVMContext& Ctx,orc::KaleidoscopeJIT &JIT);
 
-	std::unique_ptr<llvm::Module> run(CompileUnitDeclaration* CM, std::string FileName);
+	std::unique_ptr<llvm::Module> run(CompileUnitDeclaration* CM, std::string FileName,SourceMgr& mgr);
 };

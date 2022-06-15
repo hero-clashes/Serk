@@ -5,10 +5,10 @@ CodeGenerator* CodeGenerator::create(llvm::LLVMContext& Ctx,orc::KaleidoscopeJIT
     return new CodeGenerator(Ctx,JIT);
 }
 
-std::unique_ptr<llvm::Module> CodeGenerator::run(CompileUnitDeclaration* Mod, std::string FileName) {
+std::unique_ptr<llvm::Module> CodeGenerator::run(CompileUnitDeclaration* Mod, std::string FileName,SourceMgr& mgr) {
     std::unique_ptr<llvm::Module> M = std::make_unique<llvm::Module>("my cool jit", Ctx);
     M->setDataLayout(JIT.getDataLayout());
-    CGCompileUnit CGM(M.get());
+    CGCompileUnit CGM(M.get(),mgr);
     CGM.run(Mod);
     M->dump();
     return M;

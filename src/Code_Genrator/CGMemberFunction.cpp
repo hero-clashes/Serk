@@ -127,6 +127,8 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
   Fty = createFunctionType(Proc);
   Fn = createFunction(Proc, Fty);
+  if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+    Dbg->emitFunction(Proc, Fn);
 
   llvm::BasicBlock *BB = createBasicBlock("entry");
   setCurr(BB);
@@ -147,6 +149,9 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
     llvm::Value *Alloca = Builder.CreateAlloca(Arg->getType());
     auto ar = Builder.CreateStore(Arg, Alloca);
     writeLocalVariable(Curr, FP, Alloca);
+    if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+      
+          Dbg->emitParameterVariable(FP, Idx + 1, Arg, BB);
   }
 
   InitDecls(Proc);
@@ -166,6 +171,8 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
   CGM.FPM->run(*Fn);
 
   // Fn->print(errs());
+  if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+    Dbg->emitFunctionEnd(Proc, Fn);
 }
 llvm::Function *CGMemberFunction::createFunction(FunctionDeclaration *Proc,
                                            llvm::FunctionType *FTy){
@@ -179,7 +186,7 @@ llvm::Function *CGMemberFunction::createFunction(FunctionDeclaration *Proc,
     ParameterDeclaration *FP =
         Proc->getFormalParams()[Idx];
     if (FP->IsPassedbyReference()) {
-      llvm::AttrBuilder Attr;
+      llvm::AttrBuilder Attr(CGM.getLLVMCtx());
       llvm::TypeSize Sz =
           CGM.getModule()->getDataLayout().getTypeStoreSize(
               CGM.convertType(FP->getType()));

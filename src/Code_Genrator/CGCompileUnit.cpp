@@ -5,7 +5,7 @@
 #include "llvm/IR/Constants.h"
 #include "CGFunction.hpp"
 #include "CGClass.hpp"
-CGCompileUnit::CGCompileUnit(llvm::Module *M): M(M) {
+CGCompileUnit::CGCompileUnit(llvm::Module *M,SourceMgr& mgr): M(M),mgr(mgr) {
   initialize();
     
 }
@@ -42,7 +42,25 @@ void CGCompileUnit::initialize()
     Type::getInt8Ty(getLLVMCtx())->getPointerTo(),
     true /* this is variadic func */
   )
-);
+  );
+  M->getOrInsertFunction(
+    "malloc",
+    FunctionType::get(
+      Int8PtrTy,
+      IntegerType::getInt64Ty(getLLVMCtx()),
+      /* has variadic args */ false
+    )
+  );
+   M->getOrInsertFunction(
+    "free",
+    FunctionType::get(
+      VoidTy,
+      Int8PtrTy,
+      /* has variadic args */ false
+    )
+  );
+  if (Debug)
+    DebugInfo.reset(new CGDebugInfo(*this));
 }
 
 llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
@@ -131,6 +149,8 @@ void CGCompileUnit::run(CompileUnitDeclaration *Mod)
           llvm::GlobalValue::PrivateLinkage, nullptr,
           mangleName(Var));
       Globals[Var] = V;
+      if (CGDebugInfo *Dbg = getDbgInfo())
+        Dbg->emitGlobalVariable(Var, V);
     } else if (auto *Proc =
                    llvm::dyn_cast<FunctionDeclaration>(
                        Decl)) {

@@ -25,7 +25,7 @@ StructType *CGClass::run(ClassDeclaration *Class) {
     ParamList a;
     DeclList b;
     StmtList s;
-    auto F = new FunctionDeclaration(Class,SMLoc(), "Create_Default" ,a,nullptr,b,s);
+    auto F = new FunctionDeclaration(Class,Class->getLocation(), "Create_Default" ,a,nullptr,b,s);
     CGMemberFunction CGP(CGM, *this);
     CGP.run(F);
   }

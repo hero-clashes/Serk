@@ -7,6 +7,8 @@ void CGFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
   Fty = createFunctionType(Proc);
   Fn = createFunction(Proc, Fty);
+  if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+    Dbg->emitFunction(Proc, Fn);
 
   llvm::BasicBlock *BB = createBasicBlock("entry");
   setCurr(BB);
@@ -57,11 +59,19 @@ void CGFunction::run(FunctionDeclaration *Proc) {
   CGM.FPM->run(*Fn);
 
   // Fn->print(errs());
+  if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+    Dbg->emitFunctionEnd(Proc, Fn);
 }
 llvm::FunctionType *CGFunction::createFunctionType(FunctionDeclaration *Proc) {
   llvm::Type *ResultTy = nullptr;
   if (Proc->getRetType()) {
     ResultTy = mapType(Proc->getRetType());
+    // ResultTy->dump();
+    if(Proc->ReturnRef){
+      ResultTy = ResultTy->getPointerTo();
+      ResultTy->dump();
+
+    }
   }
   auto FormalParams = Proc->getFormalParams();
   llvm::SmallVector<llvm::Type *, 8> ParamTypes;
@@ -90,7 +100,7 @@ llvm::Function *CGFunction::createFunction(FunctionDeclaration *Proc,
       ParameterDeclaration *FP =
           Proc->getFormalParams()[Idx];
       if (FP->IsPassedbyReference()) {
-        llvm::AttrBuilder Attr;
+        llvm::AttrBuilder Attr(CGM.getLLVMCtx());
         llvm::TypeSize Sz =
             CGM.getModule()->getDataLayout().getTypeStoreSize(
                 CGM.convertType(FP->getType()));
@@ -107,7 +117,7 @@ llvm::Function *CGFunction::createFunction(FunctionDeclaration *Proc,
     ParameterDeclaration *FP =
         Proc->getFormalParams()[Idx];
     if (FP->IsPassedbyReference()) {
-      llvm::AttrBuilder Attr;
+      llvm::AttrBuilder Attr(CGM.getLLVMCtx());
       llvm::TypeSize Sz =
           CGM.getModule()->getDataLayout().getTypeStoreSize(
               CGM.convertType(FP->getType()));
@@ -261,6 +271,16 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
 
 };
 llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
+  if (E->geDecl()->getName() == "sizeof") {
+    assert(E->getParams().size() == 1);
+    auto E_V = emitExpr(E->getParams()[0]);
+    Value *objDummyPtr = Builder.CreateConstGEP1_64(
+          Constant::getNullValue(E_V->getType()), 1, "objsize");
+    // cast to i32 for malloc
+    Value *objSize =
+        Builder.CreatePointerCast(objDummyPtr,  CGM.Int32Ty);
+    return objSize;
+  }
    auto *F = CGM.getModule()->getFunction(E->geDecl()->getName());
   std::vector<Value *> ArgsV;
   if(E->getParams().empty() && !F->empty()){
@@ -581,6 +601,8 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
         llvm::Value *Val = Builder.CreateAlloca(Ty, nullptr, Var->getName());
         // Defs[D] = Val;
         writeLocalVariable(Curr, Var, Val);
+        if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+          Dbg->emitValue(Val, Var, Var->getLocation(), Curr);
         if (auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())) {
           if(!Var->is_initlezed){
             auto a = C->getName().str() + "_" + "Create_Default";
