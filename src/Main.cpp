@@ -94,7 +94,7 @@ llvm::Triple TargetTriple = llvm::Triple(LLVM_DEFAULT_TARGET_TRIPLE);
 
 
   PM.run(*M);
-  dest.flush();
+  // dest.flush();
   // auto RT = JIT->get()->getMainJITDylib().createResourceTracker();
 
   // auto TSM = llvm::orc::ThreadSafeModule(std::move(M), std::move(TheContext));
@@ -103,6 +103,9 @@ llvm::Triple TargetTriple = llvm::Triple(LLVM_DEFAULT_TARGET_TRIPLE);
   // auto ExprSymbol = JIT->get()->lookup("main");
   // int (*FP)() = (int (*)())(intptr_t)ExprSymbol->getAddress();
   // fmt::print("{}",FP());
+  dest.close();
+  auto a = "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.32.31326\\bin\\Hostx64\\x64\\Link.exe\" output.o /ENTRY:main /DEBUG:FULL";
+ system(a);
   return 0;
 
 }
