@@ -24,7 +24,7 @@ void CGCompileUnit::initialize()
       std::make_unique<llvm::legacy::FunctionPassManager>(M);
 
   // Promote allocas to registers.
-  FPM->add(createPromoteMemoryToRegisterPass());
+  // FPM->add(createPromoteMemoryToRegisterPass());
   // // Do simple "peephole" optimizations and bit-twiddling optzns.
   // FPM->add(createInstructionCombiningPass());
   // // Reassociate expressions.

@@ -69,7 +69,7 @@ llvm::FunctionType *CGFunction::createFunctionType(FunctionDeclaration *Proc) {
     // ResultTy->dump();
     if(Proc->ReturnRef){
       ResultTy = ResultTy->getPointerTo();
-      ResultTy->dump();
+      // ResultTy->dump();
 
     }
   }
@@ -431,11 +431,11 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
   llvm::Value *Left = emitExpr(E->getLeft());
   if(Left->getType()->isPointerTy())
     Left = Builder.CreateLoad(Left);
-  Left->dump();
+  // Left->dump();
   llvm::Value *Right = emitExpr(E->getRight());
   if(Right->getType()->isPointerTy())
     Right = Builder.CreateLoad(Left);
-  Right->dump();
+  // Right->dump();
 
   llvm::Value *Result = nullptr;
   switch (E->getOperatorInfo().getKind()) {
@@ -514,7 +514,12 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
       Builder.CreateStore(Val_not_Pointer, AggregateTypePointer);
       Builder.CreateRetVoid();  
     } else 
+      {
+      if(RetVal->getType()->isPointerTy()){
+        RetVal = Builder.CreateLoad(RetVal);
+      }
       Builder.CreateRet(RetVal);
+      }
   } else {
     Builder.CreateRetVoid();
   }
