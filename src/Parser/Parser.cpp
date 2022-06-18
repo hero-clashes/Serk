@@ -1101,6 +1101,7 @@ bool Parser::ParseTempleteArgs(
   return false;
 };
 bool Parser::SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat) {
+
   while (true) {
     // If we found one of the tokens, stop and return true.
     for (unsigned i = 0, NumToks = Toks.size(); i != NumToks; ++i) {
@@ -1110,24 +1111,27 @@ bool Parser::SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat) {
         // } else {
         //   ConsumeAnyToken();
         // }
-        if(eat){
+        if (eat) {
           advance();
         }
         return true;
       }
     }
-  }
-  // Important special case: The caller has given up and just wants us to
-  // skip the rest of the file. Do this without recursing, since we can
-  // get here precisely because the caller detected too much recursion.
-  if (Toks.size() == 1 && Toks[0] == tok::eof) {
-    while (Tok.isNot(tok::eof))
+    // Important special case: The caller has given up and just wants us to
+    // skip the rest of the file. Do this without recursing, since we can
+    // get here precisely because the caller detected too much recursion.
+    if (Toks.size() == 1 && Toks[0] == tok::eof) {
+      while (Tok.isNot(tok::eof))
+        advance();
+      return true;
+    }
+    switch (Tok.getKind()) {
+    case tok::eof:
+      // Ran out of tokens.
+      return false;
+      break;
+    default:
       advance();
-    return true;
-  }
-  switch (Tok.getKind()) {
-  case tok::eof:
-    // Ran out of tokens.
-    return false;
+    }
   }
 }
