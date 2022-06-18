@@ -48,6 +48,9 @@ int main(int argc_, const char **argv_) {
   Parser parser{lex,sema};
 
   auto outputast = parser.parse();
+  if(!outputast){
+    return 0;
+  }
   auto TheContext = std::make_unique<LLVMContext>();
   auto JIT = orc::KaleidoscopeJIT::Create();
   auto Genrator = CodeGenerator::create(*TheContext,*JIT->get());

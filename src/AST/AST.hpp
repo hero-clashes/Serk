@@ -180,6 +180,12 @@ class FunctionDeclaration : public Decl {
   StmtList Stmts;
 
 public:
+  enum FType{
+    Normal,
+    Virtual,
+    Genrator,
+  };
+  FType Type = Normal;
   FunctionDeclaration(Decl *EnclosingDecL, SMLoc Loc,
                        StringRef Name)
       : Decl(DK_Function, EnclosingDecL, Loc, Name) {}

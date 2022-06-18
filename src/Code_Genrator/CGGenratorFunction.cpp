@@ -1,10 +1,10 @@
-#include "CGMemberFunction.hpp"
+#include "CGGenratorFunction.hpp"
+#include <string>
 
-
-void CGMemberFunction::writeVariable(llvm::BasicBlock *BB,
+void CGGenratorFunction::writeVariable(llvm::BasicBlock *BB,
                                 Decl *D, llvm::Value *Val) {
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(D)) {
-    if (V->getEnclosingDecl() == CGC.Class)
+    if (V->getEnclosingDecl() == Proc)
       writeLocalVariable(BB, D, Val);
     else if (V->getEnclosingDecl() ==
              CGM.getModuleDeclaration()) {
@@ -22,7 +22,7 @@ void CGMemberFunction::writeVariable(llvm::BasicBlock *BB,
   } else
     llvm::report_fatal_error("Unsupported declaration");
 }
-void CGMemberFunction::writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
+void CGGenratorFunction::writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
                                           llvm::Value *Val) {
   assert(BB && "Basic block is nullptr");
 //   assert((llvm::isa<VariableDeclaration>(Decl) ||
@@ -30,21 +30,21 @@ void CGMemberFunction::writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
 //          "Declaration must be variable or formal parameter");
   assert(Val && "Value is nullptr");
   if (Defs.find(Decl) == Defs.end()) {
-    if (std::find(CGC.Members.begin(), CGC.Members.end(), (VariableDeclaration*)Decl) !=
-        CGC.Members.end()) {
-            auto it = std::find(CGC.Members.begin(), CGC.Members.end(), (VariableDeclaration*)Decl);
-            int index = std::distance( CGC.Members.begin(), it );
+    // if (std::find(CGC.Members.begin(), CGC.Members.end(), (VariableDeclaration*)Decl) !=
+    //     CGC.Members.end()) {
+    //         auto it = std::find(CGC.Members.begin(), CGC.Members.end(), (VariableDeclaration*)Decl);
+    //         int index = std::distance( CGC.Members.begin(), it );
      
-            auto real_pointer = Builder.CreateLoad(Defs[CGC.Class]);
-            auto pointer = Builder.CreateStructGEP(CGC.Type,real_pointer,index);
-            Builder.CreateStore(Val, pointer);
-            return;
-    }  
+    //         auto real_pointer = Builder.CreateLoad(Defs[CGC.Class]);
+    //         auto pointer = Builder.CreateStructGEP(CGC.Type,real_pointer,index);
+    //         Builder.CreateStore(Val, pointer);
+    //         return;
+    // }  
     Defs[Decl] = Val;
   } else
     Builder.CreateStore(Val, Defs[Decl]);
 }
-llvm::Value *CGMemberFunction::readVariable(llvm::BasicBlock *BB,
+llvm::Value *CGGenratorFunction::readVariable(llvm::BasicBlock *BB,
                                        Decl *D,
                                        bool LoadVal) {
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(D)) {
@@ -78,7 +78,7 @@ llvm::Value *CGMemberFunction::readVariable(llvm::BasicBlock *BB,
   } else
     llvm::report_fatal_error("Unsupported declaration");
 }
-llvm::Value *CGMemberFunction::readLocalVariable(llvm::BasicBlock *BB,
+llvm::Value *CGGenratorFunction::readLocalVariable(llvm::BasicBlock *BB,
                                                  Decl *Decl,bool LoadVal = true) {
   assert(BB && "Basic block is nullptr");
   //   assert((llvm::isa<VariableDeclaration>(Decl) ||
@@ -86,43 +86,39 @@ llvm::Value *CGMemberFunction::readLocalVariable(llvm::BasicBlock *BB,
   //          "Declaration must be variable or formal parameter");
   auto Val = CGFunction::readLocalVariable(BB, Decl, LoadVal);
   if (!Val) {
-    if (std::find(CGC.Members.begin(), CGC.Members.end(), (VariableDeclaration*)Decl) !=
-        CGC.Members.end()) {
-            auto it = std::find(CGC.Members.begin(), CGC.Members.end(), (VariableDeclaration*)Decl);
-            int index = std::distance( CGC.Members.begin(), it );
+    // if (std::find(CGC.Members.begin(), CGC.Members.end(), (VariableDeclaration*)Decl) !=
+    //     CGC.Members.end()) {
+    //         auto it = std::find(CGC.Members.begin(), CGC.Members.end(), (VariableDeclaration*)Decl);
+    //         int index = std::distance( CGC.Members.begin(), it );
 
-            auto real_pointer = Builder.CreateLoad(Defs[CGC.Class]);
-            auto pointer = Builder.CreateStructGEP(real_pointer,index);
-            if(LoadVal)
-            return Builder.CreateLoad(mapType(Decl),pointer);
-            else
-             return pointer;
-    }
+    //         auto real_pointer = Builder.CreateLoad(Defs[CGC.Class]);
+    //         auto pointer = Builder.CreateStructGEP(real_pointer,index);
+    //         if(LoadVal)
+    //         return Builder.CreateLoad(mapType(Decl),pointer);
+    //         else
+    //          return pointer;
+    // }
   }
-  // return readLocalVariableRecursive(BB, Decl);
+  return Val;
 }
 
 llvm::FunctionType *
-CGMemberFunction::createFunctionType(FunctionDeclaration *Proc) {
+CGGenratorFunction::createFunctionType(FunctionDeclaration *Proc) {
   llvm::Type *ResultTy = nullptr;
-  if (Proc->getRetType()) {
-    ResultTy = mapType(Proc->getRetType());
-  } else {
-    ResultTy = Type::getVoidTy(CGM.getLLVMCtx());
-  }
+  auto Context_type = Create_Context_type();
+
+  ResultTy = CGM.Int1Ty;
+
   auto FormalParams = Proc->getFormalParams();
-  llvm::SmallVector<llvm::Type *, 8> ParamTypes;
-  ParamTypes.push_back(CGC.Type->getPointerTo());
-  for (auto FP : FormalParams) {
-    llvm::Type *Ty = mapType(FP);
-    ParamTypes.push_back(Ty);
-  }
-  return llvm::FunctionType::get(ResultTy, ParamTypes,
+
+  
+  return llvm::FunctionType::get(ResultTy, Context_type,
                                  /* IsVarArgs */ false);
 };
 
-void CGMemberFunction::run(FunctionDeclaration *Proc) {
+void CGGenratorFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
+  
   Fty = createFunctionType(Proc);
   Fn = createFunction(Proc, Fty);
   if (CGDebugInfo *Dbg = CGM.getDbgInfo())
@@ -134,7 +130,7 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
   auto classPointer = Fn->getArg(0);
   llvm::Value *Alloca = Builder.CreateAlloca(classPointer->getType());
   auto ar = Builder.CreateStore(classPointer, Alloca);
-  writeLocalVariable(Curr, CGC.Class, Alloca);
+  // writeLocalVariable(Curr, CGC.Class, Alloca);
 
   size_t Idx = 0;
   for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E; ++I, ++Idx) {
@@ -172,11 +168,11 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
   if (CGDebugInfo *Dbg = CGM.getDbgInfo())
     Dbg->emitFunctionEnd(Proc, Fn);
 }
-llvm::Function *CGMemberFunction::createFunction(FunctionDeclaration *Proc,
+llvm::Function *CGGenratorFunction::createFunction(FunctionDeclaration *Proc,
                                            llvm::FunctionType *FTy){
   llvm::Function *Fn = llvm::Function::Create(
       Fty, llvm::GlobalValue::ExternalLinkage,
-        CGC.Class->getName() + "_" + Proc->getName(), CGM.getModule());
+       Proc->getName(), CGM.getModule());
       size_t Idx = 0;
   for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E;
        ++I, ++Idx) {
@@ -195,4 +191,15 @@ llvm::Function *CGMemberFunction::createFunction(FunctionDeclaration *Proc,
     Arg->setName(FP->getName());
   }
   return Fn;
+};
+llvm::Type *CGGenratorFunction::Create_Context_type(){
+    auto String = new std::string(Proc->getName().str() + "_Context");
+    auto Struct = StructType::create(CGM.getLLVMCtx(), StringRef(*String));
+    std::vector<llvm::Type *> bodyTypes;
+    bodyTypes.push_back(mapType(Proc->getRetType()));
+    for (auto *Member : Proc->getFormalParams()) {
+        bodyTypes.push_back(CGM.convertType(Member->getType()));
+    }
+    Struct->setBody(bodyTypes);
+    return Struct;
 };

@@ -39,6 +39,9 @@ void CGFunction::run(FunctionDeclaration *Proc) {
     llvm::Value *Alloca = Builder.CreateAlloca(Arg->getType());
     auto ar = Builder.CreateStore(Arg, Alloca);
     writeLocalVariable(Curr, FP, Alloca);
+    if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+      
+          Dbg->emitParameterVariable(FP, Idx + 1, Arg, BB);
   }
 
   InitDecls(Proc);
@@ -290,7 +293,11 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
     ArgsV.push_back(v);
   } else
   for(auto expr:E->getParams()){
-    ArgsV.push_back(emitExpr(expr));
+    auto v = emitExpr(expr);
+    if(v->getType()->isPointerTy()){
+        v = Builder.CreateLoad(v);
+    }
+    ArgsV.push_back(v);
   };
   return Builder.CreateCall(F, ArgsV, F->getReturnType()->isVoidTy()? "" :"calltmp");
   // llvm::report_fatal_error("not implemented");

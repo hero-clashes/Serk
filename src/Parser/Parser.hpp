@@ -55,6 +55,7 @@ public:
       StmtList& Stmts);
   bool parseFunctionCallStatment(StmtList& Stmts);
 
+  bool parseTemepleteList(DeclList & Decls,TypeDeclaration *&type_D,std::vector<std::variant<TypeDeclaration *, Expr *>> &Args);
   bool parseExpList(ExprList &Exprs);
   bool parseExpression(Expr* &E);
   bool parseSimpleExpression(Expr*& E);
@@ -76,4 +77,5 @@ public:
   bool ParseUsing(DeclList &ParentDecls);
   bool parseSelectors(Expr *&E);
   bool ParseTempleteArgs(std::vector<std::tuple<int, StringRef,TypeDeclaration *,SMLoc>> &Decls);
+  bool SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat = false);
 };
