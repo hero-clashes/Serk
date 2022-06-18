@@ -185,9 +185,6 @@ void Lexer::comment() {
     }
     ++End;
   }
-  if (!*End) {
-    Diags.report(getLoc(), diag::err_unterminated_block_comment);
-  }
   CurPtr = End;
 }
 
