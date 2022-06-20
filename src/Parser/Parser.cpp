@@ -565,6 +565,7 @@ bool Parser::parseFactor(Expr *&E) {
           };
           advance();
           E = new MethodCallExpr((VariableDeclaration *)D, Method_name, Exprs);
+          //TODO add error checking
         }
       }
     }
@@ -947,6 +948,7 @@ bool Parser::ParseMethodCallStatment(StmtList &Stmts, Expr *E) {
     advance();
   }
   Stmts.push_back(new MethodCallStatement(E, Method_name, Exprs, loc));
+  //TODO add error checking
   return false;
 };
 bool Parser::ParseEnum(DeclList &ParentDecls, StmtList &Stmts) {
