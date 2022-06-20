@@ -457,7 +457,7 @@ void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
       }
       Diags.report(Loc, diag::err_member_not_found,Name, R->getName());
     } else
-    Diags.report(Loc, diag::err_member_not_found);
+    Diags.report(Loc, diag::err_accessing_member_non_class);
   }
   // TODO Error message
 }

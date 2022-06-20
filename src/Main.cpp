@@ -48,7 +48,7 @@ int main(int argc_, const char **argv_) {
   Parser parser{lex,sema};
 
   auto outputast = parser.parse();
-  if(!outputast){
+  if(!outputast || dia.nunErrors() > 0){
     return 0;
   }
   auto TheContext = std::make_unique<LLVMContext>();
