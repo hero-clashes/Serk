@@ -92,11 +92,9 @@ void Sema::actOnFunctionDeclaration(FunctionDeclaration* ProcDecl, SMLoc Loc, St
 TypeDeclaration*   Sema::actOnTypeRefernce(SMLoc Loc, StringRef Name) {
     if (auto D = dyn_cast_or_null<TypeDeclaration>(CurrentScope->lookup(Name))) {
         return D;
-    // } else if (auto D = dyn_cast_or_null<ClassDeclaration>(CurrentScope->lookup(Name))) {
-    //   return D;
     }
     else {
-        Diags.report(Loc,diag::err_returntype_must_be_type);
+        Diags.report(Loc,diag::err_type_isnt_found,Name);
     };
 }
 ParameterDeclaration* Sema::actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type,bool by_ref)
@@ -104,8 +102,7 @@ ParameterDeclaration* Sema::actOnParmaDecl(SMLoc Loc, StringRef Name, Decl *Type
     auto Type_as = dyn_cast_or_null<TypeDeclaration>(Type);
     auto D = new ParameterDeclaration(CurrentDecl, Loc, Name, Type_as, by_ref);
     if (!CurrentScope->insert(D)) {
-        //TODO error it out if it didn't get inserted
-        errs() << "problem";
+      Diags.report(Loc, diag::err_symbold_declared, Name);
     }
     return D;
 }
@@ -116,8 +113,15 @@ VariableDeclaration* Sema::actOnVarDeceleration(SMLoc Loc, StringRef Name, Decl*
     if (TypeDeclaration* Ty = dyn_cast<TypeDeclaration>(Type)) {
         VariableDeclaration* Decl = new VariableDeclaration(
             CurrentDecl, Loc, Name, Ty, is_initlezed);
+        bool shadowing = false;
+        if(CurrentScope->lookup(Name)){
+          shadowing = true;
+        }
         if (CurrentScope->insert(Decl))
-            return Decl;
+            {
+              if(shadowing) Diags.report(Loc, diag::war_var_shadowing, Name);
+              return Decl;  
+            }
         else
             Diags.report(Loc, diag::err_symbold_declared, Name);
     }
@@ -144,6 +148,7 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
     } else if (auto D =dyn_cast_or_null<ConstantDeclaration>(CurrentScope->lookup(Name))){
       return D;
     };
+    Diags.report(Loc, diag::err_var_isnt_found);
     return nullptr;
 }
 Expr *Sema::actOnDesignator(Decl *D) {
@@ -197,15 +202,15 @@ void Sema::actOnAssignment(StmtList& Stmts, SMLoc Loc, Expr* D, Expr* E)
 {
     if (auto Var = dyn_cast<Designator>(D)) {
         if (Get_type(Var->getType()) != Get_type(E->getType())) {
-            //Diags.report(
-              //  Loc, diag::err_types_for_operator_not_compatible,
-                //tok::getPunctuatorSpelling(tok::equal));
-            errs() << "error";
+            Diags.report(
+               Loc, diag::err_cant_type,
+                Get_type(Var->getType())->Name,Get_type(E->getType())->Name);
         }
         Stmts.push_back(new AssignmentStatement(Var, E,Loc));
     }
     else if (D) {
-        // TODO Emit error
+        Diags.report(
+               Loc, diag::err_cant_assgin_to_empty_expr);
     }
 }
 ;
@@ -238,10 +243,10 @@ Expr *Sema::actOnExpression(Expr *Left, Expr *Right,
     return Left;
 
   if (Get_type(Left->getType()) != Get_type(Right->getType())) {
-    // Diags.report(
-    //     Op.getLocation(),
-    //     diag::err_types_for_operator_not_compatible,
-    //     tok::getPunctuatorSpelling(Op.getKind()));
+    Diags.report(
+        Op.getLocation(),
+        diag::err_types_for_operator_not_compatible,
+        tok::getPunctuatorSpelling(Op.getKind()));
   }
   bool IsConst = Left->isConst() && Right->isConst();
   return new InfixExpression(Left, Right, Op, BoolType,
@@ -257,19 +262,19 @@ Expr *Sema::actOnSimpleExpression(Expr *Left, Expr *Right,
     return Left;
 
   if (Get_type(Left->getType()) != Get_type(Right->getType())) {
-    // Diags.report(
-    //     Op.getLocation(),
-    //     diag::err_types_for_operator_not_compatible,
-    //     tok::getPunctuatorSpelling(Op.getKind()));
+    Diags.report(
+        Op.getLocation(),
+        diag::err_types_for_operator_not_compatible,
+        tok::getPunctuatorSpelling(Op.getKind()));
   }
   TypeDeclaration *Ty = Get_type(Left->getType());
   bool IsConst = Left->isConst() && Right->isConst();
-//   if (IsConst && Op.getKind() == tok::kw_OR) {
-//     BooleanLiteral *L = dyn_cast<BooleanLiteral>(Left);
-//     BooleanLiteral *R = dyn_cast<BooleanLiteral>(Right);
-//     return L->getValue() || R->getValue() ? TrueLiteral
-//                                           : FalseLiteral;
-//   }
+  if (IsConst && Op.getKind() == tok::Or) {
+    BooleanLiteral *L = dyn_cast<BooleanLiteral>(Left);
+    BooleanLiteral *R = dyn_cast<BooleanLiteral>(Right);
+    return L->getValue() || R->getValue() ? TrueLiteral
+                                          : FalseLiteral;
+  }
   return new InfixExpression(Left, Right, Op, Ty, IsConst);
 }
 Expr *Sema::actOnTerm(Expr *Left, Expr *Right,
@@ -282,19 +287,19 @@ Expr *Sema::actOnTerm(Expr *Left, Expr *Right,
 
   if (Get_type(Left->getType()) != Get_type(Right->getType()) ||
       !isOperatorForType(Op.getKind(), Get_type(Left->getType()))) {
-    // Diags.report(
-    //     Op.getLocation(),
-    //     diag::err_types_for_operator_not_compatible,
-    //     tok::getPunctuatorSpelling(Op.getKind()));
+    Diags.report(
+        Op.getLocation(),
+        diag::err_types_for_operator_not_compatible,
+        tok::getPunctuatorSpelling(Op.getKind()));
   }
   TypeDeclaration *Ty = Get_type(Left->getType());
   bool IsConst = Left->isConst() && Right->isConst();
-//   if (IsConst && Op.getKind() == tok::kw_AND) {
-//     BooleanLiteral *L = dyn_cast<BooleanLiteral>(Left);
-//     BooleanLiteral *R = dyn_cast<BooleanLiteral>(Right);
-//     return L->getValue() && R->getValue() ? TrueLiteral
-//                                           : FalseLiteral;
-//   }
+  if (IsConst && Op.getKind() == tok::And) {
+    BooleanLiteral *L = dyn_cast<BooleanLiteral>(Left);
+    BooleanLiteral *R = dyn_cast<BooleanLiteral>(Right);
+    return L->getValue() && R->getValue() ? TrueLiteral
+                                          : FalseLiteral;
+  }
   return new InfixExpression(Left, Right, Op, Ty, IsConst);
 }
 
@@ -304,16 +309,16 @@ Expr *Sema::actOnPrefixExpression(Expr *E,
     return nullptr;
 
   if (!isOperatorForType(Op.getKind(), Get_type(E->getType()))) {
-    // Diags.report(
-    //     Op.getLocation(),
-    //     diag::err_types_for_operator_not_compatible,
-    //     tok::getPunctuatorSpelling(Op.getKind()));
+    Diags.report(
+        Op.getLocation(),
+        diag::err_types_for_operator_not_compatible,
+        tok::getPunctuatorSpelling(Op.getKind()));
   }
 
-//   if (E->isConst() && Op.getKind() == tok::kw_NOT) {
-//     BooleanLiteral *L = dyn_cast<BooleanLiteral>(E);
-//     return L->getValue() ? FalseLiteral : TrueLiteral;
-//   }
+  if (E->isConst() && Op.getKind() == tok::Not) {
+    BooleanLiteral *L = dyn_cast<BooleanLiteral>(E);
+    return L->getValue() ? FalseLiteral : TrueLiteral;
+  }
 
   if (Op.getKind() == tok::minus) {
     bool Ambiguous = true;
@@ -326,8 +331,8 @@ Expr *Sema::actOnPrefixExpression(Expr *E,
         Ambiguous = false;
     }
     if (Ambiguous) {
-    //   Diags.report(Op.getLocation(),
-    //                diag::warn_ambigous_negation);
+      Diags.report(Op.getLocation(),
+                   diag::warn_ambigous_negation);
     }
   }
 
@@ -341,15 +346,15 @@ FunctionCallStatement *Sema::actOnFunctionCallStatemnt(SMLoc Loc, Decl *D,
    if (!D)
     return nullptr;
   if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
-    // checkFormalAndActualParameters(
-    //     D->getLocation(), P->getFormalParams(), Params);
-    // if (!P->getRetType())
-    //   Diags.report(D->getLocation(),
-    //                diag::err_function_call_on_nonfunction);
+    checkFormalAndActualParameters(
+        D->getLocation(), P->getFormalParams(), Params);
+    if (!P->getRetType())
+      Diags.report(D->getLocation(),
+                   diag::err_function_call_on_nonfunction);
     return new FunctionCallStatement(P, Params,Loc);
   }
-  // Diags.report(D->getLocation(),
-  //              diag::err_function_call_on_nonfunction);
+  Diags.report(D->getLocation(),
+               diag::err_function_call_on_nonfunction);
   return nullptr;
 };
 Expr *Sema::actOnFunctionCallExpr(SMLoc Loc, Decl *D,
@@ -358,15 +363,15 @@ Expr *Sema::actOnFunctionCallExpr(SMLoc Loc, Decl *D,
    if (!D)
     return nullptr;
   if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
-    // checkFormalAndActualParameters(
-    //     D->getLocation(), P->getFormalParams(), Params);
-    // if (!P->getRetType())
-    //   Diags.report(D->getLocation(),
-    //                diag::err_function_call_on_nonfunction);
+    checkFormalAndActualParameters(
+        D->getLocation(), P->getFormalParams(), Params);
+    if (!P->getRetType())
+      Diags.report(D->getLocation(),
+                   diag::err_function_call_on_nonfunction);
     return new FunctionCallExpr(P, Params);
   }
-  // Diags.report(D->getLocation(),
-  //              diag::err_function_call_on_nonfunction);
+  Diags.report(D->getLocation(),
+               diag::err_function_call_on_nonfunction);
   return nullptr;
 };
 void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
@@ -375,9 +380,9 @@ void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
 // if (!Cond)
 //     Cond = FalseLiteral;
 
-  // if (Cond->getType() != BooleanType) {
-  //   Diags.report(Loc, diag::err_if_expr_must_be_bool);
-  // }
+  if (Cond->getType() != BoolType) {
+    Diags.report(Loc, diag::err_if_expr_must_be_bool);
+  }
   Stmts.push_back(
       new IfStatement(Cond, IfStmts, ElseStmts,Loc));
 };
@@ -419,25 +424,24 @@ void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
     else
       Diags.report(Loc, diag::err_symbold_declared, Name);
   } else {
-    //Diags.report(Loc,
-               //  diag::err_vardecl_requires_type); // TODO
+    Diags.report(Loc,
+                diag::err_vardecl_requires_type);
   }
 
   };
-  void Sema::actOnIndexSelector(Expr *Desig, SMLoc Loc,
-                              Expr *E) {
+void Sema::actOnIndexSelector(Expr *Desig, SMLoc Loc, Expr *E) {
   if (auto *D = dyn_cast<Designator>(Desig)) {
-     if (auto *Ty = dyn_cast<ArrayTypeDeclaration>(D->getType())) {
-       D->addSelector(new IndexSelector(E, Ty->getType()));
+    if (auto *Ty = dyn_cast<ArrayTypeDeclaration>(D->getType())) {
+      D->addSelector(new IndexSelector(E, Ty->getType()));
+    } else {
+      Diags.report(Loc, diag::err_indexing_non_array);
     }
-  // TODO Error message
+    // TODO Error message
   }
-  // TODO Error message
 }
 
 void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
                               StringRef Name) {
-                                //TODO replace all get types by function that check for alias and replace it by actual type
   if (auto *D = dyn_cast<Designator>(Desig)) {
     if (auto *R =
             dyn_cast<ClassDeclaration>(Get_type(D->getType()))) {
@@ -451,9 +455,9 @@ void Sema::actOnFieldSelector(Expr *Desig, SMLoc Loc,
         }
         ++Index;
       }
-      // TODO Error message
-    }
-    // TODO Error message
+      Diags.report(Loc, diag::err_member_not_found,Name, R->getName());
+    } else
+    Diags.report(Loc, diag::err_member_not_found);
   }
   // TODO Error message
 }
@@ -483,12 +487,14 @@ ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,std::vector<st
       {
         auto Ty = std::get<TypeDeclaration*>(V);
         dyn_cast_or_null<Alias_TypeDeclaration>(Class_Copy->TempleteArg[index])->Realone = Ty;
+        //TODO add error checking
       }
       break;
       case 1:
       {
         auto Exp = std::get<Expr*>(V);
         dyn_cast_or_null<ConstantDeclaration>(Class_Copy->TempleteArg[index])->E = Exp;
+        //TODO add error checking
       }
       break;
     };
@@ -497,7 +503,6 @@ ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,std::vector<st
   Class_Copy->Name=StringRef(*new_name);
 
 
-  // dyn_cast_or_null<Alias_TypeDeclaration>(Class_Copy->T)->Realone = (TypeDeclaration *)inited_Type;
   CurrentScope->insert(Class_Copy);
   Decls.push_back(Class_Copy);
   return Class_Copy;
@@ -517,12 +522,35 @@ ArrayTypeDeclaration *Sema::actOnArrayTypeDeclaration(DeclList &Decls, SMLoc Loc
       auto str = new std::string(Ty->Name.str() + "Array");
       ArrayTypeDeclaration *Decl = new ArrayTypeDeclaration(
           CurrentDecl, Loc,StringRef(*str), E, Ty);
+      if(CurrentScope->insert(Decl))
         return Decl;
-      //else
-        //Diags.report(Loc, diag::err_symbold_declared, Name);
+      else
+        Diags.report(Loc, diag::err_symbold_declared, StringRef(*str));
     } else {
-      //Diags.report(Loc,
-        //           diag::err_vardecl_requires_type); // TODO
+      Diags.report(Loc,
+                  diag::err_vardecl_requires_type);
     }
   }
 };
+void Sema::checkFormalAndActualParameters(
+    SMLoc Loc, const ParamList &Formals,
+    const ExprList &Actuals) {
+  if (Formals.size() != Actuals.size()) {
+    Diags.report(Loc, diag::err_wrong_number_of_parameters);
+    return;
+  }
+  auto A = Actuals.begin();
+  for (auto I = Formals.begin(), E = Formals.end(); I != E;
+       ++I, ++A) {
+    ParameterDeclaration *F = *I;
+    Expr *Arg = *A;
+    if (F->getType() != Arg->getType())
+      Diags.report(
+          Loc,
+          diag::
+              err_type_of_formal_and_actual_parameter_not_compatible);
+    if (F->IsPassedbyReference() && isa<Designator>(Arg))
+      Diags.report(Loc,
+                   diag::err_var_parameter_requires_var);
+  }
+}

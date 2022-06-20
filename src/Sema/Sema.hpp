@@ -84,7 +84,10 @@ public:
   void Create_Genric_type(StringRef Name,SMLoc loc);
   void Create_Genric_Var(DeclList Decls,StringRef Name,SMLoc loc, TypeDeclaration* Ty);     
   ClassDeclaration *init_genric_class(DeclList &Decls,Decl *T,std::vector<std::variant<TypeDeclaration*,Expr *>> Args);   
-  TypeDeclaration *Get_type(TypeDeclaration* Type);                    
+  TypeDeclaration *Get_type(TypeDeclaration* Type);    
+  void checkFormalAndActualParameters(
+    SMLoc Loc, const ParamList &Formals,
+    const ExprList &Actuals);                
 };
 
 class EnterDeclScope {
