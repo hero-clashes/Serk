@@ -187,6 +187,11 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
   TypeDeclaration *type_D = nullptr;
   if (Tok.is(tok::colon)) {
     advance();
+    bool PointerTy = false;
+    if(Tok.is(tok::star)){
+      PointerTy = true;
+      advance();
+    }
     if (expect(tok::identifier)) {
       return _errorhandler();
     };
@@ -209,6 +214,9 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
         return _errorhandler();
       };
       advance();
+    }
+    if (PointerTy) {
+      type_D = Actions.Get_Pointer_Type(type_D);
     }
   };
 
@@ -324,7 +332,6 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
     };
     break;
   default:
-    return _errorhandler();
     break;
   }
   return false;
@@ -589,6 +596,30 @@ bool Parser::parseFactor(Expr *&E) {
     // todo move stuff to the sema
     E = Actions.actOnStringLiteral(Tok.getLocation(), Tok.getLiteralData());
     advance();
+  } else if (Tok.is(tok::Amper)) {
+    auto loc =Tok.getLocation();
+    advance();
+    Decl *D;
+    D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
+    advance();
+    E = Actions.actOnDesignator(D);
+
+    if(parseSelectors(E)){
+      return _errorhandler();
+    };
+    E = Actions.Get_Refernce(loc,E);
+  } else if (Tok.is(tok::star)) {
+    auto loc =Tok.getLocation();
+    advance();
+    Decl *D;
+    D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
+    advance();
+    E = Actions.actOnDesignator(D);
+
+    if(parseSelectors(E)){
+      return _errorhandler();
+    };
+    E = Actions.DeRefernce(loc,E);
   } else {
     return _errorhandler();
   }

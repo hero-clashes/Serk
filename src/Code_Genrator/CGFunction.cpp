@@ -496,6 +496,15 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
 
 llvm::Value *
 CGFunction::emitPrefixExpr(PrefixExpression *E) {
+  if (E->getOperatorInfo().getKind() == tok::Amper) {
+    llvm::Value *Result = emitExpr(E->getExpr());
+    return Result;
+  } else if (E->getOperatorInfo().getKind() == tok::star) {
+    llvm::Value *Result = emitExpr(E->getExpr());
+    Result = Builder.CreateLoad(Result);
+    Result = Builder.CreateLoad(Result);
+    return Result;
+  }
   llvm::Value *Result = emitExpr(E->getExpr());
   switch (E->getOperatorInfo().getKind()) {
   case tok::plus:
@@ -638,6 +647,7 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
           if(!Var->is_initlezed){
             auto a = C->getName().str() + "_" + "Create_Default";
             auto F = CGM.getModule()->getFunction(a);
+            if(F) 
             Builder.CreateCall(F, {Val});
           }
         }

@@ -15,7 +15,7 @@ public:
 
   TypeDeclaration *IntegerType;
   TypeDeclaration *BoolType;
-  TypeDeclaration *StrType;
+  TypeDeclaration *ByteType;
   BooleanLiteral *TrueLiteral;
   BooleanLiteral *FalseLiteral;
   ConstantDeclaration *TrueConst;
@@ -88,6 +88,9 @@ public:
   void checkFormalAndActualParameters(
     SMLoc Loc, const ParamList &Formals,
     const ExprList &Actuals);                
+  TypeDeclaration *Get_Pointer_Type(TypeDeclaration *Ty);
+  Expr *Get_Refernce(SMLoc loc,Expr *E);
+  Expr *DeRefernce(SMLoc loc,Expr *E);
 };
 
 class EnterDeclScope {

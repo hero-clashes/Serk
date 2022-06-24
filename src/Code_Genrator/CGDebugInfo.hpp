@@ -26,6 +26,7 @@ class CGDebugInfo {
   llvm::DIType *getAliasType(Alias_TypeDeclaration *Ty);
   llvm::DIType *getArrayType(ArrayTypeDeclaration *Ty);
   llvm::DIType *getClassType(ClassDeclaration *Ty);
+  llvm::DIType *getPointerType(PointerTypeDeclaration *Ty);
 
   llvm::DIType *getType(TypeDeclaration *Type);
   llvm::DISubroutineType *getType(FunctionDeclaration *P);

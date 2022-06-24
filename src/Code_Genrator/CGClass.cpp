@@ -2,6 +2,7 @@
 #include "CGMemberFunction.hpp"
 StructType *CGClass::run(ClassDeclaration *Class) {
   this->Class = Class;
+  if(StructType::getTypeByName(CGM.getLLVMCtx(),Class->Name)) return StructType::getTypeByName(CGM.getLLVMCtx(),Class->Name);
   for (auto *Decl : Class->Decls) {
     if (auto *Var = llvm::dyn_cast<VariableDeclaration>(Decl)) {
         Members.push_back(Var);
@@ -21,7 +22,7 @@ StructType *CGClass::run(ClassDeclaration *Class) {
       CGP.run(Proc);
     }
   }
-  if(!CGM.getModule()->getFunction(Class->getName().str() + "_" + "Create_Default")){
+  if(!CGM.getModule()->getFunction(Class->getName().str() + "_" + "Create_Default") && !Class->Stmts.empty()){
     ParamList a;
     DeclList b;
     StmtList s;

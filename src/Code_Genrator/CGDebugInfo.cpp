@@ -102,6 +102,10 @@ CGDebugInfo::getClassType(ClassDeclaration *Ty) {
   // T  = DBuilder.createUnspecifiedType(Ty->getName());
   return T;
 }
+llvm::DIType *
+CGDebugInfo::getPointerType(PointerTypeDeclaration *Ty) {
+  return DBuilder.createPointerType(getType(Ty->getType()), 64);
+}
 
 llvm::DIType *CGDebugInfo::getType(TypeDeclaration *Ty) {
   if (llvm::DIType *T = TypeCache[Ty]) {
@@ -112,6 +116,8 @@ llvm::DIType *CGDebugInfo::getType(TypeDeclaration *Ty) {
     return TypeCache[Ty] = getAliasType(AliasTy);
   else if (auto *ArrayTy = llvm::dyn_cast<ArrayTypeDeclaration>(Ty))
     return TypeCache[Ty] = getArrayType(ArrayTy);
+  else if (auto *PointerTy = llvm::dyn_cast<PointerTypeDeclaration>(Ty))
+    return TypeCache[Ty] = getPointerType(PointerTy);
   else if (llvm::isa<Base_TypeDeclaration>(Ty))
     return TypeCache[Ty] = getPervasiveType(Ty);
   llvm::report_fatal_error("Unsupported type");

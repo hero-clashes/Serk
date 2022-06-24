@@ -34,6 +34,7 @@ public:
     DK_Alias,
     DK_Class,
     DK_Array,
+    DK_Pointer,
     DK_Base_Type,
     DK_Var,
     DK_Function,
@@ -95,6 +96,23 @@ public:
   static bool classof(const Decl *D) {
     return D->getKind() >= DK_Alias &&
            D->getKind() <= DK_Base_Type;
+  }
+};
+class PointerTypeDeclaration : public TypeDeclaration {
+  TypeDeclaration *Type;
+
+public:
+  PointerTypeDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+                         StringRef Name,
+                         TypeDeclaration *Type)
+      : TypeDeclaration(DK_Pointer, EnclosingDecL, Loc,
+                        Name),
+        Type(Type) {}
+
+  TypeDeclaration *getType() const { return Type; }
+
+  static bool classof(const Decl *D) {
+    return D->getKind() == DK_Pointer;
   }
 };
 class ConstantDeclaration : public Decl {

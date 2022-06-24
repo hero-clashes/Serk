@@ -43,7 +43,7 @@ void Sema::initialize(){
     IntegerType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "int");
     BoolType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "bool");
     auto VoidType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void");
-    StrType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "str");
+    ByteType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "byte");
     auto printf_f = new FunctionDeclaration(CurrentDecl,SMLoc(),"printf");
     auto Sizeof = new FunctionDeclaration(CurrentDecl,SMLoc(),"sizeof");
     TrueLiteral = new BooleanLiteral(true, BoolType);
@@ -55,7 +55,7 @@ void Sema::initialize(){
     CurrentScope->insert(IntegerType);
     CurrentScope->insert(BoolType);
     CurrentScope->insert(VoidType);
-    CurrentScope->insert(StrType);
+    CurrentScope->insert(ByteType);
     CurrentScope->insert(printf_f);
     CurrentScope->insert(Sizeof);
 };
@@ -411,7 +411,7 @@ void Sema::actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start){
 };
 Expr *Sema::actOnStringLiteral(SMLoc Loc, StringRef Literal){
   return new String_Literal(Loc, Literal,
-        StrType);
+        ByteType);
 };
 void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
                                  StringRef Name, Decl *D){
@@ -503,7 +503,7 @@ ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,std::vector<st
   Class_Copy->Name=StringRef(*new_name);
 
 
-  CurrentScope->insert(Class_Copy);
+  CurrentScope->getParent()->insert(Class_Copy);
   Decls.push_back(Class_Copy);
   return Class_Copy;
 }
@@ -554,3 +554,21 @@ void Sema::checkFormalAndActualParameters(
                    diag::err_var_parameter_requires_var);
   }
 }
+TypeDeclaration *Sema::Get_Pointer_Type(TypeDeclaration *Ty){
+    auto t = Ty->Name + "_Pointer";
+    auto s = new std::string(t.str());
+    if (auto typ = CurrentScope->lookup(StringRef{*s})) {
+      return (TypeDeclaration *)typ;
+    } else
+    {
+      auto typ2 = new PointerTypeDeclaration(CurrentDecl,Ty->Loc,StringRef{*s},Ty);
+      CurrentScope->getParent()->insert(typ2);
+      return typ2;
+    };
+}
+Expr *Sema::Get_Refernce(SMLoc loc,Expr *E){
+  return new PrefixExpression(E,OperatorInfo(loc,tok::Amper),Get_Pointer_Type(E->getType()),E->isConst());
+};
+Expr *Sema::DeRefernce(SMLoc loc,Expr *E){
+  return new PrefixExpression(E,OperatorInfo(loc,tok::star),dyn_cast_or_null<PointerTypeDeclaration>(E->getType())->getType(),E->isConst());
+};

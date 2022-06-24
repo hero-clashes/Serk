@@ -86,6 +86,8 @@ void Lexer::next(Token &Result) {
       case '&':
       if (*(CurPtr + 1) == '&')
         formToken(Result, CurPtr + 2, tok::And);
+      else
+        formToken(Result, CurPtr + 1, tok::Amper);
       break;
       // CASE('=', tok::equal);
       CASE('+', tok::plus);

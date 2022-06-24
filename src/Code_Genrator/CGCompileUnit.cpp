@@ -100,7 +100,11 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
      llvm::Type *T =
          llvm::ArrayType::get(Component, NumElements);
      return TypeCache[Ty] = T;
-   }// else if (auto *RecordTy =
+   }  else if (auto *Pointer =
+                 llvm::dyn_cast<PointerTypeDeclaration>(Ty)) {
+    return convertType(Pointer->getType())->getPointerTo();
+   }
+    // else if (auto *RecordTy =
   //                llvm ::dyn_cast<RecordTypeDeclaration>(
   //                    Ty)) {
   //   llvm::SmallVector<llvm::Type *, 4> Elements;

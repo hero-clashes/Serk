@@ -5,13 +5,15 @@ DONE add genrics
 DONE add arrays support
 DONE add Var in templetes
 DONE add debug info
+DONE add pointers support
 TODO add genrators
 TODO add continuers
 TODO add malloc
 TODO add include handling
 TODO implment paremters for constructrs
-TODO add error messeges for everything
+DONE add error messeges for everything
 TODO port raylib
-TODO implent inheritance 
+TODO implent inheritance and calling of member functions
+TODO implment VIrtual funcitons
 TODO implment destructors
 TODO add scopes 
