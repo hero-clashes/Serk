@@ -14,6 +14,7 @@ void CGCompileUnit::initialize()
 {
     VoidTy = llvm::Type::getVoidTy(getLLVMCtx());
   Int1Ty = llvm::Type::getInt1Ty(getLLVMCtx());
+  Int8Ty = llvm::Type::getInt8Ty(getLLVMCtx());
   Int8PtrTy = llvm::Type::getInt8PtrTy(getLLVMCtx());
   Int32Ty = llvm::Type::getInt32Ty(getLLVMCtx());
   Int64Ty = llvm::Type::getInt64Ty(getLLVMCtx());
@@ -69,14 +70,19 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
     return T;
 
   if (llvm::isa<Base_TypeDeclaration>(Ty)) {
-    if (Ty->getName() == "int")
+    if (Ty->getName() == "int" || Ty->getName() == "int32" || Ty->getName() == "uint32")
       return Int32Ty;
+    if (Ty->getName() == "long" || Ty->getName() == "int64" || Ty->getName() == "uint64")
+      return Int64Ty;
     if (Ty->getName() == "bool")
       return Int1Ty;
     if(Ty->getName() == "void")
       return VoidTy;
     if(Ty->getName() == "Int8PtrTy" || Ty->getName() == "str")
       return Int8PtrTy;
+    if(Ty->getName() == "byte" || Ty->getName() == "int8" || Ty->getName() == "uint8")
+      return Int8Ty;
+
   } else if(llvm::isa<ClassDeclaration>(Ty)){
 
   }

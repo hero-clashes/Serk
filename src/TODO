@@ -6,6 +6,7 @@ DONE add arrays support
 DONE add Var in templetes
 DONE add debug info
 DONE add pointers support
+TODO move all type parsing to one funcition
 TODO add genrators
 TODO add continuers
 TODO add malloc

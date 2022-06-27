@@ -177,8 +177,11 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
     {
       Current_Var_Decl = Desig->getDecl();
       auto *Val = emitExpr(Stmt->getExpr());
+      // Val->dump();
+      // if(Val->getType()->isPointerTy())
+      // Val = Builder.CreateLoad(Val);
       if (!Val->getType()->isVoidTy()) {
-        writeVariable(Curr, Desig->getDecl(), Val);
+        writeVariable(Curr, Desig->getDecl(), Val, Desig->Derfernce);
       }  
     }
   else {
@@ -208,6 +211,8 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
         // Base->dump();
         // for(auto val:IdxList) val->dump();
         Base = Builder.CreateInBoundsGEP(Base, IdxList);
+        if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
         Current_Var_Value = Base;
         auto *Val = emitExpr(Stmt->getExpr());
         if(Val->getType()->isVoidTy()) return;
@@ -234,7 +239,12 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     // need to add array and record support.
     auto &Selectors = Var->getSelectors();
     if (Selectors.empty()) {
-      return Val;
+      if(!Var->Derfernce)
+      return Builder.CreateLoad(Val);
+      else {
+        Val = Builder.CreateLoad(Val);
+        return Builder.CreateLoad(Val);
+      }
     } else {
       llvm::SmallVector<llvm::Value *, 4> IdxList;
       // First index for GEP.
@@ -271,6 +281,8 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     return Builder.CreateGlobalStringPtr(Str->Value);
   } else if (auto *Const = llvm::dyn_cast<ConstantAccess>(E)) {
     return emitExpr(Const->getDecl()->getExpr());
+  } else if (auto *Cast = llvm::dyn_cast<CastExpr>(E)) {
+    return emitCast(Cast);
   }
   llvm::report_fatal_error("Unsupported expression");
 
@@ -294,9 +306,9 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
   } else
   for(auto expr:E->getParams()){
     auto v = emitExpr(expr);
-    if(v->getType()->isPointerTy()){
-        v = Builder.CreateLoad(v);
-    }
+    // if(v->getType()->isPointerTy()){
+    //     v = Builder.CreateLoad(v);
+    // }
     ArgsV.push_back(v);
   };
   return Builder.CreateCall(F, ArgsV, F->getReturnType()->isVoidTy()? "" :"calltmp");
@@ -315,7 +327,7 @@ llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
 };
 void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
                                      Decl *Decl,
-                                     llvm::Value *Val) {
+                                     llvm::Value *Val,bool LoadVal) {
   assert(BB && "Basic block is nullptr");
   assert(
       (llvm::isa<VariableDeclaration>(Decl) ||
@@ -325,7 +337,13 @@ void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
   if(Defs.find(Decl) == Defs.end()){
     Defs[Decl] = Val;
   } else
-  Builder.CreateStore(Val, Defs[Decl]);
+  { if(!LoadVal)
+    Builder.CreateStore(Val, Defs[Decl]);
+    else {
+    auto v = Builder.CreateLoad(Defs[Decl]);
+    Builder.CreateStore(Val, v);
+    }
+  };
 }
 
 llvm::Value *
@@ -344,10 +362,10 @@ CGFunction::readLocalVariable(llvm::BasicBlock *BB,
 
 
 void CGFunction::writeVariable(llvm::BasicBlock *BB,
-                                Decl *D, llvm::Value *Val) {
+                                Decl *D, llvm::Value *Val, bool LoadVal) {
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(D)) {
     if (V->getEnclosingDecl() == Proc)
-      writeLocalVariable(BB, D, Val);
+      writeLocalVariable(BB, D, Val, LoadVal);
     else if (V->getEnclosingDecl() ==
              CGM.getModuleDeclaration()) {
       Builder.CreateStore(Val, CGM.getGlobal(D));
@@ -360,7 +378,7 @@ void CGFunction::writeVariable(llvm::BasicBlock *BB,
     if (FP->IsPassedbyReference()) {
       Builder.CreateStore(Val, FormalParams[FP]);
     } else
-      writeLocalVariable(BB, D, Val);
+      writeLocalVariable(BB, D, Val, LoadVal);
   } else
     llvm::report_fatal_error("Unsupported declaration");
 }
@@ -436,12 +454,12 @@ void CGFunction::emitStmt(MethodCallStatement *Stmt){
 llvm::Value *
 CGFunction::emitInfixExpr(InfixExpression *E) {
   llvm::Value *Left = emitExpr(E->getLeft());
-  if(Left->getType()->isPointerTy())
-    Left = Builder.CreateLoad(Left);
+  // if(Left->getType()->isPointerTy())
+  //   // Left = Builder.CreateLoad(Left);
   // Left->dump();
   llvm::Value *Right = emitExpr(E->getRight());
-  if(Right->getType()->isPointerTy())
-    Right = Builder.CreateLoad(Left);
+  // if(Right->getType()->isPointerTy())
+  //   Right = Builder.CreateLoad(Left);
   // Right->dump();
 
   llvm::Value *Result = nullptr;
@@ -501,7 +519,7 @@ CGFunction::emitPrefixExpr(PrefixExpression *E) {
     return Result;
   } else if (E->getOperatorInfo().getKind() == tok::star) {
     llvm::Value *Result = emitExpr(E->getExpr());
-    Result = Builder.CreateLoad(Result);
+    // Result = Builder.CreateLoad(Result);
     Result = Builder.CreateLoad(Result);
     return Result;
   }
@@ -526,14 +544,14 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     llvm::Value *RetVal = emitExpr(Stmt->getRetVal());
     if(AggregateReturnType){
       auto AggregateTypePointer = Fn->getArg(0);
-      auto Val_not_Pointer = Builder.CreateLoad(RetVal);
-      Builder.CreateStore(Val_not_Pointer, AggregateTypePointer);
+      // auto Val_not_Pointer = Builder.CreateLoad(RetVal);
+      Builder.CreateStore(RetVal, AggregateTypePointer);
       Builder.CreateRetVoid();  
     } else 
       {
-      if(RetVal->getType()->isPointerTy()){
-        RetVal = Builder.CreateLoad(RetVal);
-      }
+      // if(RetVal->getType()->isPointerTy()){
+      //   RetVal = Builder.CreateLoad(RetVal);
+      // }
       Builder.CreateRet(RetVal);
       }
   } else {
@@ -662,3 +680,17 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
       }
     }
   }
+  llvm::Value *CGFunction::emitCast(CastExpr *E){
+    auto val = emitExpr(E->E);
+    if(E->E->getType()->Name == "int" && E->Type_to_cast_for->Name == "long"){
+      val = Builder.CreateZExt(val, CGM.convertType(E->Type_to_cast_for));
+    } else
+    {
+      val->dump();
+      auto s = CGM.convertType(E->Type_to_cast_for);
+      s->dump();
+      val = Builder.CreatePointerCast(val, CGM.convertType(E->Type_to_cast_for));
+    }
+    // {val = Builder.CreatePointerCast(val, CGM.convertType(E->Type_to_cast_for));}
+    return val;
+  };

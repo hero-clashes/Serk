@@ -218,6 +218,9 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
     if (PointerTy) {
       type_D = Actions.Get_Pointer_Type(type_D);
     }
+    // if(ParseType(Decls, type_D)){
+    //   return _errorhandler();
+    // };
   };
 
   Expr *Desig = nullptr;
@@ -236,7 +239,7 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
   };
 
   advance();
-  if (!type_D) {
+  if (!type_D && E) {
     type_D = E->getType();
   }
   auto Var = Actions.actOnVarDeceleration(
@@ -284,7 +287,14 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
       return _errorhandler();
     };
     break;
+  case tok::star:
   case tok::identifier:
+    {
+    bool derefernce = false;
+    if(Tok.is(tok::star)){
+      derefernce = true;
+      advance();
+    }
     if (Lex.peak(0).is(tok::l_paren)) {
       if(parseFunctionCallStatment(Stmts)){
         return _errorhandler();
@@ -294,6 +304,9 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
           Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
       advance(); // eat var
       auto Desig = Actions.actOnDesignator(Var);
+      if (auto d =  dyn_cast_or_null<Designator>(Desig)) {
+        if (derefernce) d->Derfernced();
+      }
       if(parseSelectors(Desig)){
         return _errorhandler();
       };
@@ -314,6 +327,7 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
       }
     }
     break;
+    }
   case tok::kw_if:
     // parse if
     if(parseIfStatement(Decls, Stmts)){
@@ -363,7 +377,7 @@ bool Parser::parseReturnStatement(DeclList &Decls, StmtList &Stmts) {
   SMLoc Loc = Tok.getLocation();
   consume(tok::kw_return);
   if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
-                  tok::integer_literal)) {
+                  tok::integer_literal,tok::star)) {
     if(parseExpression(E)){
       return _errorhandler();
     };
@@ -1168,3 +1182,45 @@ bool Parser::SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat) {
     }
   }
 }
+bool Parser::ParseType(DeclList &ParentDecls, TypeDeclaration *&Ty) {
+  auto _errorhandler = [this] { return SkipUntil({tok::identifier}); };
+    bool PointerTy = false;
+    bool ParsedIdenfier = false;
+  // while (Tok.isOneOf(tok::identifier,tok::star,tok::l_square)) {
+
+  // }
+    if (Tok.is(tok::star)) {
+      PointerTy = true;
+      advance();
+    }
+    if (Tok.is(tok::identifier)) {
+      Ty = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+      consume(tok::identifier);
+      if (Tok.is(tok::less)) {
+        std::vector<std::variant<TypeDeclaration *, Expr *>> Args;
+        if (parseTemepleteList(ParentDecls, Ty, Args)) {
+          return _errorhandler();
+        };
+    }
+    }
+    if (Tok.is(tok::l_square)) {
+      advance();
+      Expr *E = nullptr;
+      auto Loc = Tok.getLocation();
+      if (parseExpression(E)) {
+        return _errorhandler();
+      };
+      ;
+      Ty = Actions.actOnArrayTypeDeclaration(ParentDecls, Loc, E, Ty);
+      if (expect(tok::r_square)) {
+        return _errorhandler();
+      };
+      advance();
+    } else {
+      return _errorhandler();
+    }
+    if (PointerTy) {
+      Ty = Actions.Get_Pointer_Type(Ty);
+    }
+  return false;
+};

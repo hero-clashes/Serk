@@ -1,6 +1,8 @@
 #include "Sema.hpp"
 #include "AST/AST.hpp"
+#include <set>
 #include <string>
+#include <vcruntime.h>
 #include <vector>
 #include <variant>
 
@@ -41,11 +43,16 @@ void Sema::initialize(){
     CurrentScope = new Scope();
     CurrentDecl = nullptr;
     IntegerType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "int");
+    auto int64 = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "long");
     BoolType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "bool");
     auto VoidType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void");
     ByteType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "byte");
     auto printf_f = new FunctionDeclaration(CurrentDecl,SMLoc(),"printf");
     auto Sizeof = new FunctionDeclaration(CurrentDecl,SMLoc(),"sizeof");
+    auto malloc = new FunctionDeclaration(CurrentDecl,SMLoc(),"malloc");
+    ParamList a{new ParameterDeclaration(CurrentDecl,SMLoc(),"size",int64,false)};
+    malloc->setFormalParams(a);
+    malloc->setRetType(Get_Pointer_Type(ByteType));
     TrueLiteral = new BooleanLiteral(true, BoolType);
     FalseLiteral = new BooleanLiteral(false, BoolType);
     TrueConst = new ConstantDeclaration(CurrentDecl, SMLoc(),
@@ -58,6 +65,8 @@ void Sema::initialize(){
     CurrentScope->insert(ByteType);
     CurrentScope->insert(printf_f);
     CurrentScope->insert(Sizeof);
+    CurrentScope->insert(malloc);
+    CurrentScope->insert(int64);
 };
 
 
@@ -124,7 +133,8 @@ VariableDeclaration* Sema::actOnVarDeceleration(SMLoc Loc, StringRef Name, Decl*
             }
         else
             Diags.report(Loc, diag::err_symbold_declared, Name);
-    }
+    } else
+      Diags.report(Loc, diag::err_type_not_defined, Name);
     return nullptr;
 }
 void Sema::actOnReturnStatement(StmtList& Stmts, SMLoc Loc, Expr* RetVal)
@@ -202,6 +212,9 @@ void Sema::actOnAssignment(StmtList& Stmts, SMLoc Loc, Expr* D, Expr* E)
 {
     if (auto Var = dyn_cast<Designator>(D)) {
         if (Get_type(Var->getType()) != Get_type(E->getType())) {
+            if(Can_Be_Casted(E, D->getType())){
+              E = Create_Cast(E, D->getType());
+            } else
             Diags.report(
                Loc, diag::err_cant_type,
                 Get_type(Var->getType())->Name,Get_type(E->getType())->Name);
@@ -261,7 +274,7 @@ Expr *Sema::actOnSimpleExpression(Expr *Left, Expr *Right,
   if (!Right)
     return Left;
 
-  if (Get_type(Left->getType()) != Get_type(Right->getType())) {
+  if (Get_type(Left->getType()) != Get_type(Right->getType())) {//TODO add casting
     Diags.report(
         Op.getLocation(),
         diag::err_types_for_operator_not_compatible,
@@ -286,7 +299,7 @@ Expr *Sema::actOnTerm(Expr *Left, Expr *Right,
     return Left;
 
   if (Get_type(Left->getType()) != Get_type(Right->getType()) ||
-      !isOperatorForType(Op.getKind(), Get_type(Left->getType()))) {
+      !isOperatorForType(Op.getKind(), Get_type(Left->getType()))) {//TODO add casting
     Diags.report(
         Op.getLocation(),
         diag::err_types_for_operator_not_compatible,
@@ -530,21 +543,23 @@ ArrayTypeDeclaration *Sema::actOnArrayTypeDeclaration(DeclList &Decls, SMLoc Loc
       Diags.report(Loc,
                   diag::err_vardecl_requires_type);
     }
-  }
+  } //TODO add error messeges handling
 };
 void Sema::checkFormalAndActualParameters(
     SMLoc Loc, const ParamList &Formals,
-    const ExprList &Actuals) {
+    ExprList &Actuals) {
   if (Formals.size() != Actuals.size()) {
     Diags.report(Loc, diag::err_wrong_number_of_parameters);
     return;
   }
-  auto A = Actuals.begin();
-  for (auto I = Formals.begin(), E = Formals.end(); I != E;
-       ++I, ++A) {
-    ParameterDeclaration *F = *I;
-    Expr *Arg = *A;
+  for (int i = 0; i<Formals.size();i++) {
+    ParameterDeclaration *F = Formals[i];
+    Expr *&Arg = Actuals[i];
     if (F->getType() != Arg->getType())
+      if(Can_Be_Casted(Arg, F->getType())){
+      Arg = Create_Cast(Arg, F->getType()); 
+      }
+      else
       Diags.report(
           Loc,
           diag::
@@ -562,7 +577,10 @@ TypeDeclaration *Sema::Get_Pointer_Type(TypeDeclaration *Ty){
     } else
     {
       auto typ2 = new PointerTypeDeclaration(CurrentDecl,Ty->Loc,StringRef{*s},Ty);
+      if(CurrentScope->getParent())
       CurrentScope->getParent()->insert(typ2);
+      else 
+      CurrentScope->insert(typ2);
       return typ2;
     };
 }
@@ -571,4 +589,25 @@ Expr *Sema::Get_Refernce(SMLoc loc,Expr *E){
 };
 Expr *Sema::DeRefernce(SMLoc loc,Expr *E){
   return new PrefixExpression(E,OperatorInfo(loc,tok::star),dyn_cast_or_null<PointerTypeDeclaration>(E->getType())->getType(),E->isConst());
+};
+bool is_int(TypeDeclaration *Dest){
+  static std::set<std::string> s = {"int","float","long", "int64", "int32", "int8","uint64", "uint32", "uint8" ,"bool"};
+  return s.find(Dest->Name.str()) != s.end();
+}
+bool Sema::Can_Be_Casted(Expr *Org, TypeDeclaration* Dest){
+  auto Org_Ty = Org->getType();
+  if(is_int(Org_Ty) && is_int(Dest))
+    return true;
+  if (Org_Ty->Name == "byte_Pointer") {
+    if(dyn_cast_or_null<PointerTypeDeclaration>(Dest)){
+      return true;
+    }
+  }
+  return false;
+};
+Expr *Sema::Create_Cast(Expr* Orginal, TypeDeclaration* Type_To_Cast){
+    return new CastExpr(Orginal,Type_To_Cast);
+}
+void Sema::Insert_Decl(Decl *D){
+
 };

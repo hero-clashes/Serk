@@ -87,10 +87,13 @@ public:
   TypeDeclaration *Get_type(TypeDeclaration* Type);    
   void checkFormalAndActualParameters(
     SMLoc Loc, const ParamList &Formals,
-    const ExprList &Actuals);                
+    ExprList &Actuals);                
   TypeDeclaration *Get_Pointer_Type(TypeDeclaration *Ty);
   Expr *Get_Refernce(SMLoc loc,Expr *E);
   Expr *DeRefernce(SMLoc loc,Expr *E);
+  bool Can_Be_Casted(Expr *Org, TypeDeclaration* Dest);
+  Expr *Create_Cast(Expr* Orginal, TypeDeclaration* Type_To_Cast);
+  void Insert_Decl(Decl *D);
 };
 
 class EnterDeclScope {

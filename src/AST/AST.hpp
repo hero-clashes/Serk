@@ -301,6 +301,7 @@ public:
     EK_Func,
     EK_Meth,
     EK_String,
+    EK_Cast,
   };
 
 private:
@@ -378,6 +379,7 @@ class Designator : public Expr {
     SelectorList Selectors;
 
 public:
+    bool Derfernce = false;
     Designator(VariableDeclaration* Var)
         : Expr(EK_Designator, Var->getType(), false),
         Var(Var) {}
@@ -389,7 +391,11 @@ public:
         Selectors.push_back(Sel);
         setType(Sel->getType());
     }
-
+    void Derfernced(){
+      Derfernce = true;
+      assert(isa<PointerTypeDeclaration>(getType()));
+      setType(dyn_cast<PointerTypeDeclaration>(getType())->getType());
+    }
     Decl* getDecl() { return Var; }
     const SelectorList& getSelectors() const {
         return Selectors;
@@ -512,6 +518,19 @@ class MethodCallExpr :public Expr{
 
   static bool classof(const Expr *E) {
     return E->getKind() == EK_Meth;
+  }
+};
+class CastExpr :public Expr{
+   public:
+  Expr *E;
+  TypeDeclaration* Type_to_cast_for;
+
+  CastExpr(Expr *E, TypeDeclaration* Type_to_cast_for)
+      : Expr(EK_Cast, nullptr , false),E(E),Type_to_cast_for(Type_to_cast_for)//TODO fix returntype {}
+      {};
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == EK_Cast;
   }
 };
 

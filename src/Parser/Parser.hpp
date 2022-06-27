@@ -78,4 +78,5 @@ public:
   bool parseSelectors(Expr *&E);
   bool ParseTempleteArgs(std::vector<std::tuple<int, StringRef,TypeDeclaration *,SMLoc>> &Decls);
   bool SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat = false);
+  bool ParseType(DeclList &ParentDecls,TypeDeclaration *&Ty);
 };

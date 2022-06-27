@@ -2,10 +2,10 @@
 
 
 void CGMemberFunction::writeVariable(llvm::BasicBlock *BB,
-                                Decl *D, llvm::Value *Val) {
+                                Decl *D, llvm::Value *Val, bool LoadVal) {
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(D)) {
     if (V->getEnclosingDecl() == CGC.Class)
-      writeLocalVariable(BB, D, Val);
+      writeLocalVariable(BB, D, Val, LoadVal);
     else if (V->getEnclosingDecl() ==
              CGM.getModuleDeclaration()) {
       Builder.CreateStore(Val, CGM.getGlobal(D));
@@ -18,12 +18,12 @@ void CGMemberFunction::writeVariable(llvm::BasicBlock *BB,
     if (FP->IsPassedbyReference()) {
       Builder.CreateStore(Val, FormalParams[FP]);
     } else
-      writeLocalVariable(BB, D, Val);
+      writeLocalVariable(BB, D, Val, LoadVal);
   } else
     llvm::report_fatal_error("Unsupported declaration");
 }
 void CGMemberFunction::writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
-                                          llvm::Value *Val) {
+                                          llvm::Value *Val, bool LoadVal) {
   assert(BB && "Basic block is nullptr");
 //   assert((llvm::isa<VariableDeclaration>(Decl) ||
 //           llvm::isa<ParameterDeclaration>(Decl)) &&

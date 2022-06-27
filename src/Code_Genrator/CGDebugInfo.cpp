@@ -53,6 +53,10 @@ CGDebugInfo::getPervasiveType(TypeDeclaration *Ty) {
   if (Ty->getName() == "void"){
     return DBuilder.createUnspecifiedType("void");
   }
+  if (Ty->getName() == "byte") {
+    return DBuilder.createBasicType(
+        Ty->getName(), 8, llvm::dwarf::DW_ATE_unsigned_char);
+  }
   llvm::report_fatal_error("Unsupported pervasive type");
 }
 
@@ -94,10 +98,30 @@ CGDebugInfo::getClassType(ClassDeclaration *Ty) {
   std::pair<unsigned, unsigned> LineAndCol =
       CGM.mgr.getLineAndColumn(Ty->Loc);
   auto Type = CGM.convertType(dyn_cast<TypeDeclaration>(Ty));
-  auto Layout = CGM.getModule()->getDataLayout();
-  auto Size = Layout.getTypeSizeInBits(Type);
-  auto allingment = Layout.getABITypeAlign(Type);
-  T = DBuilder.createClassType(getScope(), Ty->Name, CU->getFile(), LineAndCol.first, Size, allingment.value(),0,{},nullptr,{});
+  auto gll = CGM.getModule()->getDataLayout();
+  auto Layout =CGM.getModule()->getDataLayout().getStructLayout(StructType::getTypeByName(CGM.getLLVMCtx(),Ty->Name));
+;
+  auto Size = Layout->getSizeInBits();
+  auto allingment = Layout->getAlignment();
+  llvm::SmallVector<Metadata*> mems;
+  int index = 0;
+  for(auto mem:Ty->Decls){
+    if(auto var = dyn_cast_or_null<VariableDeclaration>(mem)){
+      auto Type = CGM.convertType(var->getType());
+      auto ty = getType(var->getType());
+      auto varSize = gll.getTypeSizeInBits(Type);
+      auto allingmentvar = gll.getABITypeAlign(Type);
+      auto offest = Layout->getElementOffsetInBits(index);
+      std::pair<unsigned, unsigned> LineAndColvar =
+      CGM.mgr.getLineAndColumn(var->Loc);
+      // Layout.g
+      mems.push_back(DBuilder.createMemberType(CU, mem->getName(), CU->getFile(),LineAndColvar.first,varSize,allingmentvar.value(),offest,{},ty));
+      index++;
+    }
+  }
+  // getOrCreateArray 
+  // llvm::DINodeArray
+  T = DBuilder.createClassType(getScope(), Ty->Name, CU->getFile(), LineAndCol.first, Size, allingment.value(),0,{},nullptr, DBuilder.getOrCreateArray(mems));
  
   // T  = DBuilder.createUnspecifiedType(Ty->getName());
   return T;
@@ -214,7 +238,7 @@ llvm::DebugLoc CGDebugInfo::getDebugLoc(SMLoc Loc) {
   std::pair<unsigned, unsigned> LineAndCol =
       CGM.mgr.getLineAndColumn(Loc);
   llvm::DILocation *DILoc = llvm::DILocation::get(
-      CGM.getLLVMCtx(), LineAndCol.first, LineAndCol.second,
+      CGM.getLLVMCtx(), LineAndCol.first, 0,
       getScope());
   return llvm::DebugLoc(DILoc);
 }

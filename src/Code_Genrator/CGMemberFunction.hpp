@@ -7,11 +7,11 @@ class CGMemberFunction: public CGFunction{
 CGClass &CGC;
 CGMemberFunction(CGCompileUnit &CGM,CGClass &CGC):CGFunction(CGM),CGC(CGC){};
 void writeVariable(llvm::BasicBlock *BB, Decl *Decl,
-                     llvm::Value *Val);
+                     llvm::Value *Val, bool LoadVal = false);
   llvm::Value *readVariable(llvm::BasicBlock *BB,
                             Decl *Decl, bool LoadVal = true);
   void writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
-                          llvm::Value *Val);
+                          llvm::Value *Val, bool LoadVal = false);
   llvm::Value *readLocalVariable(llvm::BasicBlock *BB,
                                  Decl *Decl,bool );
   llvm::Value *

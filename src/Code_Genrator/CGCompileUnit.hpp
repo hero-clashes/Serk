@@ -23,6 +23,7 @@ llvm::DenseMap<TypeDeclaration *, llvm::Type *> TypeCache;
 public:
   llvm::Type *VoidTy;
   llvm::Type *Int1Ty;
+  llvm::Type *Int8Ty;
   llvm::Type *Int8PtrTy;
   llvm::Type *Int32Ty;
   llvm::Type *Int64Ty;

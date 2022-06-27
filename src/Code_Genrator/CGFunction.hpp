@@ -33,11 +33,11 @@ class CGFunction{
 
 
   virtual void writeVariable(llvm::BasicBlock *BB, Decl *Decl,
-                     llvm::Value *Val);
+                     llvm::Value *Val,bool LoadVal = false);
   virtual llvm::Value *readVariable(llvm::BasicBlock *BB,
                             Decl *Decl, bool LoadVal = true);
   virtual void writeLocalVariable(llvm::BasicBlock *BB, Decl *Decl,
-                          llvm::Value *Val);
+                          llvm::Value *Val, bool LoadVal = false);
   virtual llvm::Value *readLocalVariable(llvm::BasicBlock *BB,
                                  Decl *Decl,bool LoadVal);
   llvm::Value *
@@ -50,6 +50,7 @@ class CGFunction{
   llvm::Value *emitExpr(Expr *E);
   llvm::Value *emitFunccall(FunctionCallExpr *E);
   llvm::Value *emitMethcall(MethodCallExpr *E);
+  llvm::Value *emitCast(CastExpr *E);
   void emitStmt(AssignmentStatement *Stmt);
   void emitStmt(FunctionCallStatement *Stmt);
   void emitStmt(MethodCallStatement *Stmt);

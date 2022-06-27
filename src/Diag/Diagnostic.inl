@@ -24,5 +24,6 @@ DIAG(err_var_parameter_requires_var, Error, "parameter refernce requires variabl
 DIAG(err_indexing_non_array,Error, "Inedxing a non array variable")
 DIAG(err_accessing_member_non_class,Error, "Accessing a Member Varible on non Class variable")
 DIAG(err_member_not_found,Error, "Member Variable {0} is nonexisting inside the Class {1}")
+DIAG(err_type_not_defined,Error, "Type is not defined for Variable {0}")
 
 #undef DIAG
