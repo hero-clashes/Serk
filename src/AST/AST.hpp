@@ -216,7 +216,6 @@ public:
       : Decl(DK_Function, EnclosingDecL, Loc, Name),
         Params(Params), RetType(RetType), Decls(Decls),
         Stmts(Stmts) {}
-  bool ReturnRef = false;
   const ParamList &getFormalParams() {
     return Params;
   }

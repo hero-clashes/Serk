@@ -70,11 +70,6 @@ llvm::FunctionType *CGFunction::createFunctionType(FunctionDeclaration *Proc) {
   if (Proc->getRetType()) {
     ResultTy = mapType(Proc->getRetType());
     // ResultTy->dump();
-    if(Proc->ReturnRef){
-      ResultTy = ResultTy->getPointerTo();
-      // ResultTy->dump();
-
-    }
   }
   auto FormalParams = Proc->getFormalParams();
   llvm::SmallVector<llvm::Type *, 8> ParamTypes;

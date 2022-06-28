@@ -9,7 +9,7 @@ DONE add pointers support
 TODO move all type parsing to one funcition
 TODO add genrators
 TODO add continuers
-TODO add malloc
+DONE add malloc
 TODO add include handling
 TODO implment paremters for constructrs
 DONE add error messeges for everything

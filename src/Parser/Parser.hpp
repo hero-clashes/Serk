@@ -41,8 +41,8 @@ public:
 
   CompileUnitDeclaration *parse();
   bool ParseFuction(DeclList &ParentDecls);
-  bool parseParameters(ParamList &Params);
-  bool parseParameter(ParamList& Params);
+  bool parseParameters(DeclList &ParentDecls, ParamList &Params);
+  bool parseParameter(DeclList &ParentDecls, ParamList& Params);
   bool parseBlock(DeclList& Decls,
       StmtList& Stmts);
   bool parseVarDecleration(DeclList& Decls,
@@ -76,7 +76,7 @@ public:
       StmtList& Stmts);
   bool ParseUsing(DeclList &ParentDecls);
   bool parseSelectors(Expr *&E);
-  bool ParseTempleteArgs(std::vector<std::tuple<int, StringRef,TypeDeclaration *,SMLoc>> &Decls);
+  bool ParseTempleteArgs(DeclList &ParentDecls,std::vector<std::tuple<int, StringRef,TypeDeclaration *,SMLoc>> &Decls);
   bool SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat = false);
   bool ParseType(DeclList &ParentDecls,TypeDeclaration *&Ty);
 };

@@ -61,18 +61,12 @@ CompileUnitDeclaration *Parser::parse() {
 bool Parser::ParseFuction(DeclList &ParentDecls) {
   auto _errorhandler = [this] { return SkipUntil({tok::r_parth}); };
   advance(); // eat fn
-  bool returnref = false;
-  if (Tok.is(tok::kw_ref)) {
-    advance();
-    returnref = true;
-  };
-  if (expect(tok::identifier)) {
+
+  TypeDeclaration *RetType;
+  if (ParseType(ParentDecls, RetType)) {
     return _errorhandler();
-  };
-  auto type = Tok.getIdentifier();
-  auto RetType =
-      Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
-  advance(); // eat type identifer
+  }
+
 
   if (expect(tok::identifier)) { // expect function name
     return _errorhandler();
@@ -82,7 +76,6 @@ bool Parser::ParseFuction(DeclList &ParentDecls) {
   auto function_loc = Tok.getLocation();
   auto D =
       Actions.actOnFunctionDeclaration(Tok.getLocation(), Tok.getIdentifier());
-  D->ReturnRef = returnref;
   advance();                    // eat function_name identifer
   EnterDeclScope S(Actions, D); // added befor the parmeters so the parmeters
                                 // get added to the function scope
@@ -90,7 +83,7 @@ bool Parser::ParseFuction(DeclList &ParentDecls) {
     return _errorhandler();
   };
   ParamList Params;
-  if (parseParameters(Params)) {
+  if (parseParameters(ParentDecls, Params)) {
     return _errorhandler();
   };
 
@@ -117,11 +110,11 @@ bool Parser::ParseFuction(DeclList &ParentDecls) {
   return false;
 }
 
-bool Parser::parseParameters(ParamList &Params) {
+bool Parser::parseParameters(DeclList &ParentDecls, ParamList &Params) {
   auto _errorhandler = [this] { return SkipUntil({tok::r_paren}); };
   consume(tok::l_paren);
   while (Tok.isOneOf(tok::identifier, tok::kw_ref)) {
-    if (parseParameter(Params)) {
+    if (parseParameter(ParentDecls ,Params)) {
       return _errorhandler();
     };
     if (!Tok.isOneOf(tok::comma, tok::r_paren)) {
@@ -135,19 +128,28 @@ bool Parser::parseParameters(ParamList &Params) {
   consume(tok::r_paren);
   return false;
 };
-bool Parser::parseParameter(ParamList &Params) {
+bool Parser::parseParameter(DeclList &ParentDecls,ParamList &Params) {
   auto _errorhandler = [this] { return SkipUntil({tok::r_paren, tok::semi}); };
   bool by_refernce = false;
+  
+  if (expect(tok::identifier)) {
+    return _errorhandler();
+  };
+  auto Name = Tok;
+  advance();
+  if (expect(tok::colon)) {
+    return _errorhandler();
+  }
+  advance();
+
   if (Tok.is(tok::kw_ref)) {
     by_refernce = true;
     advance();
   }
-  auto type_D =
-      Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
-  consume(tok::identifier);
-  if (expect(tok::identifier)) {
+  TypeDeclaration *type_D;
+  if(ParseType(ParentDecls , type_D)){
     return _errorhandler();
-  };
+  }
   auto Parem = Actions.actOnParmaDecl(Tok.getLocation(), Tok.getIdentifier(),
                                       type_D, by_refernce);
   consume(tok::identifier);
@@ -187,40 +189,9 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
   TypeDeclaration *type_D = nullptr;
   if (Tok.is(tok::colon)) {
     advance();
-    bool PointerTy = false;
-    if(Tok.is(tok::star)){
-      PointerTy = true;
-      advance();
-    }
-    if (expect(tok::identifier)) {
+    if(ParseType(Decls, type_D)){
       return _errorhandler();
     };
-    type_D = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
-    consume(tok::identifier);
-    if (Tok.is(tok::less)) {
-      std::vector<std::variant<TypeDeclaration *, Expr *>> Args;
-      if (parseTemepleteList(Decls, type_D, Args)){
-        return _errorhandler();
-      };
-    } else if (Tok.is(tok::l_square)) {
-      advance();
-      Expr *E = nullptr;
-      auto Loc = Tok.getLocation();
-      if(parseExpression(E)){
-        return _errorhandler();
-      };;
-      type_D = Actions.actOnArrayTypeDeclaration(Decls, Loc, E, type_D);
-      if (expect(tok::r_square)) {
-        return _errorhandler();
-      };
-      advance();
-    }
-    if (PointerTy) {
-      type_D = Actions.Get_Pointer_Type(type_D);
-    }
-    // if(ParseType(Decls, type_D)){
-    //   return _errorhandler();
-    // };
   };
 
   Expr *Desig = nullptr;
@@ -258,9 +229,12 @@ bool Parser::parseTemepleteList(DeclList & Decls,TypeDeclaration* &type_D,std::v
     return _errorhandler();
   }
    do {
-        if (Tok.is(tok::identifier)) {
-          Args.push_back(Actions.actOnTypeRefernce(Tok.getLocation(),
-                                                   Tok.getIdentifier()));
+        if (Tok.isOneOf(tok::identifier,tok::star)) {
+          TypeDeclaration* Ty;
+          if(ParseType(Decls, Ty)){
+            return _errorhandler();
+          }
+          Args.push_back(Ty);
           advance();
         } else {
           Expr *EXP;
@@ -272,8 +246,6 @@ bool Parser::parseTemepleteList(DeclList & Decls,TypeDeclaration* &type_D,std::v
         if (Tok.is(tok::comma))
           advance();
       } while (Tok.isNot(tok::greater));
-      // auto intited_type = Actions.actOnTypeRefernce(Tok.getLocation(),
-      // Tok.getIdentifier());
       advance();
       type_D =
           (TypeDeclaration *)Actions.init_genric_class(Decls, type_D, Args);
@@ -909,14 +881,16 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
   std::vector<std::tuple<int, StringRef, TypeDeclaration *, SMLoc>> List;
   if (Tok.is(tok::less)) {
 
-    if(ParseTempleteArgs(List)){
+    if(ParseTempleteArgs(ParentDecls,List)){
       return _errorhandler();
     };
-
+    //TODO check if there no name
     D = Actions.actOnClassDeclaration(Class_Name.getLocation(),
                                       Class_Name.getIdentifier(), true);
     Genric = true;
   } else {
+    //TODO check if there no name
+
     D = Actions.actOnClassDeclaration(Class_Name.getLocation(),
                                       Class_Name.getIdentifier(), false);
   };
@@ -1002,11 +976,9 @@ bool Parser::ParseEnum(DeclList &ParentDecls, StmtList &Stmts) {
   TypeDeclaration *Ty = Actions.IntegerType;
   if (Tok.is(tok::colon)) {
     advance();
-    if(expect(tok::identifier)){
+    if(ParseType(ParentDecls, Ty)){
       return _errorhandler();
     }
-    Ty = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
-    consume(tok::identifier);
   };
   if(expect(tok::l_parth)){
     return _errorhandler();
@@ -1050,10 +1022,10 @@ bool Parser::ParseUsing(DeclList &ParentDecls) {
   };
   advance();
 
-  if(expect(tok::identifier)){
+  TypeDeclaration *Type;
+  if(ParseType(ParentDecls, Type)){
     return _errorhandler();
-  };
-  auto Type = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+  }
 
   if(expect(tok::identifier)){
     return _errorhandler();
@@ -1103,7 +1075,7 @@ bool Parser::parseSelectors(Expr *&E) {
   return false;
 }
 bool Parser::ParseTempleteArgs(
-    std::vector<std::tuple<int, StringRef, TypeDeclaration *, SMLoc>> &Decls) {
+    DeclList &ParentDecls,std::vector<std::tuple<int, StringRef, TypeDeclaration *, SMLoc>> &Decls) {
   auto _errorhandler = [this] { return SkipUntil({tok::greater},true); };
   consume(tok::less);
   while (Tok.isOneOf(tok::kw_var, tok::kw_type)) {
@@ -1127,9 +1099,10 @@ bool Parser::ParseTempleteArgs(
         return _errorhandler();
       };
       advance();
-      auto Ty =
-          Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
-      advance();
+      TypeDeclaration *Ty;
+      if(ParseType(ParentDecls, Ty)){
+        return _errorhandler();
+      }
       Decls.push_back({1, name, Ty, Loc});
     }
     if (!Tok.isOneOf(tok::comma, tok::greater)) {
@@ -1185,23 +1158,20 @@ bool Parser::SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat) {
 bool Parser::ParseType(DeclList &ParentDecls, TypeDeclaration *&Ty) {
   auto _errorhandler = [this] { return SkipUntil({tok::identifier}); };
     bool PointerTy = false;
-    bool ParsedIdenfier = false;
-  // while (Tok.isOneOf(tok::identifier,tok::star,tok::l_square)) {
-
-  // }
     if (Tok.is(tok::star)) {
       PointerTy = true;
       advance();
     }
-    if (Tok.is(tok::identifier)) {
-      Ty = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
-      consume(tok::identifier);
-      if (Tok.is(tok::less)) {
-        std::vector<std::variant<TypeDeclaration *, Expr *>> Args;
-        if (parseTemepleteList(ParentDecls, Ty, Args)) {
-          return _errorhandler();
-        };
+    if(expect(tok::identifier)){
+      return _errorhandler();
     }
+    Ty = Actions.actOnTypeRefernce(Tok.getLocation(), Tok.getIdentifier());
+    consume(tok::identifier);
+    if (Tok.is(tok::less)) {
+      std::vector<std::variant<TypeDeclaration *, Expr *>> Args;
+      if (parseTemepleteList(ParentDecls, Ty, Args)) {
+        return _errorhandler();
+      };
     }
     if (Tok.is(tok::l_square)) {
       advance();
@@ -1216,8 +1186,6 @@ bool Parser::ParseType(DeclList &ParentDecls, TypeDeclaration *&Ty) {
         return _errorhandler();
       };
       advance();
-    } else {
-      return _errorhandler();
     }
     if (PointerTy) {
       Ty = Actions.Get_Pointer_Type(Ty);
