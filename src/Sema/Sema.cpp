@@ -157,6 +157,10 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
       return D;
     } else if (auto D =dyn_cast_or_null<ConstantDeclaration>(CurrentScope->lookup(Name))){
       return D;
+    }else if (Name == "true") {
+      return TrueConst;
+    }else if (Name == "false") {
+      return FalseConst;
     };
     Diags.report(Loc, diag::err_var_isnt_found);
     return nullptr;
@@ -424,7 +428,8 @@ void Sema::actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start){
 };
 Expr *Sema::actOnStringLiteral(SMLoc Loc, StringRef Literal){
   return new String_Literal(Loc, Literal,
-        ByteType);
+            Get_Pointer_Type(ByteType)
+);
 };
 void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
                                  StringRef Name, Decl *D){
@@ -591,7 +596,7 @@ Expr *Sema::DeRefernce(SMLoc loc,Expr *E){
   return new PrefixExpression(E,OperatorInfo(loc,tok::star),dyn_cast_or_null<PointerTypeDeclaration>(E->getType())->getType(),E->isConst());
 };
 bool is_int(TypeDeclaration *Dest){
-  static std::set<std::string> s = {"int","float","long", "int64", "int32", "int8","uint64", "uint32", "uint8" ,"bool"};
+  static std::set<std::string> s = {"int","float","long", "byte", "int64", "int32", "int8","uint64", "uint32", "uint8" ,"bool"};
   return s.find(Dest->Name.str()) != s.end();
 }
 bool Sema::Can_Be_Casted(Expr *Org, TypeDeclaration* Dest){

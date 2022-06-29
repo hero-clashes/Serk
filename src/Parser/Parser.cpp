@@ -31,6 +31,11 @@ CompileUnitDeclaration *Parser::parse() {
         return _errorhandler();
       };
     }
+    if (Tok.is(tok::kw_extern)) {
+      if (ParseExternFunction(Decls)) {
+        return _errorhandler();
+      };
+    }
     if (Tok.is(tok::kw_var)) {
       if (parseVarDecleration(Decls, Stmts)) {
         return _errorhandler();
@@ -109,7 +114,39 @@ bool Parser::ParseFuction(DeclList &ParentDecls) {
   advance();
   return false;
 }
+bool Parser::ParseExternFunction(DeclList &ParentDecls){
+  auto _errorhandler = [this] { return SkipUntil({tok::r_paren}); };
+  advance();
+  TypeDeclaration *RetType;
+  if (ParseType(ParentDecls, RetType)) {
+    return _errorhandler();
+  }
 
+
+  if (expect(tok::identifier)) { // expect function name
+    return _errorhandler();
+  };
+
+  auto function_name = Tok.getIdentifier();
+  auto function_loc = Tok.getLocation();
+  auto D =
+      Actions.actOnFunctionDeclaration(Tok.getLocation(), Tok.getIdentifier());
+  advance();                    // eat function_name identifer
+  EnterDeclScope S(Actions, D); // added befor the parmeters so the parmeters
+                                // get added to the function scope
+  if (expect(tok::l_paren)) {
+    return _errorhandler();
+  };
+  ParamList Params;
+  if (parseParameters(ParentDecls, Params)) {
+    return _errorhandler();
+  };
+
+  Actions.actOnFunctionHeading(D, Params, RetType);
+  D->Type = FunctionDeclaration::Extern;
+  ParentDecls.push_back(D);
+  return false;
+};
 bool Parser::parseParameters(DeclList &ParentDecls, ParamList &Params) {
   auto _errorhandler = [this] { return SkipUntil({tok::r_paren}); };
   consume(tok::l_paren);
@@ -150,7 +187,7 @@ bool Parser::parseParameter(DeclList &ParentDecls,ParamList &Params) {
   if(ParseType(ParentDecls , type_D)){
     return _errorhandler();
   }
-  auto Parem = Actions.actOnParmaDecl(Tok.getLocation(), Tok.getIdentifier(),
+  auto Parem = Actions.actOnParmaDecl(Name.getLocation(), Name.getIdentifier(),
                                       type_D, by_refernce);
   consume(tok::identifier);
   Params.push_back(Parem);

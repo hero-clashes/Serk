@@ -41,6 +41,7 @@ public:
 
   CompileUnitDeclaration *parse();
   bool ParseFuction(DeclList &ParentDecls);
+  bool ParseExternFunction(DeclList &ParentDecls);
   bool parseParameters(DeclList &ParentDecls, ParamList &Params);
   bool parseParameter(DeclList &ParentDecls, ParamList& Params);
   bool parseBlock(DeclList& Decls,

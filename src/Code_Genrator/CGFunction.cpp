@@ -9,7 +9,7 @@ void CGFunction::run(FunctionDeclaration *Proc) {
   Fn = createFunction(Proc, Fty);
   if (CGDebugInfo *Dbg = CGM.getDbgInfo())
     Dbg->emitFunction(Proc, Fn);
-
+  if(Proc->Type == FunctionDeclaration::Extern) return;
   llvm::BasicBlock *BB = createBasicBlock("entry");
   setCurr(BB);
 
@@ -677,10 +677,11 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
   }
   llvm::Value *CGFunction::emitCast(CastExpr *E){
     auto val = emitExpr(E->E);
-    if(E->E->getType()->Name == "int" && E->Type_to_cast_for->Name == "long"){
-      val = Builder.CreateZExt(val, CGM.convertType(E->Type_to_cast_for));
-    } else
-    {
+    auto org_type = CGM.convertType(E->E->getType());
+    auto dest_type = CGM.convertType(E->Type_to_cast_for);
+    if (org_type->isIntegerTy() && dest_type->isIntegerTy()) {
+      val = Builder.CreateZExtOrTrunc(val, dest_type);
+    } else {
       val->dump();
       auto s = CGM.convertType(E->Type_to_cast_for);
       s->dump();

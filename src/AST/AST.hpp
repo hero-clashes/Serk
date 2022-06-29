@@ -200,6 +200,7 @@ class FunctionDeclaration : public Decl {
 public:
   enum FType{
     Normal,
+    Extern,
     Virtual,
     Genrator,
   };
