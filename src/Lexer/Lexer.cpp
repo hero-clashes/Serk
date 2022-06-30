@@ -111,6 +111,7 @@ void Lexer::next(Token &Result) {
       CASE(':', tok::colon);
       CASE('[', tok::l_square);
       CASE(']', tok::r_square);
+      CASE('%', tok::Reminder);
 #undef CASE
     case '<':
       if (*(CurPtr + 1) == '=')

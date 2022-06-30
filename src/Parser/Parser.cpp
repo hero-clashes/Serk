@@ -521,7 +521,7 @@ bool Parser::parseTerm(Expr *&E) {
   if(parseFactor(E)){
     return _errorhandler();
   };
-  while (Tok.isOneOf(tok::star, tok::slash)) {
+  while (Tok.isOneOf(tok::star, tok::slash,tok::Reminder)) {
     OperatorInfo Op;
     Expr *Right = nullptr;
     if(parseMulOperator(Op)){
@@ -630,7 +630,9 @@ bool Parser::parseFactor(Expr *&E) {
     if(parseSelectors(E)){
       return _errorhandler();
     };
-    E = Actions.Get_Refernce(loc,E);
+    auto dis = dyn_cast<Designator>(E);
+    dis->Get_Pointer();
+    dis->setType(Actions.Get_Pointer_Type(dis->getType()));
   } else if (Tok.is(tok::star)) {
     auto loc =Tok.getLocation();
     advance();
@@ -642,7 +644,7 @@ bool Parser::parseFactor(Expr *&E) {
     if(parseSelectors(E)){
       return _errorhandler();
     };
-    E = Actions.DeRefernce(loc,E);
+    dyn_cast<Designator>(E)->Derfernced();    
   } else {
     return _errorhandler();
   }
@@ -699,7 +701,10 @@ bool Parser::parseMulOperator(OperatorInfo &Op) {
     } else if (Tok.is(tok::slash)) {
       Op = fromTok(Tok);
       advance();
-    }
+    } else if (Tok.is(tok::Reminder)) {
+      Op = fromTok(Tok);
+      advance();
+    } 
     // else if (Tok.is(tok::kw_DIV)) {
     //   Op = fromTok(Tok);
     // advance();

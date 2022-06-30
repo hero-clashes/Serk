@@ -12,11 +12,9 @@ bool Sema::isOperatorForType(tok::TokenKind Op,
   case tok::plus:
   case tok::minus:
   case tok::star:
-//   case tok::kw_DIV:
-//   case tok::kw_MOD:
-    return Ty == IntegerType;
   case tok::slash:
-    return false; // REAL not implemented
+  case tok::Reminder:
+    return Ty == IntegerType;
   case tok::And:
   case tok::Or:
   case tok::Not:
@@ -42,31 +40,25 @@ void Sema::leaveScope() {
 void Sema::initialize(){
     CurrentScope = new Scope();
     CurrentDecl = nullptr;
-    IntegerType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "int");
-    auto int64 = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "long");
-    BoolType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "bool");
-    auto VoidType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void");
-    ByteType = new Base_TypeDeclaration(CurrentDecl, SMLoc(), "byte");
-    auto printf_f = new FunctionDeclaration(CurrentDecl,SMLoc(),"printf");
-    auto Sizeof = new FunctionDeclaration(CurrentDecl,SMLoc(),"sizeof");
-    auto malloc = new FunctionDeclaration(CurrentDecl,SMLoc(),"malloc");
+    Insert_Decl(IntegerType = new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "int"));
+    Integer_TypeDeclaration *int64;
+    Insert_Decl(int64 = new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "long"));
+    Insert_Decl(BoolType = new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "bool"));
+    Insert_Decl(new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "void"));
+    Insert_Decl(ByteType = new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "byte"));
+    Insert_Decl(new FunctionDeclaration(CurrentDecl,SMLoc(),"printf"));
+    Insert_Decl(new FunctionDeclaration(CurrentDecl,SMLoc(),"sizeof"));
+    FunctionDeclaration *Malloc;
+    Insert_Decl(Malloc = new FunctionDeclaration(CurrentDecl,SMLoc(),"malloc"));
     ParamList a{new ParameterDeclaration(CurrentDecl,SMLoc(),"size",int64,false)};
-    malloc->setFormalParams(a);
-    malloc->setRetType(Get_Pointer_Type(ByteType));
+    Malloc->setFormalParams(a);
+    Malloc->setRetType(Get_Pointer_Type(ByteType));
     TrueLiteral = new BooleanLiteral(true, BoolType);
     FalseLiteral = new BooleanLiteral(false, BoolType);
     TrueConst = new ConstantDeclaration(CurrentDecl, SMLoc(),
                                       "true", TrueLiteral);
     FalseConst = new ConstantDeclaration(
       CurrentDecl, SMLoc(), "false", FalseLiteral);
-    CurrentScope->insert(IntegerType);
-    CurrentScope->insert(BoolType);
-    CurrentScope->insert(VoidType);
-    CurrentScope->insert(ByteType);
-    CurrentScope->insert(printf_f);
-    CurrentScope->insert(Sizeof);
-    CurrentScope->insert(malloc);
-    CurrentScope->insert(int64);
 };
 
 
@@ -596,8 +588,7 @@ Expr *Sema::DeRefernce(SMLoc loc,Expr *E){
   return new PrefixExpression(E,OperatorInfo(loc,tok::star),dyn_cast_or_null<PointerTypeDeclaration>(E->getType())->getType(),E->isConst());
 };
 bool is_int(TypeDeclaration *Dest){
-  static std::set<std::string> s = {"int","float","long", "byte", "int64", "int32", "int8","uint64", "uint32", "uint8" ,"bool"};
-  return s.find(Dest->Name.str()) != s.end();
+  return isa<Integer_TypeDeclaration>(Dest);
 }
 bool Sema::Can_Be_Casted(Expr *Org, TypeDeclaration* Dest){
   auto Org_Ty = Org->getType();
@@ -614,5 +605,5 @@ Expr *Sema::Create_Cast(Expr* Orginal, TypeDeclaration* Type_To_Cast){
     return new CastExpr(Orginal,Type_To_Cast);
 }
 void Sema::Insert_Decl(Decl *D){
-
+  CurrentScope->insert(D);
 };

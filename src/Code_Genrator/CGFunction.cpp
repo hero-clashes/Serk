@@ -234,6 +234,8 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     // need to add array and record support.
     auto &Selectors = Var->getSelectors();
     if (Selectors.empty()) {
+      if(Var->Get_Adress)
+      return Val;
       if(!Var->Derfernce)
       return Builder.CreateLoad(Val);
       else {
@@ -468,12 +470,12 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
   case tok::star:
     Result = Builder.CreateNSWMul(Left, Right);
     break;
-  // case tok::kw_DIV:
-  //   Result = Builder.CreateSDiv(Left, Right);
-  //   break;
-  // case tok::kw_MOD:
-  //   Result = Builder.CreateSRem(Left, Right);
-  //   break;
+  case tok::slash:
+    Result = Builder.CreateSDiv(Left, Right);
+    break;
+  case tok::Reminder:
+    Result = Builder.CreateSRem(Left, Right);
+    break;
   case tok::equal_equal:
     Result = Builder.CreateICmpEQ(Left, Right);
     break;
@@ -498,9 +500,6 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
   case tok::Or:
     Result = Builder.CreateOr(Left, Right);
     break;
-  case tok::slash:
-    // Divide by real numbers not supported.
-    LLVM_FALLTHROUGH;
   default:
     llvm_unreachable("Wrong operator");
   }
@@ -509,15 +508,6 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
 
 llvm::Value *
 CGFunction::emitPrefixExpr(PrefixExpression *E) {
-  if (E->getOperatorInfo().getKind() == tok::Amper) {
-    llvm::Value *Result = emitExpr(E->getExpr());
-    return Result;
-  } else if (E->getOperatorInfo().getKind() == tok::star) {
-    llvm::Value *Result = emitExpr(E->getExpr());
-    // Result = Builder.CreateLoad(Result);
-    Result = Builder.CreateLoad(Result);
-    return Result;
-  }
   llvm::Value *Result = emitExpr(E->getExpr());
   switch (E->getOperatorInfo().getKind()) {
   case tok::plus:

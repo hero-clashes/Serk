@@ -142,7 +142,7 @@ llvm::DIType *CGDebugInfo::getType(TypeDeclaration *Ty) {
     return TypeCache[Ty] = getArrayType(ArrayTy);
   else if (auto *PointerTy = llvm::dyn_cast<PointerTypeDeclaration>(Ty))
     return TypeCache[Ty] = getPointerType(PointerTy);
-  else if (llvm::isa<Base_TypeDeclaration>(Ty))
+  else if (llvm::isa<Integer_TypeDeclaration>(Ty))
     return TypeCache[Ty] = getPervasiveType(Ty);
   llvm::report_fatal_error("Unsupported type");
   return nullptr;

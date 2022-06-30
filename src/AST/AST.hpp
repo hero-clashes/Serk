@@ -35,6 +35,7 @@ public:
     DK_Class,
     DK_Array,
     DK_Pointer,
+    DK_Integer_Type,
     DK_Base_Type,
     DK_Var,
     DK_Function,
@@ -131,15 +132,16 @@ public:
     return D->getKind() == DK_Const;
   }
 };
-class Base_TypeDeclaration : public TypeDeclaration {
+class Integer_TypeDeclaration : public TypeDeclaration {
+  bool Is_Signed;
 public:
-  Base_TypeDeclaration(Decl *EnclosingDecL, SMLoc Loc,
-                           StringRef Name)
-      : TypeDeclaration(DK_Base_Type, EnclosingDecL,
-                        Loc, Name) {}
+  Integer_TypeDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+                           StringRef Name,bool Is_Signed = true)
+      : TypeDeclaration(DK_Integer_Type, EnclosingDecL,
+                        Loc, Name),Is_Signed(Is_Signed) {}
 
   static bool classof(const Decl *D) {
-    return D->getKind() == DK_Base_Type;
+    return D->getKind() == DK_Integer_Type;
   }
 };
 class Alias_TypeDeclaration : public Decl {
@@ -380,6 +382,7 @@ class Designator : public Expr {
 
 public:
     bool Derfernce = false;
+    bool Get_Adress = false;
     Designator(VariableDeclaration* Var)
         : Expr(EK_Designator, Var->getType(), false),
         Var(Var) {}
@@ -395,6 +398,9 @@ public:
       Derfernce = true;
       assert(isa<PointerTypeDeclaration>(getType()));
       setType(dyn_cast<PointerTypeDeclaration>(getType())->getType());
+    }
+    void Get_Pointer(){
+      Get_Adress = true;
     }
     Decl* getDecl() { return Var; }
     const SelectorList& getSelectors() const {

@@ -69,7 +69,7 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
   if (llvm::Type *T = TypeCache[Ty])
     return T;
 
-  if (llvm::isa<Base_TypeDeclaration>(Ty)) {
+  if (llvm::isa<Integer_TypeDeclaration>(Ty)) {
     if (Ty->getName() == "int" || Ty->getName() == "int32" || Ty->getName() == "uint32")
       return Int32Ty;
     if (Ty->getName() == "long" || Ty->getName() == "int64" || Ty->getName() == "uint64")
