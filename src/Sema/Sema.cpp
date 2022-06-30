@@ -17,7 +17,7 @@ bool Sema::isOperatorForType(tok::TokenKind Op,
   case tok::star:
   case tok::slash:
   case tok::Reminder:
-    return Ty == IntegerType;
+    return isa<Integer_TypeDeclaration>(Ty);
   case tok::And:
   case tok::Or:
   case tok::Not:
@@ -49,6 +49,9 @@ void Sema::initialize() {
   auto &intsizes = std::get<1>(Int_types);
   auto &intsigns = std::get<2>(Int_types);
   for(int i = 0;i<size;i++){
+    if (i == 1 || i == 2) {
+    Insert_Decl(new Float_TypeDeclaration(CurrentDecl,SMLoc(),intnames[i],intsizes[i],intsigns[i]));
+    } else
     Insert_Decl(new Integer_TypeDeclaration(CurrentDecl,SMLoc(),intnames[i],intsizes[i],intsigns[i]));
   }
   IntegerType = (TypeDeclaration *)CurrentScope->lookup("int");

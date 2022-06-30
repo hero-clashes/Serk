@@ -451,30 +451,51 @@ void CGFunction::emitStmt(MethodCallStatement *Stmt){
 llvm::Value *
 CGFunction::emitInfixExpr(InfixExpression *E) {
   llvm::Value *Left = emitExpr(E->getLeft());
-  // if(Left->getType()->isPointerTy())
-  //   // Left = Builder.CreateLoad(Left);
-  // Left->dump();
+  auto intty = dyn_cast_or_null<Integer_TypeDeclaration>(E->getLeft()->getType());
   llvm::Value *Right = emitExpr(E->getRight());
-  // if(Right->getType()->isPointerTy())
-  //   Right = Builder.CreateLoad(Left);
-  // Right->dump();
+
 
   llvm::Value *Result = nullptr;
   switch (E->getOperatorInfo().getKind()) {
   case tok::plus:
+    if(isa<Float_TypeDeclaration>(intty))
+    Result = Builder.CreateFAdd(Left, Right);
+    else if(intty->Is_Signed)
     Result = Builder.CreateNSWAdd(Left, Right);
+    else
+    Result = Builder.CreateNUWAdd(Left, Right);
     break;
   case tok::minus:
+    if(isa<Float_TypeDeclaration>(intty))
+    Result = Builder.CreateFSub(Left, Right);
+    else if(intty->Is_Signed)
     Result = Builder.CreateNSWSub(Left, Right);
+    else
+    Result = Builder.CreateNUWSub(Left, Right);
     break;
   case tok::star:
+    if(isa<Float_TypeDeclaration>(intty))
+    Result = Builder.CreateFMul(Left, Right);
+    else if(intty->Is_Signed)
     Result = Builder.CreateNSWMul(Left, Right);
+    else
+    Result = Builder.CreateNUWMul(Left, Right);
     break;
   case tok::slash:
+    if(isa<Float_TypeDeclaration>(intty))
+    Result = Builder.CreateFDiv(Left, Right);
+    else if(intty->Is_Signed)
     Result = Builder.CreateSDiv(Left, Right);
+    else
+    Result = Builder.CreateUDiv(Left, Right);
     break;
   case tok::Reminder:
+    if(isa<Float_TypeDeclaration>(intty))
+    Result = Builder.CreateFRem(Left, Right);
+    else if(intty->Is_Signed)
     Result = Builder.CreateSRem(Left, Right);
+    else
+    Result = Builder.CreateURem(Left, Right);
     break;
   case tok::equal_equal:
     Result = Builder.CreateICmpEQ(Left, Right);

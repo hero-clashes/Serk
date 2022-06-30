@@ -36,6 +36,7 @@ public:
     DK_Array,
     DK_Pointer,
     DK_Integer_Type,
+    DK_Float_Type,
     DK_Base_Type,
     DK_Var,
     DK_Function,
@@ -153,7 +154,20 @@ public:
                         Loc, Name),Size(Size),Is_Signed(Is_Signed) {}
 
   static bool classof(const Decl *D) {
-    return D->getKind() == DK_Integer_Type;
+    return DK_Float_Type == D->getKind() || D->getKind() == DK_Integer_Type;
+  }
+};
+class Float_TypeDeclaration : public TypeDeclaration {
+public:
+  bool Is_Signed;
+  int Size;
+  Float_TypeDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+                           StringRef Name,int Size,bool Is_Signed = true)
+      : TypeDeclaration(DK_Float_Type, EnclosingDecL,
+                        Loc, Name),Size(Size),Is_Signed(Is_Signed) {}
+
+  static bool classof(const Decl *D) {
+    return D->getKind() == DK_Float_Type;
   }
 };
 class Alias_TypeDeclaration : public Decl {
