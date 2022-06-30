@@ -153,8 +153,12 @@ void Sema::actOnReturnStatement(StmtList& Stmts, SMLoc Loc, Expr* RetVal)
 {
     auto* Proc = dyn_cast<FunctionDeclaration>(CurrentDecl);
     if (Proc->getRetType() && RetVal) {
-        if (Get_type(Proc->getRetType()) != Get_type(RetVal->getType()))
-            Diags.report(Loc, diag::err_function_and_return_type);
+      if (Get_type(Proc->getRetType()) != Get_type(RetVal->getType())) {
+        if (Can_Be_Casted(RetVal, Proc->getRetType())) {
+          RetVal = Create_Cast(RetVal, Proc->getRetType());
+        } else
+          Diags.report(Loc, diag::err_function_and_return_type);
+      }
     }
 
     Stmts.push_back(new ReturnStatement(RetVal,Loc));
