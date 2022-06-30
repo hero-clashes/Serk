@@ -390,8 +390,6 @@ bool Parser::parseReturnStatement(DeclList &Decls, StmtList &Stmts) {
     if(parseExpression(E)){
       return _errorhandler();
     };
-  } else {
-    return _errorhandler();
   }
   Actions.actOnReturnStatement(Stmts, Loc, E);
   // if(expect(tok::semi)){

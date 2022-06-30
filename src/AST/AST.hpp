@@ -99,6 +99,17 @@ public:
            D->getKind() <= DK_Base_Type;
   }
 };
+class Base_TypeDeclaration : public TypeDeclaration {
+public:
+  Base_TypeDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+                           StringRef Name)
+      : TypeDeclaration(DK_Base_Type, EnclosingDecL,
+                        Loc, Name) {}
+
+  static bool classof(const Decl *D) {
+    return D->getKind() == DK_Base_Type;
+  }
+};
 class PointerTypeDeclaration : public TypeDeclaration {
   TypeDeclaration *Type;
 
@@ -133,12 +144,13 @@ public:
   }
 };
 class Integer_TypeDeclaration : public TypeDeclaration {
-  bool Is_Signed;
 public:
+  bool Is_Signed;
+  int Size;
   Integer_TypeDeclaration(Decl *EnclosingDecL, SMLoc Loc,
-                           StringRef Name,bool Is_Signed = true)
+                           StringRef Name,int Size,bool Is_Signed = true)
       : TypeDeclaration(DK_Integer_Type, EnclosingDecL,
-                        Loc, Name),Is_Signed(Is_Signed) {}
+                        Loc, Name),Size(Size),Is_Signed(Is_Signed) {}
 
   static bool classof(const Decl *D) {
     return D->getKind() == DK_Integer_Type;

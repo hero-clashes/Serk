@@ -93,7 +93,7 @@ public:
   Expr *DeRefernce(SMLoc loc,Expr *E);
   bool Can_Be_Casted(Expr *Org, TypeDeclaration* Dest);
   Expr *Create_Cast(Expr* Orginal, TypeDeclaration* Type_To_Cast);
-  void Insert_Decl(Decl *D);
+  Decl *Insert_Decl(Decl *D);
 };
 
 class EnterDeclScope {

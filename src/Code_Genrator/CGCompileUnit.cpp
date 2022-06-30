@@ -68,21 +68,14 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
 {
   if (llvm::Type *T = TypeCache[Ty])
     return T;
-
-  if (llvm::isa<Integer_TypeDeclaration>(Ty)) {
-    if (Ty->getName() == "int" || Ty->getName() == "int32" || Ty->getName() == "uint32")
-      return Int32Ty;
-    if (Ty->getName() == "long" || Ty->getName() == "int64" || Ty->getName() == "uint64")
-      return Int64Ty;
-    if (Ty->getName() == "bool")
-      return Int1Ty;
-    if(Ty->getName() == "void")
+  if(Ty->getName() == "void")
       return VoidTy;
-    if(Ty->getName() == "Int8PtrTy" || Ty->getName() == "str")
-      return Int8PtrTy;
-    if(Ty->getName() == "byte" || Ty->getName() == "int8" || Ty->getName() == "uint8")
-      return Int8Ty;
-
+  if (auto inttype = dyn_cast_or_null<Integer_TypeDeclaration>(Ty)) {
+    if(inttype->getName() == "double")
+      return TypeCache[Ty] = llvm::Type::getDoubleTy(getLLVMCtx());
+    if(inttype->getName() == "float")
+      return TypeCache[Ty] = llvm::Type::getFloatTy(getLLVMCtx());  
+    return TypeCache[Ty] = llvm::Type::getIntNTy(getLLVMCtx(),inttype->Size);
   } else if(llvm::isa<ClassDeclaration>(Ty)){
 
   }

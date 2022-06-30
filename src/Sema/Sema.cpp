@@ -1,7 +1,10 @@
 #include "Sema.hpp"
 #include "AST/AST.hpp"
+#include <array>
 #include <set>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vcruntime.h>
 #include <vector>
 #include <variant>
@@ -37,30 +40,44 @@ void Sema::leaveScope() {
   CurrentDecl = CurrentDecl->getEnclosingDecl();
 }
 
-void Sema::initialize(){
-    CurrentScope = new Scope();
-    CurrentDecl = nullptr;
-    Insert_Decl(IntegerType = new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "int"));
-    Integer_TypeDeclaration *int64;
-    Insert_Decl(int64 = new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "long"));
-    Insert_Decl(BoolType = new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "bool"));
-    Insert_Decl(new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "void"));
-    Insert_Decl(ByteType = new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "byte"));
-    Insert_Decl(new FunctionDeclaration(CurrentDecl,SMLoc(),"printf"));
-    Insert_Decl(new FunctionDeclaration(CurrentDecl,SMLoc(),"sizeof"));
-    FunctionDeclaration *Malloc;
-    Insert_Decl(Malloc = new FunctionDeclaration(CurrentDecl,SMLoc(),"malloc"));
-    ParamList a{new ParameterDeclaration(CurrentDecl,SMLoc(),"size",int64,false)};
-    Malloc->setFormalParams(a);
-    Malloc->setRetType(Get_Pointer_Type(ByteType));
-    TrueLiteral = new BooleanLiteral(true, BoolType);
-    FalseLiteral = new BooleanLiteral(false, BoolType);
-    TrueConst = new ConstantDeclaration(CurrentDecl, SMLoc(),
-                                      "true", TrueLiteral);
-    FalseConst = new ConstantDeclaration(
-      CurrentDecl, SMLoc(), "false", FalseLiteral);
-};
+void Sema::initialize() {
+  CurrentScope = new Scope();
+  CurrentDecl = nullptr;
+  std::tuple<std::vector<const char *>,std::vector<int>,std::vector<bool>> Int_types = {{"int","float","double","long", "byte", "int64", "int32", "int8","uint64", "uint32", "uint8" ,"bool"},{32,32,64,64, 8, 64, 32, 8,64, 32, 8 , 1},{{true,true,true , true , true, true, true, true, false, false, false , false}}};
+  auto size = std::get<0>(Int_types).size();
+  auto &intnames = std::get<0>(Int_types);
+  auto &intsizes = std::get<1>(Int_types);
+  auto &intsigns = std::get<2>(Int_types);
+  for(int i = 0;i<size;i++){
+    Insert_Decl(new Integer_TypeDeclaration(CurrentDecl,SMLoc(),intnames[i],intsizes[i],intsigns[i]));
+  }
+  IntegerType = (TypeDeclaration *)CurrentScope->lookup("int");
+  BoolType = (Integer_TypeDeclaration *)CurrentScope->lookup("bool");
+  auto int64 = (Integer_TypeDeclaration *)CurrentScope->lookup("uint64");
 
+  // auto int64 = (Integer_TypeDeclaration *)Insert_Decl(
+  //     new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "long"));
+  // BoolType = (Integer_TypeDeclaration *)Insert_Decl(
+  //     new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "bool"));
+  auto Void =
+      Insert_Decl(new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void"));
+  ByteType = (Integer_TypeDeclaration *)CurrentScope->lookup("uint8");
+
+  Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "printf"));
+  Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "sizeof"));
+  FunctionDeclaration *Malloc = (FunctionDeclaration *)Insert_Decl(
+      new FunctionDeclaration(CurrentDecl, SMLoc(), "malloc"));
+  ParamList a{
+      new ParameterDeclaration(CurrentDecl, SMLoc(), "size", int64, false)};
+  Malloc->setFormalParams(a);
+  Malloc->setRetType(Get_Pointer_Type(ByteType));
+  TrueLiteral = new BooleanLiteral(true, BoolType);
+  FalseLiteral = new BooleanLiteral(false, BoolType);
+  TrueConst =
+      new ConstantDeclaration(CurrentDecl, SMLoc(), "true", TrueLiteral);
+  FalseConst =
+      new ConstantDeclaration(CurrentDecl, SMLoc(), "false", FalseLiteral);
+};
 
 FunctionDeclaration *Sema::actOnFunctionDeclaration(SMLoc Loc, StringRef Name){
 FunctionDeclaration *P =
@@ -604,6 +621,7 @@ bool Sema::Can_Be_Casted(Expr *Org, TypeDeclaration* Dest){
 Expr *Sema::Create_Cast(Expr* Orginal, TypeDeclaration* Type_To_Cast){
     return new CastExpr(Orginal,Type_To_Cast);
 }
-void Sema::Insert_Decl(Decl *D){
+Decl *Sema::Insert_Decl(Decl *D){
   CurrentScope->insert(D);
+  return D;
 };

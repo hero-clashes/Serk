@@ -22,7 +22,7 @@ class CGDebugInfo {
   void openScope(llvm::DIScope *);
   unsigned getLineNumber(SMLoc Loc);
 
-  llvm::DIType *getPervasiveType(TypeDeclaration *Ty);
+  llvm::DIType *getPervasiveType(Integer_TypeDeclaration *Ty);
   llvm::DIType *getAliasType(Alias_TypeDeclaration *Ty);
   llvm::DIType *getArrayType(ArrayTypeDeclaration *Ty);
   llvm::DIType *getClassType(ClassDeclaration *Ty);

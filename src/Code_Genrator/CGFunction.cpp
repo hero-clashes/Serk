@@ -670,12 +670,38 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     auto org_type = CGM.convertType(E->E->getType());
     auto dest_type = CGM.convertType(E->Type_to_cast_for);
     if (org_type->isIntegerTy() && dest_type->isIntegerTy()) {
-      val = Builder.CreateZExtOrTrunc(val, dest_type);
-    } else {
+      if (dyn_cast_or_null<Integer_TypeDeclaration>(E->Type_to_cast_for)
+              ->Is_Signed) {
+        val = Builder.CreateZExtOrTrunc(val, dest_type);
+      } else {
+        val = Builder.CreateSExtOrTrunc(val, dest_type);
+      }
+    }
+    if (org_type->isIntegerTy() && dest_type->isFloatingPointTy()) {
+      if (dyn_cast_or_null<Integer_TypeDeclaration>(E->E->getType())
+              ->Is_Signed) {
+        val = Builder.CreateSIToFP(val, dest_type);
+      } else {
+        val = Builder.CreateUIToFP(val, dest_type);
+      }
+    }
+    if (org_type->isFloatingPointTy() && dest_type->isIntegerTy()) {
+      if (dyn_cast_or_null<Integer_TypeDeclaration>(E->Type_to_cast_for)
+              ->Is_Signed) {
+        val = Builder.CreateFPToSI(val, dest_type);
+      } else {
+        val = Builder.CreateFPToUI(val, dest_type);
+      }
+    }
+    if (org_type->isFloatingPointTy() && dest_type->isFloatingPointTy()) {
+      val = Builder.CreateFPCast(val, dest_type);
+    }
+    if (org_type->isPointerTy() && dest_type->isPointerTy()) {
       val->dump();
       auto s = CGM.convertType(E->Type_to_cast_for);
       s->dump();
-      val = Builder.CreatePointerCast(val, CGM.convertType(E->Type_to_cast_for));
+      val =
+          Builder.CreatePointerCast(val, CGM.convertType(E->Type_to_cast_for));
     }
     // {val = Builder.CreatePointerCast(val, CGM.convertType(E->Type_to_cast_for));}
     return val;

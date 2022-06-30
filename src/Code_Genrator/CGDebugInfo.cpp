@@ -41,22 +41,29 @@ unsigned CGDebugInfo::getLineNumber(SMLoc Loc) {
 }
 
 llvm::DIType *
-CGDebugInfo::getPervasiveType(TypeDeclaration *Ty) {
-  if (Ty->getName() == "int") {
+CGDebugInfo::getPervasiveType(Integer_TypeDeclaration *Ty) {
+  if (Ty->getName() == "double") {
     return DBuilder.createBasicType(
-        Ty->getName(), 32, llvm::dwarf::DW_ATE_signed);
+        Ty->getName(), 64, llvm::dwarf::DW_ATE_float);
+  }
+  if (Ty->getName() == "float") {
+    return DBuilder.createBasicType(
+        Ty->getName(), 32, llvm::dwarf::DW_ATE_float);
   }
   if (Ty->getName() == "bool") {
     return DBuilder.createBasicType(
         Ty->getName(), 1, llvm::dwarf::DW_ATE_boolean);
   }
-  if (Ty->getName() == "void"){
-    return DBuilder.createUnspecifiedType("void");
-  }
-  if (Ty->getName() == "byte") {
+  if (Ty->getName() == "uint8") {
     return DBuilder.createBasicType(
         Ty->getName(), 8, llvm::dwarf::DW_ATE_unsigned_char);
   }
+  if (Ty->getName() == "int8") {
+    return DBuilder.createBasicType(
+        Ty->getName(), 8, llvm::dwarf::DW_ATE_signed_char);
+  }
+  return DBuilder.createBasicType(
+        Ty->getName(), Ty->Size, Ty->Is_Signed ? llvm::dwarf::DW_ATE_signed : llvm::dwarf::DW_ATE_unsigned);
   llvm::report_fatal_error("Unsupported pervasive type");
 }
 
@@ -142,8 +149,11 @@ llvm::DIType *CGDebugInfo::getType(TypeDeclaration *Ty) {
     return TypeCache[Ty] = getArrayType(ArrayTy);
   else if (auto *PointerTy = llvm::dyn_cast<PointerTypeDeclaration>(Ty))
     return TypeCache[Ty] = getPointerType(PointerTy);
-  else if (llvm::isa<Integer_TypeDeclaration>(Ty))
-    return TypeCache[Ty] = getPervasiveType(Ty);
+  else if (auto *IntTy = llvm::dyn_cast<Integer_TypeDeclaration>(Ty))
+    return TypeCache[Ty] = getPervasiveType(IntTy);
+  if (Ty->getName() == "void"){
+    return TypeCache[Ty] = DBuilder.createUnspecifiedType("void");
+  }
   llvm::report_fatal_error("Unsupported type");
   return nullptr;
 }
