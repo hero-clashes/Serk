@@ -558,7 +558,7 @@ class CastExpr :public Expr{
   TypeDeclaration* Type_to_cast_for;
 
   CastExpr(Expr *E, TypeDeclaration* Type_to_cast_for)
-      : Expr(EK_Cast, nullptr , false),E(E),Type_to_cast_for(Type_to_cast_for)//TODO fix returntype {}
+      : Expr(EK_Cast, Type_to_cast_for , E->isConst()),E(E),Type_to_cast_for(Type_to_cast_for)//TODO fix returntype {}
       {};
 
   static bool classof(const Expr *E) {

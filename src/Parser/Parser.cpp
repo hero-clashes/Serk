@@ -598,14 +598,32 @@ bool Parser::parseFactor(Expr *&E) {
       }
     }
   } else if (Tok.is(tok::l_paren)) {
-    advance();
-    if(parseExpression(E)){
-      return _errorhandler();
-    };
-    if(expect(tok::r_paren)){
-      return _errorhandler();
-    };
-    advance();
+    if (Lex.peak(0).is(tok::identifier) && Lex.peak(1).is(tok::r_paren)) {
+      advance();
+      TypeDeclaration *T;
+      DeclList a;
+      if(ParseType(a,T)){
+        return _errorhandler();
+      }
+      if (expect(tok::r_paren)) {
+        return _errorhandler();
+      }
+      advance();
+      Expr *EE;
+      if(parseExpression(EE)){
+        return _errorhandler();
+      };
+      E = Actions.Cast(EE, T);
+    } else {
+      advance();
+      if (parseExpression(E)) {
+        return _errorhandler();
+      };
+      if (expect(tok::r_paren)) {
+        return _errorhandler();
+      };
+      advance();
+    }
   } else if (Tok.is(tok::Not)) {
     OperatorInfo Op = fromTok(Tok);
     advance();

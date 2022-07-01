@@ -632,3 +632,11 @@ Decl *Sema::Insert_Decl(Decl *D){
   CurrentScope->insert(D);
   return D;
 };
+Expr *Sema::Cast(Expr *E,TypeDeclaration* Dest){
+  if (Can_Be_Casted(E, Dest)) {
+    return Create_Cast(E, Dest);
+  } else {
+  //TODO error out
+    return nullptr;
+  }
+};

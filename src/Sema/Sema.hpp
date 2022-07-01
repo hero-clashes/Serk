@@ -94,6 +94,7 @@ public:
   bool Can_Be_Casted(Expr *Org, TypeDeclaration* Dest);
   Expr *Create_Cast(Expr* Orginal, TypeDeclaration* Type_To_Cast);
   Decl *Insert_Decl(Decl *D);
+  Expr *Cast(Expr *E,TypeDeclaration* Dest);
 };
 
 class EnterDeclScope {
