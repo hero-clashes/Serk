@@ -12,19 +12,19 @@ Parser::Parser(Lexer &Lex, Sema &Actions) : Lex(Lex), Actions(Actions) {
   Lex.next(Tok);
 };
 
-CompileUnitDeclaration *Parser::parse() {
+CompileUnitDeclaration *Parser::parse(StringRef Name) {
   auto _errorhandler = [this] {
     SkipUntil(tok::eof);
     return nullptr;
   };
-  CompileUnitDeclaration *module = nullptr;
-  module = Actions.actOnCompileUnitDeclaration(SMLoc(), "Main");
-  EnterDeclScope S(Actions, module);
+  module = Actions.actOnCompileUnitDeclaration(SMLoc(), Name);
+  // EnterDeclScope S(Actions, module);
+  Actions.CurrentDecl = module;
   DeclList Decls;
   StmtList Stmts;
   while (Tok.isNot(tok::eof)) {
-    while (Tok.is(tok::kw_import)) {
-      // handle_import()
+    if (Tok.is(tok::kw_import)) {
+      ParseImport();
     };
     if (Tok.is(tok::kw_fn)) {
       if (ParseFuction(Decls)) {
@@ -58,8 +58,8 @@ CompileUnitDeclaration *Parser::parse() {
     }
   }
 
-  Actions.actOnCompileUnitDeclaration(module, SMLoc(), "Main", Decls, Stmts);
-
+  Actions.actOnCompileUnitDeclaration(module, SMLoc(), Name , Decls, Stmts);
+  imported[Name] = module;
   return module;
 };
 
@@ -511,7 +511,7 @@ bool Parser::parseSimpleExpression(Expr *&E) {
 bool Parser::parseTerm(Expr *&E) {
   auto _errorhandler = [this] {
     return SkipUntil({tok::r_paren, tok::plus,
-                      tok::comma, // add new oprators here
+                      tok::comma, tok::Reminder, // add new oprators here
                       tok::minus, tok::semi, tok::less, tok::lessequal,
                       tok::equal, tok::greater, tok::greaterequal, tok::kw_else,
                       tok::r_parth, tok::Or, tok::r_square});
@@ -535,7 +535,7 @@ bool Parser::parseTerm(Expr *&E) {
 bool Parser::parseFactor(Expr *&E) {
   auto _errorhandler = [this] {
     return SkipUntil(
-        {tok::r_paren, tok::star, tok::plus, // new oprators get added here
+        {tok::r_paren, tok::star, tok::plus, tok::Reminder, // new oprators get added here
          tok::comma, tok::minus, tok::slash, tok::semi, tok::less,
          tok::lessequal, tok::equal, tok::greater, tok::greaterequal, tok::And,
          tok::kw_else, tok::r_parth, tok::Or, tok::r_square});
@@ -1250,3 +1250,25 @@ bool Parser::ParseType(DeclList &ParentDecls, TypeDeclaration *&Ty) {
     }
   return false;
 };
+bool Parser::ParseImport(){
+  auto _errorhandler = [this] { return SkipUntil({tok::kw_fn,tok::kw_class,tok::kw_enum,tok::kw_import}); };
+  advance(); //eat import
+  if(expect(tok::string_literal)){
+    return _errorhandler();
+  }
+  auto loc = Tok.getLocation();
+  auto str = Tok.getLiteralData();
+  advance();
+  
+  str.consume_back("\"");
+  str.consume_front("\"");
+  if(imported.find(str) != imported.end()){
+    return false;
+  }
+  auto new_lex = Lex.includefile(str, loc);
+  auto new_parser = Parser(new_lex,Actions);
+  auto m = new_parser.parse(str);
+  imported[str] = m;
+  module->Imported_Module.push_back(m);
+  return false;
+}

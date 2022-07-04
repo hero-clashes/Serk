@@ -68,6 +68,7 @@ class CompileUnitDeclaration : public Decl {
   StmtList Stmts;
 
 public:
+  std::vector<CompileUnitDeclaration*> Imported_Module;
   CompileUnitDeclaration(Decl *EnclosingDecL, SMLoc Loc,
                     StringRef Name)
       : Decl(DK_CompileUnit, EnclosingDecL, Loc, Name) {}

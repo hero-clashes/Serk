@@ -14,5 +14,6 @@ class CGClass{
     CGClass(CGCompileUnit &CGM)
       : CGM(CGM){};
   StructType *run(ClassDeclaration *Class);
+  StructType *run_imported(ClassDeclaration *Class);
   void run(){}    
 };  

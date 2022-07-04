@@ -82,5 +82,6 @@ public:
         Curr(nullptr){};
 
   void run(FunctionDeclaration *Proc);
+  void run_imported(FunctionDeclaration *Proc);
   void run() {};
 };

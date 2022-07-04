@@ -4,6 +4,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SourceMgr.h"
+#include <unordered_map>
 
 #include "Diag/Diagnostic.hpp"
 
@@ -52,6 +53,20 @@ public:
     return Diags;
   }
 
+  Lexer includefile(StringRef file,SMLoc loc){
+    std::string IncludedFile;
+    auto buf = SrcMgr.AddIncludeFile(file.str(), loc, IncludedFile);
+    Lexer copy = *this;
+    if(buf == 0){
+      //TODO error out
+    } else {
+      
+      auto buffer = SrcMgr.getMemoryBuffer(buf);
+      copy.CurBuf = buffer->getBuffer();
+      copy.CurPtr = copy.CurBuf.begin();
+    }
+    return copy;
+  };
   /// Returns the next token from the input.
   void next(Token &Result);
 

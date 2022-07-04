@@ -120,7 +120,13 @@ CGMemberFunction::createFunctionType(FunctionDeclaration *Proc) {
   return llvm::FunctionType::get(ResultTy, ParamTypes,
                                  /* IsVarArgs */ false);
 };
-
+void CGMemberFunction::run_imported(FunctionDeclaration *Proc) {
+  this->Proc = Proc;
+  Fty = createFunctionType(Proc);
+  Fn = createFunction(Proc, Fty);
+  if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+    Dbg->emitFunction(Proc, Fn);
+}
 void CGMemberFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
   Fty = createFunctionType(Proc);

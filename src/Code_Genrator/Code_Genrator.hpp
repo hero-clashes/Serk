@@ -26,13 +26,12 @@ class CodeGenerator {
 	llvm::LLVMContext& Ctx;
 	llvm::TargetMachine* TM;
 	CompileUnitDeclaration* CM;
-	orc::KaleidoscopeJIT &JIT;
 protected:
-	CodeGenerator(llvm::LLVMContext& Ctx,orc::KaleidoscopeJIT &JIT)
-		: Ctx(Ctx),CM(nullptr),JIT(JIT) {}
+	CodeGenerator(llvm::LLVMContext& Ctx, llvm::TargetMachine* TM)
+		: Ctx(Ctx),CM(nullptr),TM(TM) {}
 
 public:
-	static CodeGenerator* create(llvm::LLVMContext& Ctx,orc::KaleidoscopeJIT &JIT);
+	static CodeGenerator* create(llvm::LLVMContext& Ctx, llvm::TargetMachine* TM);
 
 	std::unique_ptr<llvm::Module> run(CompileUnitDeclaration* CM, std::string FileName,SourceMgr& mgr);
 };

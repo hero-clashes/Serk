@@ -1,16 +1,16 @@
 #include "Code_Genrator.hpp"
 #include "CGCompileUnit.hpp"
-CodeGenerator* CodeGenerator::create(llvm::LLVMContext& Ctx,orc::KaleidoscopeJIT &JIT)
+CodeGenerator* CodeGenerator::create(llvm::LLVMContext& Ctx, llvm::TargetMachine* TM)
 {
-    return new CodeGenerator(Ctx,JIT);
+    return new CodeGenerator(Ctx,TM);
 }
 
 std::unique_ptr<llvm::Module> CodeGenerator::run(CompileUnitDeclaration* Mod, std::string FileName,SourceMgr& mgr) {
-    std::unique_ptr<llvm::Module> M = std::make_unique<llvm::Module>("my cool jit", Ctx);
+    std::unique_ptr<llvm::Module> M = std::make_unique<llvm::Module>(FileName, Ctx);
     M->addModuleFlag(llvm::Module::Append,"CodeView", 1);
     M->addModuleFlag(llvm::Module::Append,"uwtable", 1);
     M->addModuleFlag(llvm::Module::Append,"Debug Info Version", 3);
-    M->setDataLayout(JIT.getDataLayout());
+    M->setDataLayout(TM->createDataLayout());
     M->setTargetTriple(LLVM_DEFAULT_TARGET_TRIPLE);
     CGCompileUnit CGM(M.get(),mgr);
     CGM.run(Mod);

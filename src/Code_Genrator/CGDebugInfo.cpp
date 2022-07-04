@@ -7,7 +7,7 @@
 CGDebugInfo::CGDebugInfo(CGCompileUnit &CGM)
     : CGM(CGM), DBuilder(*CGM.getModule()) {
   llvm::SmallString<128> Path(
-      "main.serk");
+     CGM.Mod->getName());
   llvm::sys::fs::make_absolute(Path);
 
   llvm::DIFile *File = DBuilder.createFile(
@@ -261,4 +261,22 @@ void CGDebugInfo::SetLoc(llvm::Instruction *Inst,SMLoc Loc){
   // DBuilder.SetCurrentDebugLocation(
   //     DILocation::get(Scope->getContext(), AST->getLine(), AST->getCol(), Scope));
 
+};
+void CGDebugInfo::set_file(CompileUnitDeclaration* M){
+   llvm::SmallString<128> Path(
+      M->getName());
+  llvm::sys::fs::make_absolute(Path);
+
+  llvm::DIFile *File = DBuilder.createFile(
+      llvm::sys::path::filename(Path),
+      llvm::sys::path::parent_path(Path));
+
+  bool IsOptimzed = false;
+  unsigned ObjCRunTimeVersion = 0;
+  llvm::DICompileUnit::DebugEmissionKind EmissionKind =
+      llvm::DICompileUnit::DebugEmissionKind::FullDebug;
+  CU = DBuilder.createCompileUnit(
+      llvm::dwarf::DW_LANG_C, File, "Serk",
+      IsOptimzed, StringRef(), ObjCRunTimeVersion,
+      StringRef(), EmissionKind);
 };

@@ -2,7 +2,13 @@
 #include "llvm/IR/Verifier.h"
 #include <string>
 #include "CGClass.hpp"
-
+void CGFunction::run_imported(FunctionDeclaration *Proc) {
+  this->Proc = Proc;
+  Fty = createFunctionType(Proc);
+  Fn = createFunction(Proc, Fty);
+  // if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+  //   Dbg->emitFunction(Proc, Fn);
+}
 void CGFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
   Fty = createFunctionType(Proc);

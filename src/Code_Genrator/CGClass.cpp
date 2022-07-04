@@ -1,5 +1,16 @@
 #include "CGClass.hpp"
 #include "CGMemberFunction.hpp"
+StructType *CGClass::run_imported(ClassDeclaration *Class) {
+  this->Class = Class;
+
+  for (auto *Decl : Class->Decls) {
+    if (auto *Proc = llvm::dyn_cast<FunctionDeclaration>(Decl)) {
+      CGMemberFunction CGP(CGM, *this);
+      CGP.run_imported(Proc);
+    }
+  }
+  return StructType::getTypeByName(CGM.getLLVMCtx(),Class->Name);  
+}
 StructType *CGClass::run(ClassDeclaration *Class) {
   this->Class = Class;
   if(StructType::getTypeByName(CGM.getLLVMCtx(),Class->Name)) return StructType::getTypeByName(CGM.getLLVMCtx(),Class->Name);

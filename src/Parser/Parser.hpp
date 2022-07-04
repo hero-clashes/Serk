@@ -3,7 +3,8 @@
 #include "Lexer/Lexer.hpp"
 #include "Sema/Sema.hpp"
 #include "AST/AST.hpp"
-
+#include <set>
+inline StringMap<CompileUnitDeclaration*> imported;
 class Parser {
   Lexer &Lex;
 
@@ -38,8 +39,8 @@ class Parser {
 
 public:
   Parser(Lexer &Lex, Sema &Actions);
-
-  CompileUnitDeclaration *parse();
+  CompileUnitDeclaration *module = nullptr;
+  CompileUnitDeclaration *parse(StringRef Name);
   bool ParseFuction(DeclList &ParentDecls);
   bool ParseExternFunction(DeclList &ParentDecls);
   bool parseParameters(DeclList &ParentDecls, ParamList &Params);
@@ -80,4 +81,5 @@ public:
   bool ParseTempleteArgs(DeclList &ParentDecls,std::vector<std::tuple<int, StringRef,TypeDeclaration *,SMLoc>> &Decls);
   bool SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat = false);
   bool ParseType(DeclList &ParentDecls,TypeDeclaration *&Ty);
+  bool ParseImport();
 };

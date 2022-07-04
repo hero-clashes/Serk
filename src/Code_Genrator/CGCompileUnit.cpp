@@ -60,8 +60,6 @@ void CGCompileUnit::initialize()
       /* has variadic args */ false
     )
   );
-  if (Debug)
-    DebugInfo.reset(new CGDebugInfo(*this));
 }
 
 llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
@@ -142,6 +140,28 @@ llvm::GlobalObject* CGCompileUnit::getGlobal(Decl *D)
 void CGCompileUnit::run(CompileUnitDeclaration *Mod)
 {
   this->Mod = Mod;
+  if (Debug)
+    DebugInfo.reset(new CGDebugInfo(*this));
+  for (auto *Inc_M: Mod->Imported_Module) {
+    for (auto *Decl : Inc_M->getDecls()) {
+      if (auto *Var = llvm::dyn_cast<VariableDeclaration>(Decl)) {
+        llvm::GlobalVariable *V = new llvm::GlobalVariable(
+            *M, convertType(Var->getType()),
+            /*isConstant=*/false, llvm::GlobalValue::ExternalLinkage, nullptr,
+            mangleName(Var));
+        Globals[Var] = V;
+      } else if (auto *Proc = llvm::dyn_cast<FunctionDeclaration>(Decl)) {
+        CGFunction CGP(*this);
+        CGP.run_imported(Proc);
+      } else if (auto *Proc = llvm::dyn_cast<ClassDeclaration>(Decl)) {
+        if (Proc->is_genric)
+          continue;
+        CGClass CGC(*this);
+        auto Ty = CGC.run_imported(Proc);
+        TypeCache[dyn_cast_or_null<TypeDeclaration>(Proc)] = Ty;
+      }
+    }
+  }
   for (auto *Decl : Mod->getDecls()) {
     if (auto *Var =
             llvm::dyn_cast<VariableDeclaration>(Decl)) {
