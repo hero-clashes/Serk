@@ -2,6 +2,7 @@
 #include "llvm/IR/Verifier.h"
 #include <string>
 #include "CGClass.hpp"
+SMLoc stmt_loc;
 void CGFunction::run_imported(FunctionDeclaration *Proc) {
   this->Proc = Proc;
   Fty = createFunctionType(Proc);
@@ -147,6 +148,7 @@ llvm::Type *CGFunction::mapType(Decl *Decl) {
 };
 void CGFunction::emit(const StmtList &Stmts){
   for (auto *S : Stmts) {
+    stmt_loc = S->getLoc();
     if (auto *Stmt = llvm::dyn_cast<AssignmentStatement>(S))
       emitStmt(Stmt);
     else if (auto *Stmt =
@@ -314,7 +316,11 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
     // }
     ArgsV.push_back(v);
   };
-  return Builder.CreateCall(F, ArgsV, F->getReturnType()->isVoidTy()? "" :"calltmp");
+  auto placeholder = Builder.CreateCall(
+      F, ArgsV, F->getReturnType()->isVoidTy() ? "" : "calltmp");
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),stmt_loc);
+  return placeholder;
   // llvm::report_fatal_error("not implemented");
 };
 llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
@@ -326,7 +332,10 @@ llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
   for(auto expr:E->getParams()){
     ArgsV.push_back(emitExpr(expr));
   };
-  return Builder.CreateCall(F, ArgsV, "calltmp");
+  auto c = Builder.CreateCall(F, ArgsV, "calltmp");
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),stmt_loc);
+  return c;
 };
 void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
                                      Decl *Decl,
