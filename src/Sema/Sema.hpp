@@ -20,6 +20,7 @@ public:
   BooleanLiteral *FalseLiteral;
   ConstantDeclaration *TrueConst;
   ConstantDeclaration *FalseConst;
+  ConstantDeclaration *NullPtr;
   Sema(DiagnosticsEngine &Diags)
       : CurrentScope(nullptr), CurrentDecl(nullptr), Diags(Diags) {
     initialize();

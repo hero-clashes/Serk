@@ -285,6 +285,8 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     Str->Value.consume_front("\"");
     return Builder.CreateGlobalStringPtr(Str->Value);
   } else if (auto *Const = llvm::dyn_cast<ConstantAccess>(E)) {
+    if(Const->getDecl()->Name == "nullptr")
+    return Constant::getNullValue(CGM.convertType(Const->getType()));
     return emitExpr(Const->getDecl()->getExpr());
   } else if (auto *Cast = llvm::dyn_cast<CastExpr>(E)) {
     return emitCast(Cast);
@@ -738,6 +740,10 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
       s->dump();
       val =
           Builder.CreatePointerCast(val, CGM.convertType(E->Type_to_cast_for));
+    }
+    if (org_type->isPointerTy() && dest_type == CGM.Int1Ty) {
+      val =
+          Builder.CreateIsNotNull(val);
     }
     // {val = Builder.CreatePointerCast(val, CGM.convertType(E->Type_to_cast_for));}
     return val;

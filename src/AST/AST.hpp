@@ -331,6 +331,7 @@ public:
     EK_Meth,
     EK_String,
     EK_Cast,
+    EK_Impl
   };
 
 private:
@@ -566,7 +567,12 @@ class CastExpr :public Expr{
     return E->getKind() == EK_Cast;
   }
 };
-
+class ImpExpr : public Expr{
+  using Expr::Expr;
+ static bool classof(const Expr *E) {
+    return E->getKind() == EK_Impl;
+  }
+};
 class Stmt {
 public:
     enum StmtKind {

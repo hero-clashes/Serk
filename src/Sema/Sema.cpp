@@ -58,14 +58,11 @@ void Sema::initialize() {
   BoolType = (Integer_TypeDeclaration *)CurrentScope->lookup("bool");
   auto int64 = (Integer_TypeDeclaration *)CurrentScope->lookup("uint64");
 
-  // auto int64 = (Integer_TypeDeclaration *)Insert_Decl(
-  //     new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "long"));
-  // BoolType = (Integer_TypeDeclaration *)Insert_Decl(
-  //     new Integer_TypeDeclaration(CurrentDecl, SMLoc(), "bool"));
   auto Void =
       Insert_Decl(new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void"));
   ByteType = (Integer_TypeDeclaration *)CurrentScope->lookup("uint8");
 
+  NullPtr = new ConstantDeclaration(CurrentDecl,SMLoc(),"nullptr", new Expr(Expr::EK_Impl,Get_Pointer_Type(ByteType),true));
   Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "printf"));
   Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "sizeof"));
   FunctionDeclaration *Malloc = (FunctionDeclaration *)Insert_Decl(
@@ -177,6 +174,8 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
       return TrueConst;
     }else if (Name == "false") {
       return FalseConst;
+    }else if (Name == "nullptr") {
+      return NullPtr;
     };
     Diags.report(Loc, diag::err_var_isnt_found);
     return nullptr;
@@ -294,7 +293,10 @@ Expr *Sema::actOnSimpleExpression(Expr *Left, Expr *Right,
   if (!Right)
     return Left;
 
-  if (Get_type(Left->getType()) != Get_type(Right->getType())) {//TODO add casting
+  if (Get_type(Left->getType()) != Get_type(Right->getType())) {//TODO add casting based on bit width
+    if (Can_Be_Casted(Left, Right->getType())) {
+      Left = Create_Cast(Left, Right->getType());
+    } else
     Diags.report(
         Op.getLocation(),
         diag::err_types_for_operator_not_compatible,
@@ -342,6 +344,9 @@ Expr *Sema::actOnPrefixExpression(Expr *E,
     return nullptr;
 
   if (!isOperatorForType(Op.getKind(), Get_type(E->getType()))) {
+    if(Op.getKind() == tok::Not && isa<PointerTypeDeclaration>(Get_type(E->getType()))){
+      E = Create_Cast(E, BoolType);
+    } else
     Diags.report(
         Op.getLocation(),
         diag::err_types_for_operator_not_compatible,
@@ -414,6 +419,9 @@ void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
 //     Cond = FalseLiteral;
 
   if (Cond->getType() != BoolType) {
+    if(Can_Be_Casted(Cond, BoolType)){
+      Cond = Create_Cast(Cond, BoolType);
+    } else
     Diags.report(Loc, diag::err_if_expr_must_be_bool);
   }
   Stmts.push_back(
@@ -618,10 +626,13 @@ bool Sema::Can_Be_Casted(Expr *Org, TypeDeclaration* Dest){
   auto Org_Ty = Org->getType();
   if(is_int(Org_Ty) && is_int(Dest))
     return true;
-  if (Org_Ty->Name == "byte_Pointer") {
+  if (Org_Ty->Name == "uint8_Pointer") {
     if(dyn_cast_or_null<PointerTypeDeclaration>(Dest)){
       return true;
     }
+  }
+  if(isa<PointerTypeDeclaration>(Org_Ty) && Dest == BoolType){
+    return true;
   }
   return false;
 };
