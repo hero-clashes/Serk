@@ -1024,6 +1024,10 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
       if(parseVarDecleration(Decls, StartStmt)){
         return _errorhandler();
       };
+      if(expect(tok::semi)){
+        return _errorhandler();
+      }
+      advance();
     }
   }
   if(expect(tok::r_parth)){
