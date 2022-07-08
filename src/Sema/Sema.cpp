@@ -64,7 +64,6 @@ void Sema::initialize() {
 
   NullPtr = new ConstantDeclaration(CurrentDecl,SMLoc(),"nullptr", new Expr(Expr::EK_Impl,Get_Pointer_Type(ByteType),true));
   Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "printf"));
-  Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "sizeof"));
   FunctionDeclaration *Malloc = (FunctionDeclaration *)Insert_Decl(
       new FunctionDeclaration(CurrentDecl, SMLoc(), "malloc"));
   ParamList a{
@@ -650,4 +649,21 @@ Expr *Sema::Cast(Expr *E,TypeDeclaration* Dest){
   //TODO error out
     return nullptr;
   }
+};
+Expr *Sema::actOnSizeof(TypeDeclaration* Ty_G,TypeDeclaration* Ty_P){
+  auto E = new SizeofExpr(nullptr,IntegerType);
+  if (Ty_G && Ty_P) {
+    if(Ty_G == Ty_P){
+      E->setType(Ty_G);
+    } else {
+      //TODO error out
+    }
+  }
+  if(Ty_G){
+    E->TypeTogetsize=Ty_G;
+  } else if (Ty_P) {
+    E->TypeTogetsize = Ty_P;
+  }
+  assert(E->TypeTogetsize);
+  return E;
 };

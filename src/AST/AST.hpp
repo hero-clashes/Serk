@@ -331,7 +331,8 @@ public:
     EK_Meth,
     EK_String,
     EK_Cast,
-    EK_Impl
+    EK_Impl,
+    EK_Sizeof
   };
 
 private:
@@ -571,6 +572,16 @@ class ImpExpr : public Expr{
   using Expr::Expr;
  static bool classof(const Expr *E) {
     return E->getKind() == EK_Impl;
+  }
+};
+class SizeofExpr : public Expr{
+  public:
+  TypeDeclaration *TypeTogetsize;
+  SizeofExpr(TypeDeclaration *Ty,TypeDeclaration *Int_ty):Expr(Expr::EK_Sizeof, Int_ty , true),TypeTogetsize(Ty){
+    
+  }
+ static bool classof(const Expr *E) {
+    return E->getKind() == EK_Sizeof;
   }
 };
 class Stmt {

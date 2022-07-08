@@ -290,21 +290,21 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     return emitExpr(Const->getDecl()->getExpr());
   } else if (auto *Cast = llvm::dyn_cast<CastExpr>(E)) {
     return emitCast(Cast);
-  }
-  llvm::report_fatal_error("Unsupported expression");
+  } else if(auto *Sizof = dyn_cast<SizeofExpr>(E)){
 
-};
-llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
-  if (E->geDecl()->getName() == "sizeof") {
-    assert(E->getParams().size() == 1);
-    auto E_V = emitExpr(E->getParams()[0]);
+    auto placeholder = CGM.convertType(Sizof->TypeTogetsize)->getPointerTo();
+    placeholder->dump();
     Value *objDummyPtr = Builder.CreateConstGEP1_64(
-          Constant::getNullValue(E_V->getType()), 1, "objsize");
+        Constant::getNullValue(placeholder), 1, "objsize");
     // cast to i32 for malloc
     Value *objSize =
         Builder.CreatePointerCast(objDummyPtr,  CGM.Int32Ty);
     return objSize;
   }
+  llvm::report_fatal_error("Unsupported expression");
+
+};
+llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
    auto *F = CGM.getModule()->getFunction(E->geDecl()->getName());
   std::vector<Value *> ArgsV;
   if(E->getParams().empty() && !F->empty()){

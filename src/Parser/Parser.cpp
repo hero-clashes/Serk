@@ -201,6 +201,11 @@ bool Parser::parseBlock(DeclList &Decls, StmtList &Stmts) {
       if (parseVarDecleration(Decls, Stmts)) {
         return _errorhandler();
       };
+      if(expect(tok::semi)){
+        return _errorhandler();
+      };
+
+      advance();
     } else if (Tok.is(tok::kw_enum)) {
       if (ParseEnum(Decls, Stmts)) {
         return _errorhandler();
@@ -242,11 +247,6 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
       return _errorhandler();
     };
   }
-  if(expect(tok::semi)){
-    return _errorhandler();
-  };
-
-  advance();
   if (!type_D && E) {
     type_D = E->getType();
   }
@@ -353,6 +353,11 @@ bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
     if(parseForStatement(Decls, Stmts)){
       return _errorhandler();
     };
+    break;
+  case tok::kw_var:
+    if(parseVarDecleration(Decls, Stmts)){
+      return _errorhandler();
+    }
     break;
   default:
     break;
@@ -554,11 +559,11 @@ bool Parser::parseFactor(Expr *&E) {
     if (Tok.is(tok::l_paren)) {
       // here function calls handling
       advance();
-      if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
-                      tok::integer_literal)) {
+      // if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
+      //                 tok::integer_literal)) {
         if(parseExpList(Exprs)){
           return _errorhandler();
-        };
+        // };
       }
       if(expect(tok::r_paren)){
         return _errorhandler();
@@ -661,8 +666,37 @@ bool Parser::parseFactor(Expr *&E) {
       return _errorhandler();
     };
     dyn_cast<Designator>(E)->Derfernced();    
+  } else if (Tok.is(tok::kw_sizeof)) {
+    advance();
+    TypeDeclaration* Ty_G = nullptr;
+    TypeDeclaration* Ty_P = nullptr;
+    if(Tok.is(tok::less)){
+      advance();
+      DeclList a;
+      if (ParseType(a, Ty_G)) {
+        return _errorhandler();
+      }
+      if (expect(tok::greater)) {
+        return _errorhandler();
+      }
+      advance();
+    }
+    if (expect(tok::l_paren)) {
+        return _errorhandler();
+    }
+    advance();
+    if (Tok.is(tok::r_paren)) {
+      advance();
+    } else {
+      Expr *EE;
+      if (parseExpression(EE)) {
+        return _errorhandler();
+      }
+      Ty_P = EE->getType();
+    }
+    E = Actions.actOnSizeof(Ty_G, Ty_P);
   } else {
-    return _errorhandler();
+    // return _errorhandler();
   }
   return false;
 }
@@ -889,7 +923,11 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
   if(parseVarDecleration(Decls, Start_Val)){
     return _errorhandler();
   };
+  if(expect(tok::semi)){
+    return _errorhandler();
+  };
 
+  advance();
   if(parseExpression(E)){
     return _errorhandler();
   };

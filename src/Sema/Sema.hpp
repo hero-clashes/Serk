@@ -96,6 +96,7 @@ public:
   Expr *Create_Cast(Expr* Orginal, TypeDeclaration* Type_To_Cast);
   Decl *Insert_Decl(Decl *D);
   Expr *Cast(Expr *E,TypeDeclaration* Dest);
+  Expr *actOnSizeof(TypeDeclaration* Ty_G,TypeDeclaration* Ty_P);
 };
 
 class EnterDeclScope {
