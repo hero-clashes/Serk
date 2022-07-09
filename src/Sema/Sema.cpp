@@ -81,6 +81,10 @@ void Sema::initialize() {
 FunctionDeclaration *Sema::actOnFunctionDeclaration(SMLoc Loc, StringRef Name){
 FunctionDeclaration *P =
       new FunctionDeclaration(CurrentDecl, Loc, Name);
+  if(Name.endswith("Create")){
+    if (!CurrentScope->getParent()->insert(P))
+    Diags.report(Loc, diag::err_symbold_declared, Name);
+  } else
   if (!CurrentScope->insert(P))
     Diags.report(Loc, diag::err_symbold_declared, Name);
   return P;
@@ -175,7 +179,12 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
       return FalseConst;
     }else if (Name == "nullptr") {
       return NullPtr;
-    };
+    }else if (auto D = dyn_cast_or_null<ClassDeclaration>(CurrentScope->lookup(Name))){
+      auto s = new std::string(("Create"));
+      if(auto F = dyn_cast_or_null<FunctionDeclaration>(CurrentScope->lookup(*s))){
+        return F;
+      }
+    }
     Diags.report(Loc, diag::err_var_isnt_found);
     return nullptr;
 }

@@ -229,6 +229,7 @@ class FunctionDeclaration : public Decl {
 public:
   enum FType{
     Normal,
+    Method,
     Extern,
     Virtual,
     Genrator,
@@ -289,6 +290,7 @@ class ClassDeclaration: public Decl{
   StmtList Stmts;
   bool is_genric;
   DeclList TempleteArg;
+  bool has_constructor = false;
   ClassDeclaration(Decl *EnclosingDecL, SMLoc Loc,
                              StringRef Name,bool is_genric):Decl(DK_Class, EnclosingDecL, Loc, Name),is_genric(is_genric) {
 
@@ -329,6 +331,7 @@ public:
     EK_Const,
     EK_Func,
     EK_Meth,
+    EK_Constructor,
     EK_String,
     EK_Cast,
     EK_Impl,
@@ -545,7 +548,7 @@ class MethodCallExpr :public Expr{
 
   MethodCallExpr(VariableDeclaration *Var, StringRef Function_Name,
                    ExprList Params)
-      : Expr(EK_Meth, nullptr , false),Var(Var),//TODO fix returntype
+      : Expr(EK_Meth, Var->getType() , false),Var(Var),
         Function_Name(Function_Name), Params(Params) {}
 
   // FunctionDeclaration *geDecl() { return Proc; }
@@ -553,6 +556,23 @@ class MethodCallExpr :public Expr{
 
   static bool classof(const Expr *E) {
     return E->getKind() == EK_Meth;
+  }
+};
+class ConstructorCallExpr :public Expr{
+   public:
+  FunctionDeclaration* Func;
+  ExprList Params;
+
+  ConstructorCallExpr(FunctionDeclaration* Func,
+                   ExprList Params)
+      : Expr(EK_Constructor, Func->getRetType() , false),Func(Func),
+        Params(Params) {}
+
+  // FunctionDeclaration *geDecl() { return Proc; }
+  const ExprList &getParams() { return Params; }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == EK_Constructor;
   }
 };
 class CastExpr :public Expr{

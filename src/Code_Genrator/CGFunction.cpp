@@ -238,6 +238,8 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
   } else if (auto *Var = llvm::dyn_cast<Designator>(E)) {
     auto *Decl = Var->getDecl();
     llvm::Value *Val = readVariable(Curr, Decl, false);
+    // CGM.getModule()->dump();
+    // Val->dump();
     // With more languages features in place, here you
     // need to add array and record support.
     auto &Selectors = Var->getSelectors();
@@ -280,6 +282,9 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     return emitFunccall(FuncCall);
   } else if (auto *MethCall = llvm::dyn_cast<MethodCallExpr>(E)) {
     return emitMethcall(MethCall);
+  } else if (auto *ConstructorCall = llvm::dyn_cast<ConstructorCallExpr>(E)) {
+    auto m = new MethodCallExpr((VariableDeclaration *)Current_Var_Decl,"Create",ConstructorCall->getParams());
+    return emitMethcall(m);
   } else if (auto *Str = llvm::dyn_cast<String_Literal>(E)) {
     Str->Value.consume_back("\"");
     Str->Value.consume_front("\"");
@@ -334,10 +339,13 @@ llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
   for(auto expr:E->getParams()){
     ArgsV.push_back(emitExpr(expr));
   };
-  auto c = Builder.CreateCall(F, ArgsV, "calltmp");
+  // for(auto a:ArgsV) a->dump();
+  // F->dump();
+  auto placeholder = Builder.CreateCall(
+      F, ArgsV, F->getReturnType()->isVoidTy() ? "" : "calltmp");
   if(auto dbg = CGM.getDbgInfo())
             dbg->SetLoc(&Curr->back(),stmt_loc);
-  return c;
+  return placeholder;
 };
 void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
                                      Decl *Decl,
@@ -362,16 +370,20 @@ void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
 
 llvm::Value *
 CGFunction::readLocalVariable(llvm::BasicBlock *BB,
-                               Decl *Decl,bool LoadVal = true) {
+                               Decl *Decl,bool LoadVal = false) {
   assert(BB && "Basic block is nullptr");
   assert(
       (llvm::isa<VariableDeclaration>(Decl) ||
        llvm::isa<ParameterDeclaration>(Decl)) &&
       "Declaration must be variable or formal parameter");
   auto Val = Defs.find(Decl);
-  if (Val != Defs.end())
-    return Builder.CreateLoad(mapType(Decl), Val->second);
-  // return readLocalVariableRecursive(BB, Decl);
+  if (Val != Defs.end()) {
+    if (LoadVal)
+      return Builder.CreateLoad(mapType(Decl), Val->second);
+    else
+      return Val->second;
+  };
+  return nullptr;
 }
 
 
@@ -686,7 +698,7 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
           Dbg->emitValue(Val, Var, Var->getLocation(), Curr);
         if (auto C = dyn_cast_or_null<ClassDeclaration>(Var->getType())) {
           if(!Var->is_initlezed){
-            auto a = C->getName().str() + "_" + "Create_Default";
+            auto a = C->getName().str() + "_" + "Create";
             auto F = CGM.getModule()->getFunction(a);
             if(F) 
             Builder.CreateCall(F, {Val});

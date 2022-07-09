@@ -82,4 +82,5 @@ public:
   bool SkipUntil(ArrayRef<tok::TokenKind> Toks,bool eat = false);
   bool ParseType(DeclList &ParentDecls,TypeDeclaration *&Ty);
   bool ParseImport();
+  bool ParseConstructor(DeclList &ParentDecls,Decl *Class);
 };

@@ -105,10 +105,11 @@ llvm::Value *CGMemberFunction::readLocalVariable(llvm::BasicBlock *BB,
 llvm::FunctionType *
 CGMemberFunction::createFunctionType(FunctionDeclaration *Proc) {
   llvm::Type *ResultTy = nullptr;
-  if (Proc->getRetType()) {
+  if (Proc->getRetType() && !(CGC.Class->has_constructor && Proc->getName().endswith("Create"))) {
     ResultTy = mapType(Proc->getRetType());
   } else {
     ResultTy = Type::getVoidTy(CGM.getLLVMCtx());
+    AggregateReturnType = true;
   }
   auto FormalParams = Proc->getFormalParams();
   llvm::SmallVector<llvm::Type *, 8> ParamTypes;
@@ -183,6 +184,8 @@ llvm::Function *CGMemberFunction::createFunction(FunctionDeclaration *Proc,
   llvm::Function *Fn = llvm::Function::Create(
       Fty, llvm::GlobalValue::ExternalLinkage,
         CGC.Class->getName() + "_" + Proc->getName(), CGM.getModule());
+  auto a = new std::string((CGC.Class->getName() + "_" + Proc->getName()).str());
+  Proc->Name = *a;
       size_t Idx = 0;
   for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E;
        ++I, ++Idx) {

@@ -62,7 +62,45 @@ CompileUnitDeclaration *Parser::parse(StringRef Name) {
   imported[Name] = module;
   return module;
 };
+bool Parser::ParseConstructor(DeclList &ParentDecls,Decl *Class){
+  auto _errorhandler = [this] { return SkipUntil({tok::r_parth}); };
+  auto function_name = new std::string("Create");
+  auto function_loc = Tok.getLocation();
+  auto D =
+      Actions.actOnFunctionDeclaration(Tok.getLocation(), *function_name);
+  advance();                    // eat function_name identifer
+  EnterDeclScope S(Actions, D); // added befor the parmeters so the parmeters
+                                // get added to the function scope
+  if (expect(tok::l_paren)) {
+    return _errorhandler();
+  };
+  ParamList Params;
+  if (parseParameters(ParentDecls, Params)) {
+    return _errorhandler();
+  };
 
+  if (expect(tok::l_parth)) {
+    return _errorhandler();
+  };
+  advance();
+  Actions.actOnFunctionHeading(D, Params, Class);
+
+  DeclList Decls;
+  StmtList Stmts;
+
+  if (parseBlock(Decls, Stmts)) {
+    return _errorhandler();
+  };
+
+  ParentDecls.push_back(D);
+  Actions.actOnFunctionDeclaration(D, function_loc, *function_name, Decls,
+                                   Stmts);
+  if (expect(tok::r_parth)) {
+    return _errorhandler();
+  };
+  advance();
+  return false;
+};
 bool Parser::ParseFuction(DeclList &ParentDecls) {
   auto _errorhandler = [this] { return SkipUntil({tok::r_parth}); };
   advance(); // eat fn
@@ -568,6 +606,9 @@ bool Parser::parseFactor(Expr *&E) {
       if(expect(tok::r_paren)){
         return _errorhandler();
       };
+      if(D->getName().endswith("Create"))
+      E = new ConstructorCallExpr((FunctionDeclaration *)D, Exprs);
+      else
       E = Actions.actOnFunctionCallExpr(call.getLocation(), D, Exprs);
       advance();
     } else {
@@ -1028,6 +1069,15 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
         return _errorhandler();
       }
       advance();
+    } else if (Tok.is(tok::identifier)) {
+      if(Tok.getIdentifier() != Class_Name.getIdentifier()){
+        //TODO error out
+      } else {
+        if(ParseConstructor(Decls,D)){
+          return _errorhandler();
+        }
+        static_cast<ClassDeclaration*>(D)->has_constructor = true;
+      }
     }
   }
   if(expect(tok::r_parth)){

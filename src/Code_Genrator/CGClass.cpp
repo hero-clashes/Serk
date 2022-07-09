@@ -20,7 +20,7 @@ StructType *CGClass::run(ClassDeclaration *Class) {
     }
   }
   Type = StructType::create(CGM.getLLVMCtx(), Class->getName());
-
+  CGM.TypeCache[dyn_cast<TypeDeclaration>(Class)] = Type;
     std::vector<llvm::Type *> bodyTypes;
     for (auto *Member : Members) {
         bodyTypes.push_back(CGM.convertType(Member->getType()));
@@ -29,8 +29,8 @@ StructType *CGClass::run(ClassDeclaration *Class) {
 
   for (auto *Decl : Class->Decls) {
     if (auto *Proc = llvm::dyn_cast<FunctionDeclaration>(Decl)) {
-      CGMemberFunction CGP(CGM, *this);
-      CGP.run(Proc);
+        CGMemberFunction CGP(CGM, *this);
+        CGP.run(Proc);
     }
   }
   if(!CGM.getModule()->getFunction(Class->getName().str() + "_" + "Create_Default") && !Class->Stmts.empty()){
