@@ -10,11 +10,12 @@ DONE move all type parsing to one funcition
 TODO add genrators
 TODO add continuers
 DONE add malloc
-TODO add include handling
-TODO implment paremters for constructrs
+DONE implment paremters for constructrs
 DONE add error messeges for everything
 TODO port raylib
 TODO implent inheritance and calling of member functions
 TODO implment VIrtual funcitons
 TODO implment destructors
 TODO add scopes 
+TODO structured bindings
+TODO implment gernrcis checks

@@ -125,8 +125,8 @@ void CGMemberFunction::run_imported(FunctionDeclaration *Proc) {
   this->Proc = Proc;
   Fty = createFunctionType(Proc);
   Fn = createFunction(Proc, Fty);
-  if (CGDebugInfo *Dbg = CGM.getDbgInfo())
-    Dbg->emitFunction(Proc, Fn);
+  // if (CGDebugInfo *Dbg = CGM.getDbgInfo())
+  //   Dbg->emitFunction(Proc, Fn);
 }
 void CGMemberFunction::run(FunctionDeclaration *Proc) {
   this->Proc = Proc;
@@ -183,9 +183,8 @@ llvm::Function *CGMemberFunction::createFunction(FunctionDeclaration *Proc,
                                            llvm::FunctionType *FTy){
   llvm::Function *Fn = llvm::Function::Create(
       Fty, llvm::GlobalValue::ExternalLinkage,
-        CGC.Class->getName() + "_" + Proc->getName(), CGM.getModule());
-  auto a = new std::string((CGC.Class->getName() + "_" + Proc->getName()).str());
-  Proc->Name = *a;
+    Proc->getName(), CGM.getModule());
+
       size_t Idx = 0;
   for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E;
        ++I, ++Idx) {

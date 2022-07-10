@@ -101,6 +101,8 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
                  llvm::dyn_cast<PointerTypeDeclaration>(Ty)) {
     return convertType(Pointer->getType())->getPointerTo();
    }
+   if (auto s =StructType::getTypeByName(getLLVMCtx(),Ty->getName()))
+    return s;
     // else if (auto *RecordTy =
   //                llvm ::dyn_cast<RecordTypeDeclaration>(
   //                    Ty)) {

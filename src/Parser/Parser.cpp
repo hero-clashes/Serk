@@ -24,7 +24,9 @@ CompileUnitDeclaration *Parser::parse(StringRef Name) {
   StmtList Stmts;
   while (Tok.isNot(tok::eof)) {
     if (Tok.is(tok::kw_import)) {
-      ParseImport();
+      if(ParseImport()){
+        return _errorhandler();
+      };
     };
     if (Tok.is(tok::kw_fn)) {
       if (ParseFuction(Decls)) {
@@ -201,6 +203,7 @@ bool Parser::parseParameters(DeclList &ParentDecls, ParamList &Params) {
     }
   };
   consume(tok::r_paren);
+  if(Tok.is(tok::semi)) advance();
   return false;
 };
 bool Parser::parseParameter(DeclList &ParentDecls,ParamList &Params) {
@@ -260,12 +263,19 @@ bool Parser::parseBlock(DeclList &Decls, StmtList &Stmts) {
 bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
   auto _errorhandler = [this] { return SkipUntil({tok::semi}); };
   advance(); // eat var
-  auto var = Tok;
+  std::vector<Token> Var_Names;
+  while (Tok.is(tok::identifier)) {
+    Var_Names.push_back(Tok);
+    advance();
+    if (Tok.isOneOf(tok::colon,tok::equal)) {
+      break;
+    }
+    if(expect(tok::comma)){
+      return _errorhandler();
+    }
+    advance();
+  }
 
-  if (expect(tok::identifier)) {
-    return _errorhandler();
-  };
-  consume(tok::identifier);
   TypeDeclaration *type_D = nullptr;
   if (Tok.is(tok::colon)) {
     advance();
@@ -275,26 +285,36 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
   };
 
   Expr *Desig = nullptr;
-  Expr *E = nullptr;
-  SMLoc Loc;
+  std::vector<Expr*> Es;
+  std::vector<SMLoc> Locs;
   if (Tok.is(tok::equal)) {
     advance();
-    Loc = Tok.getLocation();
 
-    if(parseExpression(E)){
-      return _errorhandler();
-    };
+    while (Tok.isNot(tok::semi)) {
+      Expr* E;
+      Locs.push_back(Tok.getLocation());
+
+      if (parseExpression(E)) {
+        return _errorhandler();
+      };
+      Es.push_back(E);
+    }
   }
-  if (!type_D && E) {
-    type_D = E->getType();
+  if (!type_D && (!Es.empty()) &&Es[0]) {
+    type_D = Es[0]->getType();
   }
-  auto Var = Actions.actOnVarDeceleration(
-      var.getLocation(), var.getIdentifier(), type_D, E ? true : false);
-  if (E) {
-    Desig = Actions.actOnDesignator(Var);
-    Actions.actOnAssignment(Stmts, Loc, Desig, E);
+  for (int i = 0; i < Var_Names.size(); i++) {
+    auto var = Var_Names[i];
+    Expr* E = i < Es.size() ? Es[i] : nullptr;
+
+    auto Var = Actions.actOnVarDeceleration(
+        var.getLocation(), var.getIdentifier(), type_D, E ? true : false);
+    if (E) {
+      Desig = Actions.actOnDesignator(Var);
+      Actions.actOnAssignment(Stmts, Locs[i], Desig, E);
+    }
+    Decls.push_back(Var);
   }
-  Decls.push_back(Var);
   return false;
 }
 bool Parser::parseTemepleteList(DeclList & Decls,TypeDeclaration* &type_D,std::vector<std::variant<TypeDeclaration *, Expr *>> &Args){
@@ -597,17 +617,14 @@ bool Parser::parseFactor(Expr *&E) {
     if (Tok.is(tok::l_paren)) {
       // here function calls handling
       advance();
-      // if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
-      //                 tok::integer_literal)) {
         if(parseExpList(Exprs)){
           return _errorhandler();
-        // };
       }
       if(expect(tok::r_paren)){
         return _errorhandler();
       };
       if(D->getName().endswith("Create"))
-      E = new ConstructorCallExpr((FunctionDeclaration *)D, Exprs);
+      E = Actions.actOnConstructorCallExpr(call.getLocation(), D, Exprs);
       else
       E = Actions.actOnFunctionCallExpr(call.getLocation(), D, Exprs);
       advance();
@@ -1130,24 +1147,45 @@ bool Parser::ParseEnum(DeclList &ParentDecls, StmtList &Stmts) {
       return _errorhandler();
     }
   };
+  if(Tok.is(tok::identifier)) advance();
   if(expect(tok::l_parth)){
     return _errorhandler();
   };
   advance();
-  std::vector<Token> idents;
+  std::vector<std::pair<Token,Expr*>> idents;
   while (Tok.is(tok::identifier)) {
-    idents.push_back(Tok);
+    auto Name = Tok;
     advance();
+    Expr* E = nullptr;
+    if(Tok.is(tok::equal)){
+      advance();
+      if (parseExpression(E)) {
+        return _errorhandler();
+      }
+      if (!E) {
+      //TODO error out
+      } else {
+        if(!E->isConst()){
+          //TODO error out
+        }
+      }
+    }
+    idents.push_back({Name,E});
     if(expect(tok::comma)){
       return _errorhandler();
     };
     advance();
   }
   int num = 0;
-  for (auto iden : idents) {
+  for (auto p : idents) {
+    auto iden = p.first;
+    auto E = p.second;
+    //TODO check if e is const
+    
     Actions.actOnConstantDeclaration(
         ParentDecls, iden.getLocation(), iden.getIdentifier(),
-        Actions.actOnIntegerLiteral(iden.getLocation(), num));
+        E ? E:Actions.actOnIntegerLiteral(iden.getLocation(), num));
+    if(E) num = static_cast<IntegerLiteral*>(E)->getValue().getExtValue();
     num++;
   }
   if(expect(tok::r_parth)){

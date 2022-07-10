@@ -63,6 +63,8 @@ public:
                      ExprList &Params);
   Expr *actOnFunctionCallExpr(SMLoc Loc, Decl *D,
                      ExprList &Params);
+  Expr *actOnConstructorCallExpr(SMLoc Loc, Decl *D,
+                     ExprList &Params);
   void actOnIfStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &IfStmts,
                         StmtList &ElseStmts);

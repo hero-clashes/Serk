@@ -298,7 +298,7 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
   } else if(auto *Sizof = dyn_cast<SizeofExpr>(E)){
 
     auto placeholder = CGM.convertType(Sizof->TypeTogetsize)->getPointerTo();
-    placeholder->dump();
+    // placeholder->dump();
     Value *objDummyPtr = Builder.CreateConstGEP1_64(
         Constant::getNullValue(placeholder), 1, "objsize");
     // cast to i32 for malloc
@@ -333,6 +333,7 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
 llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
    std::string Method_Name = E->Var->getType()->getName().str() + "_" + E->Function_Name.str();
   auto *F = CGM.getModule()->getFunction(Method_Name);
+  CGM.getModule()->dump();
   auto o = F->arg_size();
   std::vector<Value *> ArgsV;
   ArgsV.push_back(Defs[E->Var]);
@@ -466,6 +467,7 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
 void CGFunction::emitStmt(MethodCallStatement *Stmt){
   std::string Method_Name = Stmt->Var->getType()->getName().str() + "_" + Stmt->Function_Name.str();
   auto *F = CGM.getModule()->getFunction(Method_Name);
+  CGM.getModule()->dump();
   auto o = F->arg_size();
   std::vector<Value *> ArgsV;
   ArgsV.push_back(emitExpr(Stmt->Var));
@@ -747,9 +749,9 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
       val = Builder.CreateFPCast(val, dest_type);
     }
     if (org_type->isPointerTy() && dest_type->isPointerTy()) {
-      val->dump();
+      // val->dump();
       auto s = CGM.convertType(E->Type_to_cast_for);
-      s->dump();
+      // s->dump();
       val =
           Builder.CreatePointerCast(val, CGM.convertType(E->Type_to_cast_for));
     }

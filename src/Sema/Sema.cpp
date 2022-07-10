@@ -43,7 +43,7 @@ void Sema::leaveScope() {
 void Sema::initialize() {
   CurrentScope = new Scope();
   CurrentDecl = nullptr;
-  std::tuple<std::vector<const char *>,std::vector<int>,std::vector<bool>> Int_types = {{"int","float","double","long", "byte", "int64", "int32", "int8","uint64", "uint32", "uint8" ,"bool"},{32,32,64,64, 8, 64, 32, 8,64, 32, 8 , 1},{{true,true,true , true , true, true, true, true, false, false, false , false}}};
+  std::tuple<std::vector<const char *>,std::vector<int>,std::vector<bool>> Int_types = {{"int","float","double","long", "byte", "int64", "int32","int16", "int8","uint64", "uint32","uint16", "uint8" ,"bool"},{32,32,64,64, 16, 8, 64, 32, 8,64, 32, 16, 8 , 1},{{true,true,true , true ,true, true, true, true, true, false, false, false, false , false}}};
   auto size = std::get<0>(Int_types).size();
   auto &intnames = std::get<0>(Int_types);
   auto &intsizes = std::get<1>(Int_types);
@@ -60,7 +60,7 @@ void Sema::initialize() {
 
   auto Void =
       Insert_Decl(new Base_TypeDeclaration(CurrentDecl, SMLoc(), "void"));
-  ByteType = (Integer_TypeDeclaration *)CurrentScope->lookup("uint8");
+  ByteType = (Integer_TypeDeclaration *)CurrentScope->lookup("int8");
 
   NullPtr = new ConstantDeclaration(CurrentDecl,SMLoc(),"nullptr", new Expr(Expr::EK_Impl,Get_Pointer_Type(ByteType),true));
   Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "printf"));
@@ -185,7 +185,7 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
         return F;
       }
     }
-    Diags.report(Loc, diag::err_var_isnt_found);
+    Diags.report(Loc, diag::err_var_isnt_found, Name);
     return nullptr;
 }
 Expr *Sema::actOnDesignator(Decl *D) {
@@ -420,6 +420,22 @@ Expr *Sema::actOnFunctionCallExpr(SMLoc Loc, Decl *D,
                diag::err_function_call_on_nonfunction);
   return nullptr;
 };
+Expr *Sema::actOnConstructorCallExpr(SMLoc Loc, Decl *D,
+                     ExprList &Params){
+  if (!D)
+    return nullptr;
+  if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
+    checkFormalAndActualParameters(
+        D->getLocation(), P->getFormalParams(), Params);
+    if (!P->getRetType())
+      Diags.report(D->getLocation(),
+                   diag::err_function_call_on_nonfunction);
+    return new ConstructorCallExpr(P, Params);
+  }
+  Diags.report(D->getLocation(),
+               diag::err_function_call_on_nonfunction);
+  return nullptr;
+};
 void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &IfStmts,
                         StmtList &ElseStmts){
@@ -575,7 +591,7 @@ ArrayTypeDeclaration *Sema::actOnArrayTypeDeclaration(DeclList &Decls, SMLoc Loc
       if(CurrentScope->insert(Decl))
         return Decl;
       else
-        Diags.report(Loc, diag::err_symbold_declared, StringRef(*str));
+        return (ArrayTypeDeclaration *)CurrentScope->lookup(*str);
     } else {
       Diags.report(Loc,
                   diag::err_vardecl_requires_type);
