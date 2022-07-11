@@ -33,5 +33,5 @@ protected:
 public:
 	static CodeGenerator* create(llvm::LLVMContext& Ctx, llvm::TargetMachine* TM);
 
-	std::unique_ptr<llvm::Module> run(CompileUnitDeclaration* CM, std::string FileName,SourceMgr& mgr);
+	std::unique_ptr<llvm::Module> run(CompileUnitDeclaration* CM, std::string FileName,SourceMgr& mgr,bool Debug);
 };

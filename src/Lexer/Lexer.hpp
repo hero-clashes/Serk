@@ -73,7 +73,7 @@ public:
   /// Gets source code buffer.
   StringRef getBuffer() const { return CurBuf; }
   Token peak(int n);
-
+  unsigned getCurBuffer() {return CurBuffer;};
 private:
   void identifier(Token &Result);
   void number(Token &Result);

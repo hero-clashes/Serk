@@ -43,7 +43,9 @@ void Sema::leaveScope() {
 void Sema::initialize() {
   CurrentScope = new Scope(nullptr,nullptr);
   CurrentDecl = nullptr;
-  std::tuple<std::vector<const char *>,std::vector<int>,std::vector<bool>> Int_types = {{"int","float","double","long", "byte", "int64", "int32","int16", "int8","uint64", "uint32","uint16", "uint8" ,"bool"},{32,32,64,64, 16, 8, 64, 32, 8,64, 32, 16, 8 , 1},{{true,true,true , true ,true, true, true, true, true, false, false, false, false , false}}};
+  std::tuple<std::array<const char *,14>,std::array<int,14>,std::array<bool,14>> Int_types = {{"int","float","double","long", "byte", "int64", "int32","int16", "int8","uint64", "uint32","uint16", "uint8" ,"bool"},
+                                                                                              {32,    32,        64,     64,     8,      64,     32,     16,      8     ,64,        32,      16,      8 ,       1},
+                                                                                              {{true, true,     true , true ,   true, true,   true,     true,   true,   false,      false,   false,    false , false}}};
   auto size = std::get<0>(Int_types).size();
   auto &intnames = std::get<0>(Int_types);
   auto &intsizes = std::get<1>(Int_types);

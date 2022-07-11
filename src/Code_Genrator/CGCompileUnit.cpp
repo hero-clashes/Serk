@@ -5,7 +5,7 @@
 #include "llvm/IR/Constants.h"
 #include "CGFunction.hpp"
 #include "CGClass.hpp"
-CGCompileUnit::CGCompileUnit(llvm::Module *M,SourceMgr& mgr): M(M),mgr(mgr) {
+CGCompileUnit::CGCompileUnit(llvm::Module *M,SourceMgr& mgr,bool Debug): M(M),mgr(mgr),Debug(Debug) {
   initialize();
     
 }

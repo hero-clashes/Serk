@@ -14,7 +14,7 @@ class CGCompileUnit{
 llvm::Module *M;
 
 SourceMgr& mgr;
-bool Debug = true;
+bool Debug;
 std::unique_ptr<CGDebugInfo> DebugInfo;
 CompileUnitDeclaration *Mod;
 
@@ -32,7 +32,7 @@ public:
   // Repository of global objects.
   llvm::DenseMap<Decl *, llvm::GlobalObject *> Globals;
 public:
-  CGCompileUnit( llvm::Module *M,SourceMgr& mgr);
+  CGCompileUnit( llvm::Module *M,SourceMgr& mgr,bool Debug);
   void initialize();
 
   llvm::LLVMContext &getLLVMCtx() {

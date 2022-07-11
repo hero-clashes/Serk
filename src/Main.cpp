@@ -33,6 +33,11 @@
 static llvm::cl::list<std::string>
     InputFiles(llvm::cl::Positional,
                llvm::cl::desc("<input-files>"));
+
+static cl::opt<bool>
+    Debug("emit Debug info",
+             cl::desc("emit Debug info"),
+             cl::init(true));               
 TargetMachine *Create_TM() {
   llvm::Triple TargetTriple = llvm::Triple(LLVM_DEFAULT_TARGET_TRIPLE);
 
@@ -100,7 +105,7 @@ int main(int argc_, const char **argv_) {
     auto val = imported[key];
     if (!val)
       return 1;
-    auto M = Genrator->run(val, key.str(), mgr);
+    auto M = Genrator->run(val, key.str(), mgr, Debug);
     legacy::PassManager PM;
     std::error_code EC;
     key.consume_back(".serk");
