@@ -184,6 +184,7 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
         llvm::ConstantInt::get(CGM.Int32Ty, 0));
     auto *Base =
         readVariable(Curr, Desig->getDecl(), false);
+    // Base->dump();
     // errs() << Selectors.size();
     for (auto I = Selectors.begin(), E = Selectors.end();
          I != E; ++I) {
@@ -203,16 +204,21 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
       if (Base->getType()) {
         // Base->dump();
         // for(auto val:IdxList) val->dump();
+        if(isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Desig->getDecl())->getType())))
+        Base = Builder.CreateLoad(Base);
+        // Base->dump();
         Base = Builder.CreateInBoundsGEP(Base, IdxList);
+        // if(isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Desig->getDecl())->getType())))
+        // Base = Builder.CreateLoad(Base);
         if(auto dbg = CGM.getDbgInfo())
             dbg->SetLoc(&Curr->back(),Stmt->getLoc());
         Current_Var_Value = Base;
         auto *Val = emitExpr(Stmt->getExpr());
         if(Val->getType()->isVoidTy()) return;
-        if(isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Desig->getDecl())->getType())))
-        Base = Builder.CreateLoad(Base);
-        Base->dump();
-        Val->dump();
+        // if(isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Desig->getDecl())->getType())))
+        // Base = Builder.CreateLoad(Base);
+        // Base->dump();
+        // Val->dump();
         Builder.CreateStore(Val, Base);
       }
       else {
@@ -249,9 +255,11 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     } else {
       llvm::SmallVector<llvm::Value *, 4> IdxList;
       // First index for GEP.
-      if(!isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Var->getDecl())->getType())))
-      IdxList.push_back(llvm::ConstantInt::get(CGM.Int32Ty, 0));
-      
+      if (!isa<PointerTypeDeclaration>(Sema::Get_type(
+              ((VariableDeclaration *)Var->getDecl())->getType()))) {
+        IdxList.push_back(llvm::ConstantInt::get(CGM.Int32Ty, 0));
+      }
+
       for (auto I = Selectors.begin(), E = Selectors.end(); I != E; ++I) {
         if (auto *IdxSel = llvm::dyn_cast<IndexSelector>(*I)) {
           IdxList.push_back(emitExpr(IdxSel->getIndex()));
@@ -263,9 +271,11 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
           llvm::report_fatal_error("not implemented");
         }
       }
-      Val = Builder.CreateInBoundsGEP(Val, IdxList);
       if(isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Var->getDecl())->getType())))
         Val = Builder.CreateLoad(Val);
+      Val = Builder.CreateInBoundsGEP(Val, IdxList);
+      // if(isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Var->getDecl())->getType())))
+      //   Val = Builder.CreateLoad(Val);
       Val = Builder.CreateLoad(Val);
       return Val;
     }
@@ -330,8 +340,8 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
 llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
    std::string Method_Name = E->Var->getType()->getName().str() + "_" + E->Function_Name.str();
   auto *F = CGM.getModule()->getFunction(Method_Name);
-  CGM.getModule()->dump();
-  auto o = F->arg_size();
+  // CGM.getModule()->dump();
+  // auto o = F->arg_size();
   std::vector<Value *> ArgsV;
   ArgsV.push_back(Defs[E->Var]);
   for(auto expr:E->getParams()){
@@ -357,7 +367,7 @@ void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
   if(Defs.find(Decl) == Defs.end()){
     Defs[Decl] = Val;
   } else {
-    Defs[Decl]->dump();
+    // Defs[Decl]->dump();
     if (!LoadVal)
       Builder.CreateStore(Val, Defs[Decl]);
     else {
