@@ -18,6 +18,7 @@ class CGFunction{
   bool AggregateReturnType = false;
   Decl *Current_Var_Decl = nullptr;
   llvm::Value *Current_Var_Value = nullptr;
+  SMLoc stmt_loc;
 
   llvm::DenseMap<Decl *, llvm::TrackingVH<llvm::Value>>
         Defs;
@@ -48,11 +49,11 @@ class CGFunction{
   llvm::Value *emitInfixExpr(InfixExpression *E);
   llvm::Value *emitPrefixExpr(PrefixExpression *E);
   llvm::Value *emitExpr(Expr *E);
-  llvm::Value *emitFunccall(FunctionCallExpr *E);
+  virtual llvm::Value *emitFunccall(FunctionCallExpr *E);
   llvm::Value *emitMethcall(MethodCallExpr *E);
   llvm::Value *emitCast(CastExpr *E);
   void emitStmt(AssignmentStatement *Stmt);
-  void emitStmt(FunctionCallStatement *Stmt);
+  virtual void emitStmt(FunctionCallStatement *Stmt);
   void emitStmt(MethodCallStatement *Stmt);
   void emitStmt(IfStatement *Stmt);
   void emitStmt(WhileStatement *Stmt);

@@ -330,7 +330,6 @@ bool Parser::parseTemepleteList(DeclList & Decls,TypeDeclaration* &type_D,std::v
             return _errorhandler();
           }
           Args.push_back(Ty);
-          advance();
         } else {
           Expr *EXP;
           if(parseSimpleExpression(EXP)) {
@@ -878,18 +877,24 @@ bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
   };
   advance();
 
-  if(expect(tok::l_parth)){
-    return _errorhandler();
-  };
-  advance();
+  if (Tok.is(tok::l_parth)) {
+    if (expect(tok::l_parth)) {
+      return _errorhandler();
+    };
+    advance();
 
-  if(parseStatementSequence(Decls, IfStmts)){
-    return _errorhandler();
-  };
-  if(expect(tok::r_parth)){
-    return _errorhandler();
-  };
-  advance();
+    if (parseStatementSequence(Decls, IfStmts)) {
+      return _errorhandler();
+    };
+    if (expect(tok::r_parth)) {
+      return _errorhandler();
+    };
+    advance();
+  } else {
+    if(parseStatement(Decls, IfStmts)){
+        return _errorhandler();
+    };
+  }
 
   if (Tok.is(tok::kw_else)) {
     if (Tok.isNot(tok::l_parth)) {

@@ -3,6 +3,7 @@
 !/build/Debug/
 /build/Debug/*
 !/build/Debug/tests/
+!/build/Debug/std/
 /lib_release/*
 /lib_debug/*
 /lib_debug_2/*
@@ -11,3 +12,4 @@
 /.cache/*
 /src2/*
 /.VSCodeCounter/*
+**.obj

@@ -1,0 +1,30 @@
+class vector<type T>{
+    var ptr:*T;
+    var reserved_size:uint64;
+    var size:uint64 = 0;
+    vector(){
+        ptr = malloc(sizeof<T>() * 5);
+        reserved_size = 5;
+    }
+    fn bool need_expanding(){
+        if(reserved_size == size){
+            return true;
+        } else
+            return false;
+    }
+    fn void expand(){
+        reserved_size = reserved_size*2;
+        ptr = realloc(ptr, reserved_size);
+    }
+    fn int size(){
+        return size;
+    }
+    fn void push_back(Val:T){
+        if(need_expanding()) expand();
+        ptr[size] = Val;
+        size = size + 1; 
+    }
+    fn T get(index:uint64){
+        return ptr[index]
+    }    
+}

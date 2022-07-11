@@ -2,7 +2,7 @@
 #include "llvm/IR/Verifier.h"
 #include <string>
 #include "CGClass.hpp"
-SMLoc stmt_loc;
+#include "Sema/Sema.hpp"
 void CGFunction::run_imported(FunctionDeclaration *Proc) {
   this->Proc = Proc;
   Fty = createFunctionType(Proc);
@@ -168,7 +168,7 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
     {
       Current_Var_Decl = Desig->getDecl();
       auto *Val = emitExpr(Stmt->getExpr());
-      Val->dump();
+      // Val->dump();
       // if(Val->getType()->isPointerTy())
       // Val = Builder.CreateLoad(Val);
       if (!Val->getType()->isVoidTy()) {
@@ -178,6 +178,8 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
   else {
     llvm::SmallVector<llvm::Value *, 4> IdxList;
     // First index for GEP.
+    
+    if(!isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Desig->getDecl())->getType())))
     IdxList.push_back(
         llvm::ConstantInt::get(CGM.Int32Ty, 0));
     auto *Base =
@@ -207,6 +209,10 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
         Current_Var_Value = Base;
         auto *Val = emitExpr(Stmt->getExpr());
         if(Val->getType()->isVoidTy()) return;
+        if(isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Desig->getDecl())->getType())))
+        Base = Builder.CreateLoad(Base);
+        Base->dump();
+        Val->dump();
         Builder.CreateStore(Val, Base);
       }
       else {
@@ -362,10 +368,10 @@ llvm::Value *
 CGFunction::readLocalVariable(llvm::BasicBlock *BB,
                                Decl *Decl,bool LoadVal = false) {
   assert(BB && "Basic block is nullptr");
-  assert(
-      (llvm::isa<VariableDeclaration>(Decl) ||
-       llvm::isa<ParameterDeclaration>(Decl)) &&
-      "Declaration must be variable or formal parameter");
+  // assert(
+  //     (llvm::isa<VariableDeclaration>(Decl) ||
+  //      llvm::isa<ParameterDeclaration>(Decl)) &&
+  //     "Declaration must be variable or formal parameter");
   auto Val = Defs.find(Decl);
   if (Val != Defs.end()) {
     if (LoadVal)
@@ -456,7 +462,7 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
 void CGFunction::emitStmt(MethodCallStatement *Stmt){
   std::string Method_Name = Stmt->Var->getType()->getName().str() + "_" + Stmt->Function_Name.str();
   auto *F = CGM.getModule()->getFunction(Method_Name);
-  CGM.getModule()->dump();
+  // CGM.getModule()->dump();
   auto o = F->arg_size();
   std::vector<Value *> ArgsV;
   ArgsV.push_back(readVariable(Curr, static_cast<Designator*>(Stmt->Var)->getDecl(), false));

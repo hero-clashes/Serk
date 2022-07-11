@@ -70,6 +70,12 @@ void Sema::initialize() {
       new ParameterDeclaration(CurrentDecl, SMLoc(), "size", int64, false)};
   Malloc->setFormalParams(a);
   Malloc->setRetType(Get_Pointer_Type(ByteType));
+  FunctionDeclaration *realloc = (FunctionDeclaration *)Insert_Decl(
+      new FunctionDeclaration(CurrentDecl, SMLoc(), "realloc"));
+  ParamList b{ new ParameterDeclaration(CurrentDecl,SMLoc(),"old_ptr", Get_Pointer_Type(ByteType), false),
+      new ParameterDeclaration(CurrentDecl, SMLoc(), "size", int64, false)};
+  realloc->setFormalParams(b);
+  realloc->setRetType(Get_Pointer_Type(ByteType));
   TrueLiteral = new BooleanLiteral(true, BoolType);
   FalseLiteral = new BooleanLiteral(false, BoolType);
   TrueConst =
@@ -182,6 +188,11 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
       return NullPtr;
     }else if (auto D = dyn_cast_or_null<ClassDeclaration>(CurrentScope->lookup(Name))){
       auto s = new std::string(("Create"));
+      if(auto F = dyn_cast_or_null<FunctionDeclaration>(CurrentScope->lookup(*s))){
+        return F;
+      }
+    } else if (auto D = dyn_cast_or_null<ClassDeclaration>(CurrentDecl->getEnclosingDecl())) {
+      auto s = new std::string((D->Name + "_" + Name).str());
       if(auto F = dyn_cast_or_null<FunctionDeclaration>(CurrentScope->lookup(*s))){
         return F;
       }
@@ -511,7 +522,9 @@ void Sema::actOnAliasTypeDeclaration(DeclList &Decls, SMLoc Loc,
   };
 void Sema::actOnIndexSelector(Expr *Desig, SMLoc Loc, Expr *E) {
   if (auto *D = dyn_cast<Designator>(Desig)) {
-    if (auto *Ty = dyn_cast<ArrayTypeDeclaration>(D->getType())) {
+    if (auto *Ty = dyn_cast<ArrayTypeDeclaration>(D->getType()) ) {
+      D->addSelector(new IndexSelector(E, Ty->getType()));
+    } else if (auto *Ty = dyn_cast<PointerTypeDeclaration>(D->getType()) ) {
       D->addSelector(new IndexSelector(E, Ty->getType()));
     } else {
       Diags.report(Loc, diag::err_indexing_non_array);
@@ -664,11 +677,11 @@ bool Sema::Can_Be_Casted(Expr *Org, TypeDeclaration* Dest){
   auto Org_Ty = Org->getType();
   if(is_int(Org_Ty) && is_int(Dest))
     return true;
-  if (Org_Ty->Name == "uint8_Pointer") {
-    if(dyn_cast_or_null<PointerTypeDeclaration>(Dest)){
+  if (isa<PointerTypeDeclaration>(Org_Ty)) {
+    if(isa<PointerTypeDeclaration>(Dest)){
       return true;
     }
-  }
+  } 
   if(isa<PointerTypeDeclaration>(Org_Ty) && Dest == BoolType){
     return true;
   }

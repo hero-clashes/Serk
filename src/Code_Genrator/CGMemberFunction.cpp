@@ -4,7 +4,7 @@
 void CGMemberFunction::writeVariable(llvm::BasicBlock *BB,
                                 Decl *D, llvm::Value *Val, bool LoadVal) {
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(D)) {
-    if (V->getEnclosingDecl() == CGC.Class)
+    if (V->getEnclosingDecl()->Name.startswith(CGC.Class->Name))
       writeLocalVariable(BB, D, Val, LoadVal);
     else if (V->getEnclosingDecl() ==
              CGM.getModuleDeclaration()) {
@@ -163,7 +163,7 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
   InitDecls(Proc);
 
   auto Block = Proc->getStmts();
-  if(Proc->getName() == "Create_Default"){
+  if(Proc->getName().endswith("Create")){
     emit(dyn_cast_or_null<ClassDeclaration>(Proc->getEnclosingDecl())->Stmts);
   }
   emit(Proc->getStmts());
@@ -204,4 +204,51 @@ llvm::Function *CGMemberFunction::createFunction(FunctionDeclaration *Proc,
     Arg->setName(FP->getName());
   }
   return Fn;
+};
+
+llvm::Value *CGMemberFunction::emitFunccall(FunctionCallExpr *E){
+   auto *F = CGM.getModule()->getFunction(E->geDecl()->getName());
+  std::vector<Value *> ArgsV;
+  if(E->geDecl()->getEnclosingDecl() && E->geDecl()->getEnclosingDecl()->Name.startswith(CGC.Class->Name)){
+    ArgsV.push_back(Builder.CreateLoad(Defs[CGC.Class]));
+  };
+  for(auto expr:E->getParams()){
+    auto v = emitExpr(expr);
+    // if(v->getType()->isPointerTy()){
+    //     v = Builder.CreateLoad(v);
+    // }
+    ArgsV.push_back(v);
+  };
+  // for(auto a:ArgsV) a->dump();
+  // F->dump();
+  auto placeholder = Builder.CreateCall(
+      F, ArgsV, F->getReturnType()->isVoidTy() ? "" : "calltmp");
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),stmt_loc);
+  return placeholder;
+  // llvm::report_fatal_error("not implemented");
+};
+void CGMemberFunction::emitStmt(FunctionCallStatement *Stmt){
+  auto *F = CGM.getModule()->getFunction(Stmt->getProc()->getName());
+
+  std::vector<Value *> ArgsV;
+  if(Stmt->getProc()->getEnclosingDecl() && Stmt->getProc()->getEnclosingDecl()->Name.startswith(CGC.Class->Name)){
+    ArgsV.push_back(Builder.CreateLoad(Defs[CGC.Class]));
+  };
+  int index  =0;
+  for(auto expr:Stmt->getParams()){
+    if (!Stmt->getProc()->getFormalParams().empty() && Stmt->getProc()->getFormalParams()[index]->IsPassedbyReference()) {
+      Value* val;
+     auto a =dyn_cast_or_null<Designator>(expr);
+     val = Defs[a->getDecl()];
+     ArgsV.push_back(val);
+    //  val->dump();
+    }else
+    ArgsV.push_back(emitExpr(expr));
+    index++;
+  };
+   Builder.CreateCall(F, ArgsV);
+  if(auto dbg = CGM.getDbgInfo())
+            dbg->SetLoc(&Curr->back(),Stmt->getLoc());
+  // llvm::report_fatal_error("not implemented");
 };

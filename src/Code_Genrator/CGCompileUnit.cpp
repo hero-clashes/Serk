@@ -52,6 +52,15 @@ void CGCompileUnit::initialize()
       /* has variadic args */ false
     )
   );
+  M->getOrInsertFunction(
+    "realloc",
+    FunctionType::get(
+      Int8PtrTy,
+      { Int8PtrTy,
+        IntegerType::getInt64Ty(getLLVMCtx())},
+      /* has variadic args */ false
+    )
+  );
    M->getOrInsertFunction(
     "free",
     FunctionType::get(

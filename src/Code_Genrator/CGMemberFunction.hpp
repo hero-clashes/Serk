@@ -27,4 +27,7 @@ llvm::FunctionType *
 
 void run(FunctionDeclaration *Proc);
 void run_imported(FunctionDeclaration *Proc);
+
+llvm::Value *emitFunccall(FunctionCallExpr *E);
+void emitStmt(FunctionCallStatement *Stmt);
 };
