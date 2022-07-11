@@ -1,0 +1,13 @@
+
+class A {
+  var asd:int;
+	fn int s(){
+	  asd = 45;
+	  return asd;
+	}
+  } 
+fn int main() {
+  var s:A;
+  var o =  s.s();
+  return o;
+}

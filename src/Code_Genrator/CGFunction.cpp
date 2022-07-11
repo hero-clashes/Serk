@@ -21,21 +21,9 @@ void CGFunction::run(FunctionDeclaration *Proc) {
   setCurr(BB);
 
     size_t Idx = 0;
-  if(AggregateReturnType){
-    for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E;
-       ++I, ++Idx) {
-    llvm::Argument *Arg = I;
-    ParameterDeclaration *FP =
-        Proc->getFormalParams()[Idx];
-    // Create mapping FormalParameter -> llvm::Argument
-    // for VAR parameters.
-    FormalParams[FP] = Arg;
-    llvm::Value *Alloca = Builder.CreateAlloca(Arg->getType());
-    auto ar = Builder.CreateStore(Arg, Alloca);
-    writeLocalVariable(Curr, FP, Alloca);
-  }
-  } else
-  for (auto I = Fn->arg_begin(), E = Fn->arg_end(); I != E;
+  auto I = Fn->arg_begin();
+  if(AggregateReturnType) I++;
+  for (auto E = Fn->arg_end(); I != E;
        ++I, ++Idx) {
     llvm::Argument *Arg = I;
     ParameterDeclaration *FP =
@@ -180,7 +168,7 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
     {
       Current_Var_Decl = Desig->getDecl();
       auto *Val = emitExpr(Stmt->getExpr());
-      // Val->dump();
+      Val->dump();
       // if(Val->getType()->isPointerTy())
       // Val = Builder.CreateLoad(Val);
       if (!Val->getType()->isVoidTy()) {
@@ -283,7 +271,7 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
   } else if (auto *MethCall = llvm::dyn_cast<MethodCallExpr>(E)) {
     return emitMethcall(MethCall);
   } else if (auto *ConstructorCall = llvm::dyn_cast<ConstructorCallExpr>(E)) {
-    auto m = new MethodCallExpr((VariableDeclaration *)Current_Var_Decl,"Create",ConstructorCall->getParams());
+    auto m = new MethodCallExpr((VariableDeclaration *)Current_Var_Decl,"Create",ConstructorCall->getParams(),ConstructorCall->getType());
     return emitMethcall(m);
   } else if (auto *Str = llvm::dyn_cast<String_Literal>(E)) {
     Str->Value.consume_back("\"");
@@ -359,12 +347,13 @@ void CGFunction::writeLocalVariable(llvm::BasicBlock *BB,
   assert(Val && "Value is nullptr");
   if(Defs.find(Decl) == Defs.end()){
     Defs[Decl] = Val;
-  } else
-  { if(!LoadVal)
-    Builder.CreateStore(Val, Defs[Decl]);
+  } else {
+    Defs[Decl]->dump();
+    if (!LoadVal)
+      Builder.CreateStore(Val, Defs[Decl]);
     else {
-    auto v = Builder.CreateLoad(Defs[Decl]);
-    Builder.CreateStore(Val, v);
+      auto v = Builder.CreateLoad(Defs[Decl]);
+      Builder.CreateStore(Val, v);
     }
   };
 }
@@ -470,7 +459,7 @@ void CGFunction::emitStmt(MethodCallStatement *Stmt){
   CGM.getModule()->dump();
   auto o = F->arg_size();
   std::vector<Value *> ArgsV;
-  ArgsV.push_back(emitExpr(Stmt->Var));
+  ArgsV.push_back(readVariable(Curr, static_cast<Designator*>(Stmt->Var)->getDecl(), false));
   for(auto expr:Stmt->getParams()){
     ArgsV.push_back(emitExpr(expr));
   };
@@ -693,7 +682,11 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
       if (auto *Var = llvm::dyn_cast<VariableDeclaration>(D)) {
         llvm::Type *Ty = mapType(Var);
         // if (Ty->isAggregateType()) {
-        llvm::Value *Val = Builder.CreateAlloca(Ty, nullptr, Var->getName());
+        auto *Val = Builder.CreateAlloca(Ty, nullptr, Var->getName());
+        auto a =CGM.getModule()->getDataLayout();
+        auto b = a.getABITypeAlign(Ty);
+        auto c = b.value();
+        Val->setAlignment(b);
         // Defs[D] = Val;
         writeLocalVariable(Curr, Var, Val);
         if (CGDebugInfo *Dbg = CGM.getDbgInfo())

@@ -1,0 +1,11 @@
+fn int d(ad:int) { return ad * ad; }
+
+int main() {
+
+  // lj;lkl;kasd
+  var a = 10;
+  while(a != 20){
+	a = a + 1 ;
+  }
+  return a;
+}

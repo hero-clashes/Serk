@@ -23,12 +23,16 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/WithColor.h"
+#include "llvm/Support/FileSystem.h"
 
 #include "llvm/Passes/PassBuilder.h" // New
 #include "llvm/Passes/PassPlugin.h" // New
 #include "llvm/Analysis/AliasAnalysis.h" // New
 #include "llvm/Analysis/TargetTransformInfo.h" // New
 
+static llvm::cl::list<std::string>
+    InputFiles(llvm::cl::Positional,
+               llvm::cl::desc("<input-files>"));
 TargetMachine *Create_TM() {
   llvm::Triple TargetTriple = llvm::Triple(LLVM_DEFAULT_TARGET_TRIPLE);
 
@@ -66,26 +70,27 @@ int main(int argc_, const char **argv_) {
   llvm::cl::ParseCommandLineOptions(argc_, argv_, "Serk Compiler");
 
   llvm::codegen::RegisterCodeGenFlags()	;
-
-  llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>>
-    FileOrErr = llvm::MemoryBuffer::getFile("main.serk");
-
-
+  if(InputFiles.empty()) InputFiles.push_back("main.serk");
   SourceMgr mgr;
+  for (auto File : InputFiles) {
 
-  mgr.AddNewSourceBuffer(std::move(*FileOrErr), llvm::SMLoc());
+    llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> FileOrErr =
+        llvm::MemoryBuffer::getFile(File);
 
 
+    mgr.AddNewSourceBuffer(std::move(*FileOrErr), llvm::SMLoc());
 
-  DiagnosticsEngine dia{mgr};
-  Lexer lex{mgr,dia};
+    DiagnosticsEngine dia{mgr};
+    Sema sema{dia};
 
-  Sema sema{dia};
-  Parser parser{lex,sema};
+    Lexer lex{mgr, dia};
 
-  parser.parse("main.serk");
-  if(dia.nunErrors() > 0){
-    return 0;
+    Parser parser{lex, sema};
+    auto base_filename = new std::string(File.substr(File.find_last_of("/\\") + 1));
+    parser.parse(*base_filename);
+    if (dia.nunErrors() > 0) {
+      return 1;
+    }
   }
   auto TM = Create_TM();
   auto TheContext = std::make_unique<LLVMContext>();
@@ -94,7 +99,7 @@ int main(int argc_, const char **argv_) {
   for (auto key : imported.keys()) {
     auto val = imported[key];
     if (!val)
-      return 0;
+      return 1;
     auto M = Genrator->run(val, key.str(), mgr);
     legacy::PassManager PM;
     std::error_code EC;

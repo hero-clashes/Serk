@@ -1,0 +1,16 @@
+fn int d(ad:int) { return ad * ad; }
+
+fn int main() {
+
+  // lj;lkl;kasd
+  var a = 10;
+  if (a == 10) {
+    a = d(a);
+    if (a == 99) {
+      a = d(a);
+    } else {
+	 a = d(a + 1);
+	}
+  }
+  return a;
+}

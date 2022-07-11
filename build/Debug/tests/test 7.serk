@@ -1,0 +1,16 @@
+var d = 0;
+class A {
+  var asd:int = 0;
+	fn int s(){
+	asd = 45;
+	return asd;
+	}
+	A(){
+	asd = 45;
+	}
+  } 
+int main() {
+  A s;
+  int o =  s.s();
+  return o;
+}

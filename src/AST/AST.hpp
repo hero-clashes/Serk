@@ -547,8 +547,8 @@ class MethodCallExpr :public Expr{
   ExprList Params;
 
   MethodCallExpr(VariableDeclaration *Var, StringRef Function_Name,
-                   ExprList Params)
-      : Expr(EK_Meth, Var->getType() , false),Var(Var),
+                   ExprList Params, TypeDeclaration* Ty)
+      : Expr(EK_Meth, Ty , false),Var(Var),
         Function_Name(Function_Name), Params(Params) {}
 
   // FunctionDeclaration *geDecl() { return Proc; }

@@ -640,7 +640,7 @@ bool Parser::parseFactor(Expr *&E) {
         if(expect(tok::identifier)){
           return _errorhandler();
         }
-        auto Method_name = Tok.getIdentifier();
+        auto Method_name = Tok;
         ExprList Exprs;
         advance();
         if (Tok.is(tok::l_paren)) {
@@ -655,7 +655,7 @@ bool Parser::parseFactor(Expr *&E) {
             return _errorhandler();
           };
           advance();
-          E = new MethodCallExpr((VariableDeclaration *)D, Method_name, Exprs);
+          E = Actions.actOnMethodCallExpr(Method_name.getLocation(), D, Method_name.getIdentifier(), Exprs);
           //TODO add error checking
         }
       }

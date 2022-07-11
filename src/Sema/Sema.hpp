@@ -65,6 +65,8 @@ public:
                      ExprList &Params);
   Expr *actOnConstructorCallExpr(SMLoc Loc, Decl *D,
                      ExprList &Params);
+  Expr *actOnMethodCallExpr(SMLoc Loc, Decl *D, StringRef Method_Name,
+                     ExprList &Params);                   
   void actOnIfStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &IfStmts,
                         StmtList &ElseStmts);

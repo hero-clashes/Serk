@@ -1,0 +1,13 @@
+class A{
+var asd:int;
+}
+class I<T>{
+var asd:T;
+}
+fn int main() {
+  var Som:I<A>;
+  Som.asd.asd = 10;
+  printf("%d", Som.asd);
+  return 0;
+ }
+ 

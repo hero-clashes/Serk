@@ -1,0 +1,9 @@
+import "a.serk"
+fn int main() {
+var as:float = a();
+var aas:*float = nullptr;
+if(aas){
+	as = as + a();
+};
+return a;
+}

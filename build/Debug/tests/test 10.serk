@@ -1,0 +1,11 @@
+class I{
+ var asd:int = 5;
+}
+fn int main() {
+  var Som:I;
+  printf("%d", Som.asd);
+  Som.asd = 9
+  printf("%d", Som.asd);
+  return 0;
+ }
+ 

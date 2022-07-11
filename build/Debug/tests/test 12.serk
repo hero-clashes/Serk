@@ -1,0 +1,6 @@
+fn int main() {
+  var Som:int[100];
+  Som[0] = 25;
+  printf("%d", Som[0]);
+  return 0;
+ }

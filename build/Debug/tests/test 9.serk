@@ -1,0 +1,16 @@
+enum {
+    zero,
+    one,
+    som = 546,
+}
+fn void foo(a:ref int){
+    a = 41
+}
+fn int main() {
+  var n = one;
+  var s = som;
+  foo(n);
+  printf("%d", n);
+  return 0;
+ }
+ 

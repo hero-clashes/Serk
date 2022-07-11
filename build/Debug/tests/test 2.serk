@@ -1,0 +1,11 @@
+fn int d(ad:int){
+return ad*ad;
+}
+
+fn int main(){
+
+//lj;lkl;kasd
+var:int a = 10;
+a = d(a);
+return a;
+}

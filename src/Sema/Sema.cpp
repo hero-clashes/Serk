@@ -81,7 +81,8 @@ void Sema::initialize() {
 FunctionDeclaration *Sema::actOnFunctionDeclaration(SMLoc Loc, StringRef Name){
 FunctionDeclaration *P =
       new FunctionDeclaration(CurrentDecl, Loc, Name);
-  if(Name.endswith("Create")){
+  if(isa<ClassDeclaration>(CurrentDecl)){
+    P->Name = *(new std::string((CurrentDecl->Name + "_" + Name).str()));
     if (!CurrentScope->getParent()->insert(P))
     Diags.report(Loc, diag::err_symbold_declared, Name);
   } else
@@ -435,6 +436,19 @@ Expr *Sema::actOnConstructorCallExpr(SMLoc Loc, Decl *D,
   Diags.report(D->getLocation(),
                diag::err_function_call_on_nonfunction);
   return nullptr;
+};
+Expr *Sema::actOnMethodCallExpr(SMLoc Loc, Decl *D, StringRef Method_Name,
+                                ExprList &Params){
+  auto name = (((VariableDeclaration*)D)->getType()->getName() + "_" + Method_Name).str();
+  auto M = CurrentScope->lookup(name);
+  if(!M ||!isa<FunctionDeclaration>(M)){
+    //TODO error out
+  } else {
+    auto P = (FunctionDeclaration*)M;
+    checkFormalAndActualParameters(
+        Loc, P->getFormalParams(), Params);
+  }
+  return new MethodCallExpr((VariableDeclaration*)D,Method_Name,Params,((FunctionDeclaration*)M)->getRetType());                 
 };
 void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &IfStmts,

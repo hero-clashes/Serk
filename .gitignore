@@ -1,4 +1,8 @@
 /build/*
+!/build/
+!/build/Debug/
+/build/Debug/*
+!/build/Debug/tests/
 /lib_release/*
 /lib_debug/*
 /lib_debug_2/*
@@ -6,3 +10,4 @@
 /include2/*
 /.cache/*
 /src2/*
+/.VSCodeCounter/*

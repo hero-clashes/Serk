@@ -29,17 +29,16 @@ StructType *CGClass::run(ClassDeclaration *Class) {
 
   for (auto *Decl : Class->Decls) {
     if (auto *Proc = llvm::dyn_cast<FunctionDeclaration>(Decl)) {
-        auto a = new std::string((Class->getName() + "_" + Proc->getName()).str());
-        Proc->Name = *a;
         CGMemberFunction CGP(CGM, *this);
         CGP.run(Proc);
     }
   }
   if(!CGM.getModule()->getFunction(Class->getName().str() + "_" + "Create") && !Class->Stmts.empty()){
+    auto n = new std::string(Class->getName().str() + "_" + "Create");
     ParamList a;
     DeclList b;
     StmtList s;
-    auto F = new FunctionDeclaration(Class,Class->getLocation(), "Create" ,a,nullptr,b,s);
+    auto F = new FunctionDeclaration(Class,Class->getLocation(), *n ,a,nullptr,b,Class->Stmts);
     CGMemberFunction CGP(CGM, *this);
     CGP.run(F);
   }
