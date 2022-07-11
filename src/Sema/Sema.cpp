@@ -28,7 +28,7 @@ bool Sema::isOperatorForType(tok::TokenKind Op,
 }
 
 void Sema::enterScope(Decl *D) {
-  CurrentScope = new Scope(CurrentScope);
+  CurrentScope = new Scope(D,CurrentScope);
   CurrentDecl = D;
 }
 
@@ -37,11 +37,11 @@ void Sema::leaveScope() {
   Scope *Parent = CurrentScope->getParent();
   delete CurrentScope;
   CurrentScope = Parent;
-  CurrentDecl = CurrentDecl->getEnclosingDecl();
+  CurrentDecl = CurrentScope->P_Decl;
 }
 
 void Sema::initialize() {
-  CurrentScope = new Scope();
+  CurrentScope = new Scope(nullptr,nullptr);
   CurrentDecl = nullptr;
   std::tuple<std::vector<const char *>,std::vector<int>,std::vector<bool>> Int_types = {{"int","float","double","long", "byte", "int64", "int32","int16", "int8","uint64", "uint32","uint16", "uint8" ,"bool"},{32,32,64,64, 16, 8, 64, 32, 8,64, 32, 16, 8 , 1},{{true,true,true , true ,true, true, true, true, true, false, false, false, false , false}}};
   auto size = std::get<0>(Int_types).size();
@@ -63,7 +63,11 @@ void Sema::initialize() {
   ByteType = (Integer_TypeDeclaration *)CurrentScope->lookup("int8");
 
   NullPtr = new ConstantDeclaration(CurrentDecl,SMLoc(),"nullptr", new Expr(Expr::EK_Impl,Get_Pointer_Type(ByteType),true));
-  Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "printf"));
+  auto printf = (FunctionDeclaration *)Insert_Decl(new FunctionDeclaration(CurrentDecl, SMLoc(), "printf"));
+  ParamList c{ new ParameterDeclaration(CurrentDecl,SMLoc(),"str", Get_Pointer_Type(ByteType), false)};
+  printf->setFormalParams(c);
+  printf->setRetType(IntegerType);
+  printf->is_varg = true;
   FunctionDeclaration *Malloc = (FunctionDeclaration *)Insert_Decl(
       new FunctionDeclaration(CurrentDecl, SMLoc(), "malloc"));
   ParamList a{
@@ -341,7 +345,10 @@ Expr *Sema::actOnTerm(Expr *Left, Expr *Right,
     return Left;
 
   if (Get_type(Left->getType()) != Get_type(Right->getType()) ||
-      !isOperatorForType(Op.getKind(), Get_type(Left->getType()))) {//TODO add casting
+      !isOperatorForType(Op.getKind(), Get_type(Left->getType()))) {
+    if (Can_Be_Casted(Left, Right->getType())) {
+      Left = Create_Cast(Left, Right->getType());
+    } else
     Diags.report(
         Op.getLocation(),
         diag::err_types_for_operator_not_compatible,
@@ -404,7 +411,7 @@ FunctionCallStatement *Sema::actOnFunctionCallStatemnt(SMLoc Loc, Decl *D,
    if (!D)
     return nullptr;
   if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
-    checkFormalAndActualParameters(
+    checkFormalAndActualParameters(P,
         D->getLocation(), P->getFormalParams(), Params);
     if (!P->getRetType())
       Diags.report(D->getLocation(),
@@ -421,7 +428,7 @@ Expr *Sema::actOnFunctionCallExpr(SMLoc Loc, Decl *D,
    if (!D)
     return nullptr;
   if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
-    checkFormalAndActualParameters(
+    checkFormalAndActualParameters(P,
         D->getLocation(), P->getFormalParams(), Params);
     if (!P->getRetType())
       Diags.report(D->getLocation(),
@@ -437,7 +444,7 @@ Expr *Sema::actOnConstructorCallExpr(SMLoc Loc, Decl *D,
   if (!D)
     return nullptr;
   if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
-    checkFormalAndActualParameters(
+    checkFormalAndActualParameters(P,
         D->getLocation(), P->getFormalParams(), Params);
     if (!P->getRetType())
       Diags.report(D->getLocation(),
@@ -456,7 +463,7 @@ Expr *Sema::actOnMethodCallExpr(SMLoc Loc, Decl *D, StringRef Method_Name,
     //TODO error out
   } else {
     auto P = (FunctionDeclaration*)M;
-    checkFormalAndActualParameters(
+    checkFormalAndActualParameters(P,
         Loc, P->getFormalParams(), Params);
   }
   return new MethodCallExpr((VariableDeclaration*)D,Method_Name,Params,((FunctionDeclaration*)M)->getRetType());                 
@@ -489,7 +496,7 @@ void Sema::actOnForStatement(StmtList &Stmts, SMLoc Loc,
 ClassDeclaration *Sema::actOnClassDeclaration(SMLoc Loc, StringRef Name,bool Is_Genric){
   ClassDeclaration *P =
       new ClassDeclaration(CurrentDecl, Loc, Name,Is_Genric);
-  if (!CurrentScope->insert(P))
+  if (!CurrentScope->getScopeAtDepth(0)->insert(P))
     Diags.report(Loc, diag::err_symbold_declared, Name);
   return P;
 };
@@ -625,10 +632,10 @@ ArrayTypeDeclaration *Sema::actOnArrayTypeDeclaration(DeclList &Decls, SMLoc Loc
     }
   } //TODO add error messeges handling
 };
-void Sema::checkFormalAndActualParameters(
+void Sema::checkFormalAndActualParameters(FunctionDeclaration *F,
     SMLoc Loc, const ParamList &Formals,
     ExprList &Actuals) {
-  if (Formals.size() != Actuals.size()) {
+  if ((Formals.size() != Actuals.size()) && !F->is_varg) {
     Diags.report(Loc, diag::err_wrong_number_of_parameters);
     return;
   }

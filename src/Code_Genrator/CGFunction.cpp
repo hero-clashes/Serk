@@ -249,6 +249,7 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     } else {
       llvm::SmallVector<llvm::Value *, 4> IdxList;
       // First index for GEP.
+      if(!isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Var->getDecl())->getType())))
       IdxList.push_back(llvm::ConstantInt::get(CGM.Int32Ty, 0));
       
       for (auto I = Selectors.begin(), E = Selectors.end(); I != E; ++I) {
@@ -263,6 +264,8 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
         }
       }
       Val = Builder.CreateInBoundsGEP(Val, IdxList);
+      if(isa<PointerTypeDeclaration>(Sema::Get_type(((VariableDeclaration*)Var->getDecl())->getType())))
+        Val = Builder.CreateLoad(Val);
       Val = Builder.CreateLoad(Val);
       return Val;
     }
@@ -444,7 +447,7 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
   std::vector<Value *> ArgsV;
   int index  =0;
   for(auto expr:Stmt->getParams()){
-    if (!Stmt->getProc()->getFormalParams().empty() && Stmt->getProc()->getFormalParams()[index]->IsPassedbyReference()) {
+    if (!Stmt->getProc()->getFormalParams().empty() && Stmt->getProc()->getFormalParams().size() > index && Stmt->getProc()->getFormalParams()[index]->IsPassedbyReference()) {
       Value* val;
      auto a =dyn_cast_or_null<Designator>(expr);
      val = Defs[a->getDecl()];

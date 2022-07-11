@@ -90,7 +90,7 @@ public:
   void Create_Genric_Var(DeclList Decls,StringRef Name,SMLoc loc, TypeDeclaration* Ty);     
   ClassDeclaration *init_genric_class(DeclList &Decls,Decl *T,std::vector<std::variant<TypeDeclaration*,Expr *>> Args);   
   static TypeDeclaration *Get_type(TypeDeclaration* Type);    
-  void checkFormalAndActualParameters(
+  void checkFormalAndActualParameters(FunctionDeclaration *F,
     SMLoc Loc, const ParamList &Formals,
     ExprList &Actuals);                
   TypeDeclaration *Get_Pointer_Type(TypeDeclaration *Ty);
@@ -109,6 +109,9 @@ class EnterDeclScope {
 public:
   EnterDeclScope(Sema &Semantics, Decl *D) : Semantics(Semantics) {
     Semantics.enterScope(D);
+  }
+  EnterDeclScope(Sema &Semantics) : Semantics(Semantics) {
+    Semantics.enterScope(Semantics.CurrentScope->P_Decl);
   }
   ~EnterDeclScope() { Semantics.leaveScope(); }
 };

@@ -235,6 +235,7 @@ public:
     Genrator,
   };
   FType Type = Normal;
+  bool is_varg = false;
   FunctionDeclaration(Decl *EnclosingDecL, SMLoc Loc,
                        StringRef Name)
       : Decl(DK_Function, EnclosingDecL, Loc, Name) {}

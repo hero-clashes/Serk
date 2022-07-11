@@ -20,6 +20,7 @@ CompileUnitDeclaration *Parser::parse(StringRef Name) {
   module = Actions.actOnCompileUnitDeclaration(SMLoc(), Name);
   // EnterDeclScope S(Actions, module);
   Actions.CurrentDecl = module;
+  Actions.CurrentScope->P_Decl = module;
   DeclList Decls;
   StmtList Stmts;
   while (Tok.isNot(tok::eof)) {
@@ -862,7 +863,7 @@ bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
   StmtList IfStmts, ElseStmts;
   SMLoc Loc = Tok.getLocation();
   consume(tok::kw_if);
-
+  EnterDeclScope s(Actions);
   if(expect(tok::l_paren)){
     return _errorhandler();
   };
@@ -897,12 +898,12 @@ bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
   }
 
   if (Tok.is(tok::kw_else)) {
+    advance();
     if (Tok.isNot(tok::l_parth)) {
       if(parseStatement(Decls, ElseStmts)){
         return _errorhandler();
       };
     } else {
-      advance();
       if(expect(tok::l_parth)){
         return _errorhandler();
       };
@@ -930,7 +931,7 @@ bool Parser::parseWhileStatement(DeclList &Decls, StmtList &Stmts) {
   StmtList WhileStmts;
   SMLoc Loc = Tok.getLocation();
   consume(tok::kw_while);
-
+  EnterDeclScope s(Actions);
   if(expect(tok::l_paren)){
     return _errorhandler();
   };
@@ -977,7 +978,7 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
 
   SMLoc Loc = Tok.getLocation();
   consume(tok::kw_for);
-
+  EnterDeclScope s(Actions);
   if(expect(tok::l_paren)){
     return _errorhandler();
   };
