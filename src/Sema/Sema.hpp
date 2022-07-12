@@ -88,7 +88,7 @@ public:
   ArrayTypeDeclaration *actOnArrayTypeDeclaration(DeclList &Decls, SMLoc Loc,Expr *E,Decl *D);
   void Create_Genric_type(StringRef Name,SMLoc loc);
   void Create_Genric_Var(DeclList Decls,StringRef Name,SMLoc loc, TypeDeclaration* Ty);     
-  ClassDeclaration *init_genric_class(DeclList &Decls,Decl *T,std::vector<std::variant<TypeDeclaration*,Expr *>> Args);   
+  ClassDeclaration *init_genric_class(DeclList &Decls,Decl *T,std::vector<std::variant<TypeDeclaration*,Expr *>> Arg,SMLoc Loc);   
   static TypeDeclaration *Get_type(TypeDeclaration* Type);    
   void checkFormalAndActualParameters(FunctionDeclaration *F,
     SMLoc Loc, const ParamList &Formals,

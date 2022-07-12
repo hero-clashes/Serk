@@ -58,7 +58,8 @@ public:
     auto buf = SrcMgr.AddIncludeFile(file.str(), loc, IncludedFile);
     Lexer copy = *this;
     if(buf == 0){
-      //TODO error out
+      Diags.report(loc, diag::err_file_not_found, file);
+      return copy;
     } else {
       
       auto buffer = SrcMgr.getMemoryBuffer(buf);

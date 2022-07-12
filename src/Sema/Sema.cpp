@@ -462,7 +462,8 @@ Expr *Sema::actOnMethodCallExpr(SMLoc Loc, Decl *D, StringRef Method_Name,
   auto name = (((VariableDeclaration*)D)->getType()->getName() + "_" + Method_Name).str();
   auto M = CurrentScope->lookup(name);
   if(!M ||!isa<FunctionDeclaration>(M)){
-    //TODO error out
+    Diags.report(D->getLocation(),
+                   diag::err_function_call_on_nonfunction);
   } else {
     auto P = (FunctionDeclaration*)M;
     checkFormalAndActualParameters(P,
@@ -574,13 +575,21 @@ void Sema::Create_Genric_Var(DeclList Decls,StringRef Name,SMLoc loc,TypeDeclara
   CurrentScope->insert(Genric);
   Decls.push_back(Genric);
 };
-ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,std::vector<std::variant<TypeDeclaration*,Expr *>> Args){
+ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,std::vector<std::variant<TypeDeclaration*,Expr *>> Args,SMLoc Loc){
   auto Class = dyn_cast_or_null<ClassDeclaration>(T);
+  if(!Class){
+    Diags.report(Loc, diag::err_not_class);
+    return nullptr;
+  }
+  if(!Class->is_genric){
+    Diags.report(Loc, diag::err_class_not_genric);
+    return nullptr;
+  }
   auto Class_Copy = new ClassDeclaration(*Class);
   Class_Copy->is_genric = false;
   auto new_name =new std::string(Class_Copy->Name.str());
   if(Args.size() != Class_Copy->TempleteArg.size()){
-    //TODO error out
+    Diags.report(Loc, diag::err_wrong_number_of_parameters_templete);
   }
   int index = 0;
   for(auto V:Args){
@@ -588,15 +597,21 @@ ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,std::vector<st
       case 0:
       {
         auto Ty = std::get<TypeDeclaration*>(V);
-        dyn_cast_or_null<Alias_TypeDeclaration>(Class_Copy->TempleteArg[index])->Realone = Ty;
-        //TODO add error checking
+        if(auto T = dyn_cast_or_null<Alias_TypeDeclaration>(Class_Copy->TempleteArg[index])){
+          T->Realone = Ty;
+        } else {
+          Diags.report(Loc, diag::err_passing_type_to_non_type_templete_arg);
+        };
       }
       break;
       case 1:
       {
         auto Exp = std::get<Expr*>(V);
-        dyn_cast_or_null<ConstantDeclaration>(Class_Copy->TempleteArg[index])->E = Exp;
-        //TODO add error checking
+        if(auto Const = dyn_cast_or_null<ConstantDeclaration>(Class_Copy->TempleteArg[index])){
+          Const->E = Exp;
+        } else{
+          Diags.report(Loc, diag::err_passing_var_to_non_var_templete_arg);
+        };
       }
       break;
     };

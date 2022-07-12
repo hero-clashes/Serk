@@ -343,7 +343,7 @@ bool Parser::parseTemepleteList(DeclList & Decls,TypeDeclaration* &type_D,std::v
       } while (Tok.isNot(tok::greater));
       advance();
       type_D =
-          (TypeDeclaration *)Actions.init_genric_class(Decls, type_D, Args);
+          (TypeDeclaration *)Actions.init_genric_class(Decls, type_D, Args, Tok.getLocation());
   return false;
 };
 bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
@@ -656,7 +656,6 @@ bool Parser::parseFactor(Expr *&E) {
           };
           advance();
           E = Actions.actOnMethodCallExpr(Method_name.getLocation(), D, Method_name.getIdentifier(), Exprs);
-          //TODO add error checking
         }
       }
     }
@@ -1035,6 +1034,9 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
 
   bool Genric = false;
   advance(); // eat class
+  if (expect(tok::identifier)) {
+    return _errorhandler();
+  }
   auto Class_Name = Tok;
   advance();
   Decl *D;
@@ -1044,13 +1046,10 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
     if(ParseTempleteArgs(ParentDecls,List)){
       return _errorhandler();
     };
-    //TODO check if there no name
     D = Actions.actOnClassDeclaration(Class_Name.getLocation(),
                                       Class_Name.getIdentifier(), true);
     Genric = true;
   } else {
-    //TODO check if there no name
-
     D = Actions.actOnClassDeclaration(Class_Name.getLocation(),
                                       Class_Name.getIdentifier(), false);
   };
@@ -1399,9 +1398,13 @@ bool Parser::ParseImport(){
   str.consume_back("\"");
   str.consume_front("\"");
   if(imported.find(str) != imported.end()){
+    module->Imported_Module.push_back(imported[str]);
     return false;
   }
   auto new_lex = Lex.includefile(str, loc);
+  if(new_lex.getCurBuffer() == Lex.getCurBuffer()){
+    return _errorhandler();
+  }
   auto new_parser = Parser(new_lex,Actions);
   auto m = new_parser.parse(str);
   imported[str] = m;

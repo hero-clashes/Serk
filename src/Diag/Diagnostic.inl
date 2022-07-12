@@ -25,5 +25,10 @@ DIAG(err_indexing_non_array,Error, "Inedxing a non array variable")
 DIAG(err_accessing_member_non_class,Error, "Accessing a Member Varible on non Class variable")
 DIAG(err_member_not_found,Error, "Member Variable {0} is nonexisting inside the Class {1}")
 DIAG(err_type_not_defined,Error, "Type is not defined for Variable {0}")
-
+DIAG(err_file_not_found ,Error, "File {0} is not found")
+DIAG(err_wrong_number_of_parameters_templete, Error, "wrong number of parameters for templete")
+DIAG(err_class_not_genric, Error, "Passing Templete arg to non genric class")
+DIAG(err_not_class, Error, "Initing Base Type with Templete arg")
+DIAG(err_passing_type_to_non_type_templete_arg, Error, "Passing Type to non Type arg in genrics init")
+DIAG(err_passing_var_to_non_var_templete_arg, Error, "Passing Var to non Var arg in genrics init")
 #undef DIAG
