@@ -65,6 +65,7 @@ public:
       auto buffer = SrcMgr.getMemoryBuffer(buf);
       copy.CurBuf = buffer->getBuffer();
       copy.CurPtr = copy.CurBuf.begin();
+      copy.CurBuffer = buf;
     }
     return copy;
   };
