@@ -1,8 +1,8 @@
-class vector<type T>{
+class list<type T>{
     var ptr:*T;
     var reserved_size:int64;
     var _size:int64;
-    vector(){
+    list(){
         ptr = malloc(sizeof<T>() * 5);
         _size = 0;
         reserved_size = 5;
