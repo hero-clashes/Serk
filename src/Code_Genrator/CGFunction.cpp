@@ -86,25 +86,15 @@ llvm::Function *CGFunction::createFunction(FunctionDeclaration *Proc,
       Fty, llvm::GlobalValue::ExternalLinkage,
       Proc->getName(), CGM.getModule());
       size_t Idx = 0;
+  auto I = Fn->arg_begin();
   if(AggregateReturnType){
-      for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E;
-        ++I, ++Idx) {
       llvm::Argument *Arg = I;
-      ParameterDeclaration *FP =
-          Proc->getFormalParams()[Idx];
-      if (FP->IsPassedbyReference()) {
-        llvm::AttrBuilder Attr(CGM.getLLVMCtx());
-        llvm::TypeSize Sz =
-            CGM.getModule()->getDataLayout().getTypeStoreSize(
-                CGM.convertType(FP->getType()));
-        Attr.addDereferenceableAttr(Sz);
-        Attr.addAttribute(llvm::Attribute::NoCapture);
-        Arg->addAttrs(Attr);
-      }
-      Arg->setName(FP->getName());
-    }
-  } else
-  for (auto I = Fn->arg_begin(), E = Fn->arg_end(); I != E;
+      llvm::AttrBuilder Attr(CGM.getLLVMCtx());
+      Attr.addStructRetAttr(mapType(Proc->getRetType()));
+      Arg->addAttrs(Attr);
+      I++;
+  } 
+  for (auto E = Fn->arg_end(); I != E;
        ++I, ++Idx) {
     llvm::Argument *Arg = I;
     ParameterDeclaration *FP =
@@ -127,12 +117,46 @@ llvm::Type *CGFunction::mapType(Decl *Decl) {
     llvm::Type *Ty = CGM.convertType(FP->getType());
     if (FP->IsPassedbyReference())
       Ty = Ty->getPointerTo();
+    if (auto Struct= dyn_cast_or_null<StructType>(Ty)) {
+    if (Proc->Type != FunctionDeclaration::Extern) {
+      return Ty;
+    }
+    auto datalay = CGM.getModule()->getDataLayout();
+    auto size = datalay.getTypeSizeInBits(Struct);
+    switch (size) {
+    case 32:
+    return CGM.Int32Ty;
+    break;
+    case 64:
+    return CGM.Int32Ty;
+    break;
+    default:
+    break;
+    }
+  }
     return Ty;
   }
   if (auto *V = llvm::dyn_cast<VariableDeclaration>(Decl))
     return CGM.convertType(V->getType());
-  
-  return CGM.convertType(llvm::cast<TypeDeclaration>(Decl));
+  auto placeholder = CGM.convertType(llvm::cast<TypeDeclaration>(Decl));
+  if (auto Struct= dyn_cast_or_null<StructType>(placeholder)) {
+    if (Proc->Type != FunctionDeclaration::Extern) {
+      return placeholder;
+    }
+    auto datalay = CGM.getModule()->getDataLayout();
+    auto size = datalay.getTypeSizeInBits(Struct);
+    switch (size) {
+    case 32:
+    return CGM.Int32Ty;
+    break;
+    case 64:
+    return CGM.Int32Ty;
+    break;
+    default:
+    break;
+    }
+  }
+  return placeholder;
 };
 void CGFunction::emit(const StmtList &Stmts){
   for (auto *S : Stmts) {
@@ -229,7 +253,7 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
   if(auto dbg = CGM.getDbgInfo())
             dbg->SetLoc(&Curr->back(),Stmt->getLoc());
 };
-llvm::Value *CGFunction::emitExpr(Expr *E){
+llvm::Value *CGFunction::emitExpr(Expr *E,bool want_value){
   if (auto *Infix = llvm::dyn_cast<InfixExpression>(E)) {
     return emitInfixExpr(Infix);
   } else if (auto *Prefix =
@@ -244,9 +268,9 @@ llvm::Value *CGFunction::emitExpr(Expr *E){
     // need to add array and record support.
     auto &Selectors = Var->getSelectors();
     if (Selectors.empty()) {
-      if(Var->Get_Adress)
+      if(Var->Get_Adress || !want_value)
       return Val;
-      if(!Var->Derfernce)
+      if((!Var->Derfernce))
       return Builder.CreateLoad(Val);
       else {
         Val = Builder.CreateLoad(Val);
@@ -322,14 +346,23 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
   if(E->getParams().empty() && !F->empty()){
     Value* v = Current_Var_Decl ? readVariable(Curr, Current_Var_Decl,false): Current_Var_Value;
     ArgsV.push_back(v);
-  } else
+  }
+  int index = 0;
   for(auto expr:E->getParams()){
     auto v = emitExpr(expr);
+    if(v->getType() != F->getArg(index)->getType()){
+      v = emitExpr(expr,false);
+      // v->dump();
+      v = Builder.CreateBitCast(v, F->getArg(index)->getType()->getPointerTo(), "agg.tmp");
+      v = Builder.CreateLoad(v);
+    }
     // if(v->getType()->isPointerTy()){
     //     v = Builder.CreateLoad(v);
     // }
     ArgsV.push_back(v);
+    index++;
   };
+  for (auto a:ArgsV) a->dump();
   auto placeholder = Builder.CreateCall(
       F, ArgsV, F->getReturnType()->isVoidTy() ? "" : "calltmp");
   if(auto dbg = CGM.getDbgInfo())
@@ -455,18 +488,22 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
   auto *F = CGM.getModule()->getFunction(Stmt->getProc()->getName());
 
   std::vector<Value *> ArgsV;
-  int index  =0;
+  int index = 0;
   for(auto expr:Stmt->getParams()){
-    if (!Stmt->getProc()->getFormalParams().empty() && Stmt->getProc()->getFormalParams().size() > index && Stmt->getProc()->getFormalParams()[index]->IsPassedbyReference()) {
-      Value* val;
-     auto a =dyn_cast_or_null<Designator>(expr);
-     val = Defs[a->getDecl()];
-     ArgsV.push_back(val);
-    //  val->dump();
-    }else
-    ArgsV.push_back(emitExpr(expr));
+    auto v = emitExpr(expr);
+    if(!F->isVarArg() && v->getType() != F->getArg(index)->getType()){
+      v = emitExpr(expr,false);
+      // v->dump();
+      v = Builder.CreateBitCast(v, F->getArg(index)->getType()->getPointerTo(), "agg.tmp");
+      v = Builder.CreateLoad(v);
+    }
+    // if(v->getType()->isPointerTy()){
+    //     v = Builder.CreateLoad(v);
+    // }
+    ArgsV.push_back(v);
     index++;
   };
+  for (auto a:ArgsV) a->dump();
    Builder.CreateCall(F, ArgsV);
   if(auto dbg = CGM.getDbgInfo())
             dbg->SetLoc(&Curr->back(),Stmt->getLoc());

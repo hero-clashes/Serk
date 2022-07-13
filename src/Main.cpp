@@ -133,7 +133,7 @@ int main(int argc_, const char **argv_) {
 
   // auto a = "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.32.31326\\bin\\Hostx64\\x64\\Link.exe\" output.o /ENTRY:main /DEBUG:FULL";
   std::string a(R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\bin\Hostx64\x64\link.exe" "/DEBUG:FULL" /LARGEADDRESSAWARE:NO "-libpath:C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\lib\x64" "-libpath:C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\atlmfc\lib\x64" "-libpath:C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0\ucrt\x64" "-libpath:C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0\um\x64" "-libpath:C:\Program Files\LLVM\lib\clang\13.0.0\lib\windows" "-nologo" A.lib winmm.lib opengl32.lib gdi32.lib user32.lib shell32.lib ole32.lib oleaut32.lib msvcrt.lib")");
-  std::reverse(objs.begin(),objs.end());
+  // std::reverse(objs.begin(),objs.end());
   for(auto ob:objs){
     a.append(" " + ob);
   }

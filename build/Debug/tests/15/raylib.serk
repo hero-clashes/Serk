@@ -1,0 +1,889 @@
+class Vector2{
+	var x:float; //Vector x component
+	var y:float; //Vector y component
+}
+class Vector3{
+	var x:float; //Vector x component
+	var y:float; //Vector y component
+	var z:float; //Vector z component
+}
+class Vector4{
+	var x:float; //Vector x component
+	var y:float; //Vector y component
+	var z:float; //Vector z component
+	var w:float; //Vector w component
+}
+class Matrix{
+	var m0, m4, m8, m12:float; //Matrix first row (4 components)
+	var m1, m5, m9, m13:float; //Matrix second row (4 components)
+	var m2, m6, m10, m14:float; //Matrix third row (4 components)
+	var m3, m7, m11, m15:float; //Matrix fourth row (4 components)
+}
+class Color{
+	var r:uint8; //Color red value
+	var g:uint8; //Color green value
+	var b:uint8; //Color blue value
+	var a:uint8; //Color alpha value
+	Color(rr:uint8,gg:uint8,bb:uint8,aa:uint8){
+		r = rr;
+		g = gg;
+		b = bb;
+		a = aa;
+	}
+}
+class Rectangle{
+	var x:float; //Rectangle top-left corner position x 
+	var y:float; //Rectangle top-left corner position y
+	var width:float; //Rectangle width
+	var height:float; //Rectangle height
+}
+class Image{
+	var data:*uint8 ; //Image raw data
+	var width:int; //Image base width
+	var height:int; //Image base height
+	var mipmaps:int; //Mipmap levels, 1 by default
+	var format:int; //Data format (PixelFormat type)
+}
+class Texture{
+	var id:uint32; //OpenGL texture id
+	var width:int; //Texture base width
+	var height:int; //Texture base height
+	var mipmaps:int; //Mipmap levels, 1 by default
+	var format:int; //Data format (PixelFormat type)
+}
+class RenderTexture{
+	var id:uint32; //OpenGL framebuffer object id
+	var texture:Texture; //Color buffer attachment texture
+	var depth:Texture; //Depth buffer attachment texture
+}
+class NPatchInfo{
+	var source:Rectangle; //Texture source rectangle
+	var left:int; //Left border offset
+	var top:int; //Top border offset
+	var right:int; //Right border offset
+	var bottom:int; //Bottom border offset
+	var layout:int; //Layout of the n-patch: 3x3, 1x3 or 3x1
+}
+class CharInfo{
+	var value:int; //Character value (Unicode)
+	var offsetX:int; //Character offset X when drawing
+	var offsetY:int; //Character offset Y when drawing
+	var advanceX:int; //Character advance position X
+	var image:Image; //Character image data
+}
+class Font{
+	var baseSize:int; //Base size (default chars height)
+	var charsCount:int; //Number of characters
+	var charsPadding:int; //Padding around the chars
+	var texture:Texture; //Characters texture atlas
+	var recs:*Rectangle ; //Characters rectangles in texture
+	var chars:*CharInfo ; //Characters info data
+}
+class Camera3D{
+	var position:Vector3; //Camera3D position
+	var target:Vector3; //Camera3D target it looks-at
+	var up:Vector3; //Camera3D up vector (rotation over its axis)
+	var fovy:float; //Camera3D field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
+	var projection:int; //Camera3D projection: CAMERA_PERSPECTIVE or CAMERA_ORTHOGRAPHIC
+}
+class Camera2D{
+	var offset:Vector2; //Camera3D offset (displacement from target)
+	var target:Vector2; //Camera3D target (rotation and zoom origin)
+	var rotation:float; //Camera3D rotation in degrees
+	var zoom:float; //Camera3D zoom (scaling), should be 1.0f by default
+}
+class Mesh{
+	var vertexCount:int; //Number of vertices stored in arrays
+	var triangleCount:int; //Number of triangles stored (indexed or not)
+	var vertices:*float ; //Vertex position (XYZ - 3 components per vertex) (shader-location = 0)
+	var texcoords:*float ; //Vertex texture coordinates (UV - 2 components per vertex) (shader-location = 1)
+	var texcoords2:*float ; //Vertex second texture coordinates (useful for lightmaps) (shader-location = 5)
+	var normals:*float ; //Vertex normals (XYZ - 3 components per vertex) (shader-location = 2)
+	var tangents:*float ; //Vertex tangents (XYZW - 4 components per vertex) (shader-location = 4)
+	var colors:*uint8 ; //Vertex colors (RGBA - 4 components per vertex) (shader-location = 3)
+	var indices:*uint16 ; //Vertex indices (in case vertex data comes indexed)
+	var animVertices:*float ; //Animated vertex positions (after bones transformations)
+	var animNormals:*float ; //Animated normals (after bones transformations)
+	var boneIds:*int ; //Vertex bone ids, up to 4 bones influence by vertex (skinning)
+	var boneWeights:*float ; //Vertex bone weight, up to 4 bones influence by vertex (skinning)
+	var vaoId:uint32; //OpenGL Vertex Array Object id
+	var vboId:*uint32 ; //OpenGL Vertex Buffer Objects id (default vertex data)
+}
+class Shader{
+	var id:uint32; //Shader program id
+	var locs:*int ; //Shader locations array (MAX_SHADER_LOCATIONS)
+}
+class MaterialMap{
+	var texture:Texture; //Material map texture
+	var color:Color; //Material map color
+	var value:float; //Material map value
+}
+class Material{
+	var shader:Shader; //Material shader
+	var maps:*MaterialMap ; //Material maps array (MAX_MATERIAL_MAPS)
+	var params:float[4]; //Material generic parameters (if required)
+}
+class Transform{
+	var translation:Vector3; //Translation
+	var rotation:Vector4; //Rotation
+	var scale:Vector3; //Scale
+}
+class BoneInfo{
+	var name:int8[32]; //Bone name
+	var parent:int; //Bone parent
+}
+class Model{
+	var transform:Matrix; //Local transform matrix
+	var meshCount:int; //Number of meshes
+	var materialCount:int; //Number of materials
+	var meshes:*Mesh ; //Meshes array
+	var materials:*Material ; //Materials array
+	var meshMaterial:*int ; //Mesh material number
+	var boneCount:int; //Number of bones
+	var bones:*BoneInfo ; //Bones information (skeleton)
+	var bindPose:*Transform ; //Bones base transformation (pose)
+}
+class ModelAnimation{
+	var boneCount:int; //Number of bones
+	var frameCount:int; //Number of animation frames
+	var bones:*BoneInfo ; //Bones information (skeleton)
+	var framePoses:*uint8 ; //Poses array by frame
+}
+class Ray{
+	var position:Vector3; //Ray position (origin)
+	var direction:Vector3; //Ray direction
+}
+class RayCollision{
+	var hit:bool; //Did the ray hit something?
+	var distance:float; //Distance to nearest hit
+	var point:Vector3; //Point of nearest hit
+	var normal:Vector3; //Surface normal of hit
+}
+class BoundingBox{
+	var min:Vector3; //Minimum vertex box-corner
+	var max:Vector3; //Maximum vertex box-corner
+}
+class Wave{
+	var sampleCount:uint32; //Total number of samples (considering channels!)
+	var sampleRate:uint32; //Frequency (samples per second)
+	var sampleSize:uint32; //Bit depth (bits per sample): 8, 16, 32 (24 not supported)
+	var channels:uint32; //Number of channels (1-mono, 2-stereo)
+	var data:*uint8 ; //Buffer data pointer
+}
+class AudioStream{
+	var buffer:*uint8 ; //Pointer to internal data used by the audio system
+	var sampleRate:uint32; //Frequency (samples per second)
+	var sampleSize:uint32; //Bit depth (bits per sample): 8, 16, 32 (24 not supported)
+	var channels:uint32; //Number of channels (1-mono, 2-stereo)
+}
+class Sound{
+	var stream:AudioStream; //Audio stream
+	var sampleCount:uint32; //Total number of samples
+}
+class Music{
+	var stream:AudioStream; //Audio stream
+	var sampleCount:uint32; //Total number of samples
+	var looping:bool; //Music looping enable
+	var ctxType:int; //Type of music context (audio filetype)
+	var ctxData:*uint8 ; //Audio context data, depends on type
+}
+class VrDeviceInfo{
+	var hResolution:int; //Horizontal resolution in pixels
+	var vResolution:int; //Vertical resolution in pixels
+	var hScreenSize:float; //Horizontal size in meters
+	var vScreenSize:float; //Vertical size in meters
+	var vScreenCenter:float; //Screen center in meters
+	var eyeToScreenDistance:float; //Distance between eye and display in meters
+	var lensSeparationDistance:float; //Lens separation distance in meters
+	var interpupillaryDistance:float; //IPD (distance between pupils) in meters
+	var lensDistortionValues:float[4]; //Lens distortion constant parameters
+	var chromaAbCorrection:float[4]; //Chromatic aberration correction parameters
+}
+class VrStereoConfig{
+	var projection:Matrix[2]; //VR projection matrices (per eye)
+	var viewOffset:Matrix[2]; //VR view offset matrices (per eye)
+	var leftLensCenter:float[2]; //VR left lens center
+	var rightLensCenter:float[2]; //VR right lens center
+	var leftScreenCenter:float[2]; //VR left screen center
+	var rightScreenCenter:float[2]; //VR right screen center
+	var scale:float[2]; //VR distortion scale
+	var scaleIn:float[2]; //VR distortion scale in
+}
+enum ConfigFlags{
+	FLAG_VSYNC_HINT = 64,
+	FLAG_FULLSCREEN_MODE = 2,
+	FLAG_WINDOW_RESIZABLE = 4,
+	FLAG_WINDOW_UNDECORATED = 8,
+	FLAG_WINDOW_HIDDEN = 128,
+	FLAG_WINDOW_MINIMIZED = 512,
+	FLAG_WINDOW_MAXIMIZED = 1024,
+	FLAG_WINDOW_UNFOCUSED = 2048,
+	FLAG_WINDOW_TOPMOST = 4096,
+	FLAG_WINDOW_ALWAYS_RUN = 256,
+	FLAG_WINDOW_TRANSPARENT = 16,
+	FLAG_WINDOW_HIGHDPI = 8192,
+	FLAG_MSAA_4X_HINT = 32,
+	FLAG_INTERLACED_HINT = 65536,
+
+}
+enum TraceLogLevel{
+	LOG_ALL = 0,
+	LOG_TRACE = 1,
+	LOG_DEBUG = 2,
+	LOG_INFO = 3,
+	LOG_WARNING = 4,
+	LOG_ERROR = 5,
+	LOG_FATAL = 6,
+	LOG_NONE = 7,
+
+}
+enum KeyboardKey{
+	KEY_NULL = 0,
+	KEY_APOSTROPHE = 39,
+	KEY_COMMA = 44,
+	KEY_MINUS = 45,
+	KEY_PERIOD = 46,
+	KEY_SLASH = 47,
+	KEY_ZERO = 48,
+	KEY_ONE = 49,
+	KEY_TWO = 50,
+	KEY_THREE = 51,
+	KEY_FOUR = 52,
+	KEY_FIVE = 53,
+	KEY_SIX = 54,
+	KEY_SEVEN = 55,
+	KEY_EIGHT = 56,
+	KEY_NINE = 57,
+	KEY_SEMICOLON = 59,
+	KEY_EQUAL = 61,
+	KEY_A = 65,
+	KEY_B = 66,
+	KEY_C = 67,
+	KEY_D = 68,
+	KEY_E = 69,
+	KEY_F = 70,
+	KEY_G = 71,
+	KEY_H = 72,
+	KEY_I = 73,
+	KEY_J = 74,
+	KEY_K = 75,
+	KEY_L = 76,
+	KEY_M = 77,
+	KEY_N = 78,
+	KEY_O = 79,
+	KEY_P = 80,
+	KEY_Q = 81,
+	KEY_R = 82,
+	KEY_S = 83,
+	KEY_T = 84,
+	KEY_U = 85,
+	KEY_V = 86,
+	KEY_W = 87,
+	KEY_X = 88,
+	KEY_Y = 89,
+	KEY_Z = 90,
+	KEY_SPACE = 32,
+	KEY_ESCAPE = 256,
+	KEY_ENTER = 257,
+	KEY_TAB = 258,
+	KEY_BACKSPACE = 259,
+	KEY_INSERT = 260,
+	KEY_DELETE = 261,
+	KEY_RIGHT = 262,
+	KEY_LEFT = 263,
+	KEY_DOWN = 264,
+	KEY_UP = 265,
+	KEY_PAGE_UP = 266,
+	KEY_PAGE_DOWN = 267,
+	KEY_HOME = 268,
+	KEY_END = 269,
+	KEY_CAPS_LOCK = 280,
+	KEY_SCROLL_LOCK = 281,
+	KEY_NUM_LOCK = 282,
+	KEY_PRINT_SCREEN = 283,
+	KEY_PAUSE = 284,
+	KEY_F1 = 290,
+	KEY_F2 = 291,
+	KEY_F3 = 292,
+	KEY_F4 = 293,
+	KEY_F5 = 294,
+	KEY_F6 = 295,
+	KEY_F7 = 296,
+	KEY_F8 = 297,
+	KEY_F9 = 298,
+	KEY_F10 = 299,
+	KEY_F11 = 300,
+	KEY_F12 = 301,
+	KEY_LEFT_SHIFT = 340,
+	KEY_LEFT_CONTROL = 341,
+	KEY_LEFT_ALT = 342,
+	KEY_LEFT_SUPER = 343,
+	KEY_RIGHT_SHIFT = 344,
+	KEY_RIGHT_CONTROL = 345,
+	KEY_RIGHT_ALT = 346,
+	KEY_RIGHT_SUPER = 347,
+	KEY_KB_MENU = 348,
+	KEY_LEFT_BRACKET = 91,
+	KEY_BACKSLASH = 92,
+	KEY_RIGHT_BRACKET = 93,
+	KEY_GRAVE = 96,
+	KEY_KP_0 = 320,
+	KEY_KP_1 = 321,
+	KEY_KP_2 = 322,
+	KEY_KP_3 = 323,
+	KEY_KP_4 = 324,
+	KEY_KP_5 = 325,
+	KEY_KP_6 = 326,
+	KEY_KP_7 = 327,
+	KEY_KP_8 = 328,
+	KEY_KP_9 = 329,
+	KEY_KP_DECIMAL = 330,
+	KEY_KP_DIVIDE = 331,
+	KEY_KP_MULTIPLY = 332,
+	KEY_KP_SUBTRACT = 333,
+	KEY_KP_ADD = 334,
+	KEY_KP_ENTER = 335,
+	KEY_KP_EQUAL = 336,
+	KEY_BACK = 4,
+	KEY_MENU = 82,
+	KEY_VOLUME_UP = 24,
+	KEY_VOLUME_DOWN = 25,
+
+}
+enum MouseButton{
+	MOUSE_BUTTON_LEFT = 0,
+	MOUSE_BUTTON_RIGHT = 1,
+	MOUSE_BUTTON_MIDDLE = 2,
+	MOUSE_BUTTON_SIDE = 3,
+	MOUSE_BUTTON_EXTRA = 4,
+	MOUSE_BUTTON_FORWARD = 5,
+	MOUSE_BUTTON_BACK = 6,
+
+}
+enum MouseCursor{
+	MOUSE_CURSOR_DEFAULT = 0,
+	MOUSE_CURSOR_ARROW = 1,
+	MOUSE_CURSOR_IBEAM = 2,
+	MOUSE_CURSOR_CROSSHAIR = 3,
+	MOUSE_CURSOR_POINTING_HAND = 4,
+	MOUSE_CURSOR_RESIZE_EW = 5,
+	MOUSE_CURSOR_RESIZE_NS = 6,
+	MOUSE_CURSOR_RESIZE_NWSE = 7,
+	MOUSE_CURSOR_RESIZE_NESW = 8,
+	MOUSE_CURSOR_RESIZE_ALL = 9,
+	MOUSE_CURSOR_NOT_ALLOWED = 10,
+
+}
+enum GamepadButton{
+	GAMEPAD_BUTTON_UNKNOWN = 0,
+	GAMEPAD_BUTTON_LEFT_FACE_UP = 1,
+	GAMEPAD_BUTTON_LEFT_FACE_RIGHT = 2,
+	GAMEPAD_BUTTON_LEFT_FACE_DOWN = 3,
+	GAMEPAD_BUTTON_LEFT_FACE_LEFT = 4,
+	GAMEPAD_BUTTON_RIGHT_FACE_UP = 5,
+	GAMEPAD_BUTTON_RIGHT_FACE_RIGHT = 6,
+	GAMEPAD_BUTTON_RIGHT_FACE_DOWN = 7,
+	GAMEPAD_BUTTON_RIGHT_FACE_LEFT = 8,
+	GAMEPAD_BUTTON_LEFT_TRIGGER_1 = 9,
+	GAMEPAD_BUTTON_LEFT_TRIGGER_2 = 10,
+	GAMEPAD_BUTTON_RIGHT_TRIGGER_1 = 11,
+	GAMEPAD_BUTTON_RIGHT_TRIGGER_2 = 12,
+	GAMEPAD_BUTTON_MIDDLE_LEFT = 13,
+	GAMEPAD_BUTTON_MIDDLE = 14,
+	GAMEPAD_BUTTON_MIDDLE_RIGHT = 15,
+	GAMEPAD_BUTTON_LEFT_THUMB = 16,
+	GAMEPAD_BUTTON_RIGHT_THUMB = 17,
+
+}
+enum GamepadAxis{
+	GAMEPAD_AXIS_LEFT_X = 0,
+	GAMEPAD_AXIS_LEFT_Y = 1,
+	GAMEPAD_AXIS_RIGHT_X = 2,
+	GAMEPAD_AXIS_RIGHT_Y = 3,
+	GAMEPAD_AXIS_LEFT_TRIGGER = 4,
+	GAMEPAD_AXIS_RIGHT_TRIGGER = 5,
+
+}
+enum MaterialMapIndex{
+	MATERIAL_MAP_ALBEDO = 0,
+	MATERIAL_MAP_METALNESS = 1,
+	MATERIAL_MAP_NORMAL = 2,
+	MATERIAL_MAP_ROUGHNESS = 3,
+	MATERIAL_MAP_OCCLUSION = 4,
+	MATERIAL_MAP_EMISSION = 5,
+	MATERIAL_MAP_HEIGHT = 6,
+	MATERIAL_MAP_CUBEMAP = 7,
+	MATERIAL_MAP_IRRADIANCE = 8,
+	MATERIAL_MAP_PREFILTER = 9,
+	MATERIAL_MAP_BRDF = 10,
+
+}
+enum ShaderLocationIndex{
+	SHADER_LOC_VERTEX_POSITION = 0,
+	SHADER_LOC_VERTEX_TEXCOORD01 = 1,
+	SHADER_LOC_VERTEX_TEXCOORD02 = 2,
+	SHADER_LOC_VERTEX_NORMAL = 3,
+	SHADER_LOC_VERTEX_TANGENT = 4,
+	SHADER_LOC_VERTEX_COLOR = 5,
+	SHADER_LOC_MATRIX_MVP = 6,
+	SHADER_LOC_MATRIX_VIEW = 7,
+	SHADER_LOC_MATRIX_PROJECTION = 8,
+	SHADER_LOC_MATRIX_MODEL = 9,
+	SHADER_LOC_MATRIX_NORMAL = 10,
+	SHADER_LOC_VECTOR_VIEW = 11,
+	SHADER_LOC_COLOR_DIFFUSE = 12,
+	SHADER_LOC_COLOR_SPECULAR = 13,
+	SHADER_LOC_COLOR_AMBIENT = 14,
+	SHADER_LOC_MAP_ALBEDO = 15,
+	SHADER_LOC_MAP_METALNESS = 16,
+	SHADER_LOC_MAP_NORMAL = 17,
+	SHADER_LOC_MAP_ROUGHNESS = 18,
+	SHADER_LOC_MAP_OCCLUSION = 19,
+	SHADER_LOC_MAP_EMISSION = 20,
+	SHADER_LOC_MAP_HEIGHT = 21,
+	SHADER_LOC_MAP_CUBEMAP = 22,
+	SHADER_LOC_MAP_IRRADIANCE = 23,
+	SHADER_LOC_MAP_PREFILTER = 24,
+	SHADER_LOC_MAP_BRDF = 25,
+
+}
+enum ShaderUniformDataType{
+	SHADER_UNIFORM_FLOAT = 0,
+	SHADER_UNIFORM_VEC2 = 1,
+	SHADER_UNIFORM_VEC3 = 2,
+	SHADER_UNIFORM_VEC4 = 3,
+	SHADER_UNIFORM_INT = 4,
+	SHADER_UNIFORM_IVEC2 = 5,
+	SHADER_UNIFORM_IVEC3 = 6,
+	SHADER_UNIFORM_IVEC4 = 7,
+	SHADER_UNIFORM_SAMPLER2D = 8,
+
+}
+enum ShaderAttributeDataType{
+	SHADER_ATTRIB_FLOAT = 0,
+	SHADER_ATTRIB_VEC2 = 1,
+	SHADER_ATTRIB_VEC3 = 2,
+	SHADER_ATTRIB_VEC4 = 3,
+
+}
+enum PixelFormat{
+	PIXELFORMAT_UNCOMPRESSED_GRAYSCALE = 1,
+	PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA = 2,
+	PIXELFORMAT_UNCOMPRESSED_R5G6B5 = 3,
+	PIXELFORMAT_UNCOMPRESSED_R8G8B8 = 4,
+	PIXELFORMAT_UNCOMPRESSED_R5G5B5A1 = 5,
+	PIXELFORMAT_UNCOMPRESSED_R4G4B4A4 = 6,
+	PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 = 7,
+	PIXELFORMAT_UNCOMPRESSED_R32 = 8,
+	PIXELFORMAT_UNCOMPRESSED_R32G32B32 = 9,
+	PIXELFORMAT_UNCOMPRESSED_R32G32B32A32 = 10,
+	PIXELFORMAT_COMPRESSED_DXT1_RGB = 11,
+	PIXELFORMAT_COMPRESSED_DXT1_RGBA = 12,
+	PIXELFORMAT_COMPRESSED_DXT3_RGBA = 13,
+	PIXELFORMAT_COMPRESSED_DXT5_RGBA = 14,
+	PIXELFORMAT_COMPRESSED_ETC1_RGB = 15,
+	PIXELFORMAT_COMPRESSED_ETC2_RGB = 16,
+	PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA = 17,
+	PIXELFORMAT_COMPRESSED_PVRT_RGB = 18,
+	PIXELFORMAT_COMPRESSED_PVRT_RGBA = 19,
+	PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA = 20,
+	PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA = 21,
+
+}
+enum TextureFilter{
+	TEXTURE_FILTER_POINT = 0,
+	TEXTURE_FILTER_BILINEAR = 1,
+	TEXTURE_FILTER_TRILINEAR = 2,
+	TEXTURE_FILTER_ANISOTROPIC_4X = 3,
+	TEXTURE_FILTER_ANISOTROPIC_8X = 4,
+	TEXTURE_FILTER_ANISOTROPIC_16X = 5,
+
+}
+enum TextureWrap{
+	TEXTURE_WRAP_REPEAT = 0,
+	TEXTURE_WRAP_CLAMP = 1,
+	TEXTURE_WRAP_MIRROR_REPEAT = 2,
+	TEXTURE_WRAP_MIRROR_CLAMP = 3,
+
+}
+enum CubemapLayout{
+	CUBEMAP_LAYOUT_AUTO_DETECT = 0,
+	CUBEMAP_LAYOUT_LINE_VERTICAL = 1,
+	CUBEMAP_LAYOUT_LINE_HORIZONTAL = 2,
+	CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR = 3,
+	CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE = 4,
+	CUBEMAP_LAYOUT_PANORAMA = 5,
+
+}
+enum FontType{
+	FONT_DEFAULT = 0,
+	FONT_BITMAP = 1,
+	FONT_SDF = 2,
+
+}
+enum BlendMode{
+	BLEND_ALPHA = 0,
+	BLEND_ADDITIVE = 1,
+	BLEND_MULTIPLIED = 2,
+	BLEND_ADD_COLORS = 3,
+	BLEND_SUBTRACT_COLORS = 4,
+	BLEND_CUSTOM = 5,
+
+}
+enum Gesture{
+	GESTURE_NONE = 0,
+	GESTURE_TAP = 1,
+	GESTURE_DOUBLETAP = 2,
+	GESTURE_HOLD = 4,
+	GESTURE_DRAG = 8,
+	GESTURE_SWIPE_RIGHT = 16,
+	GESTURE_SWIPE_LEFT = 32,
+	GESTURE_SWIPE_UP = 64,
+	GESTURE_SWIPE_DOWN = 128,
+	GESTURE_PINCH_IN = 256,
+	GESTURE_PINCH_OUT = 512,
+
+}
+enum CameraMode{
+	CAMERA_CUSTOM = 0,
+	CAMERA_FREE = 1,
+	CAMERA_ORBITAL = 2,
+	CAMERA_FIRST_PERSON = 3,
+	CAMERA_THIRD_PERSON = 4,
+
+}
+enum CameraProjection{
+	CAMERA_PERSPECTIVE = 0,
+	CAMERA_ORTHOGRAPHIC = 1,
+
+}
+enum NPatchLayout{
+	NPATCH_NINE_PATCH = 0,
+	NPATCH_THREE_PATCH_VERTICAL = 1,
+	NPATCH_THREE_PATCH_HORIZONTAL = 2,
+
+}
+extern void InitWindow(width: int,height: int,title: * int8 );		//Initialize window and OpenGL context
+extern bool WindowShouldClose();		//Check if KEY_ESCAPE pressed or Close icon pressed
+extern void CloseWindow();		//Close window and unload OpenGL context
+extern bool IsWindowReady();		//Check if window has been initialized successfully
+extern bool IsWindowFullscreen();		//Check if window is currently fullscreen
+extern bool IsWindowHidden();		//Check if window is currently hidden (only PLATFORM_DESKTOP)
+extern bool IsWindowMinimized();		//Check if window is currently minimized (only PLATFORM_DESKTOP)
+extern bool IsWindowMaximized();		//Check if window is currently maximized (only PLATFORM_DESKTOP)
+extern bool IsWindowFocused();		//Check if window is currently focused (only PLATFORM_DESKTOP)
+extern bool IsWindowResized();		//Check if window has been resized last frame
+extern bool IsWindowState(flag: uint32);		//Check if one specific window flag is enabled
+extern void SetWindowState(flags: uint32);		//Set window configuration state using flags
+extern void ClearWindowState(flags: uint32);		//Clear window configuration state flags
+extern void ToggleFullscreen();		//Toggle window state: fullscreen/windowed (only PLATFORM_DESKTOP)
+extern void MaximizeWindow();		//Set window state: maximized, if resizable (only PLATFORM_DESKTOP)
+extern void MinimizeWindow();		//Set window state: minimized, if resizable (only PLATFORM_DESKTOP)
+extern void RestoreWindow();		//Set window state: not minimized/maximized (only PLATFORM_DESKTOP)
+extern void SetWindowIcon(image: Image);		//Set icon for window (only PLATFORM_DESKTOP)
+extern void SetWindowTitle(title: * int8 );		//Set title for window (only PLATFORM_DESKTOP)
+extern void SetWindowPosition(x: int,y: int);		//Set window position on screen (only PLATFORM_DESKTOP)
+extern void SetWindowMonitor(monitor: int);		//Set monitor for the current window (fullscreen mode)
+extern void SetWindowMinSize(width: int,height: int);		//Set window minimum dimensions (for FLAG_WINDOW_RESIZABLE)
+extern void SetWindowSize(width: int,height: int);		//Set window dimensions
+extern *uint8  GetWindowHandle();		//Get native window handle
+extern int GetScreenWidth();		//Get current screen width
+extern int GetScreenHeight();		//Get current screen height
+extern int GetMonitorCount();		//Get number of connected monitors
+extern int GetCurrentMonitor();		//Get current connected monitor
+extern Vector2 GetMonitorPosition(monitor: int);		//Get specified monitor position
+extern int GetMonitorWidth(monitor: int);		//Get specified monitor width (max available by monitor)
+extern int GetMonitorHeight(monitor: int);		//Get specified monitor height (max available by monitor)
+extern int GetMonitorPhysicalWidth(monitor: int);		//Get specified monitor physical width in millimetres
+extern int GetMonitorPhysicalHeight(monitor: int);		//Get specified monitor physical height in millimetres
+extern int GetMonitorRefreshRate(monitor: int);		//Get specified monitor refresh rate
+extern Vector2 GetWindowPosition();		//Get window position XY on monitor
+extern Vector2 GetWindowScaleDPI();		//Get window scale DPI factor
+extern * int8  GetMonitorName(monitor: int);		//Get the human-readable, UTF-8 encoded name of the primary monitor
+extern void SetClipboardText(text: * int8 );		//Set clipboard text content
+extern * int8  GetClipboardText();		//Get clipboard text content
+extern void ShowCursor();		//Shows cursor
+extern void HideCursor();		//Hides cursor
+extern bool IsCursorHidden();		//Check if cursor is not visible
+extern void EnableCursor();		//Enables cursor (unlock cursor)
+extern void DisableCursor();		//Disables cursor (lock cursor)
+extern bool IsCursorOnScreen();		//Check if cursor is on the screen
+extern void ClearBackground(color: Color);		//Set background color (framebuffer clear color)
+extern void BeginDrawing();		//Setup canvas (framebuffer) to start drawing
+extern void EndDrawing();		//End canvas drawing and swap buffers (double buffering)
+extern void BeginMode2D(Camera3D: Camera2D);		//Begin 2D mode with custom Camera3D (2D)
+extern void EndMode2D();		//Ends 2D mode with custom Camera3D
+extern void BeginMode3D(Camera3D: Camera3D);		//Begin 3D mode with custom Camera3D (3D)
+extern void EndMode3D();		//Ends 3D mode and returns to default 2D orthographic mode
+extern void BeginTextureMode(target: RenderTexture);		//Begin drawing to render texture
+extern void EndTextureMode();		//Ends drawing to render texture
+extern void BeginShaderMode(shader: Shader);		//Begin custom shader drawing
+extern void EndShaderMode();		//End custom shader drawing (use default shader)
+extern void BeginBlendMode(mode: int);		//Begin blending mode (alpha, additive, multiplied, subtract, custom)
+extern void EndBlendMode();		//End blending mode (reset to default: alpha blending)
+extern void BeginScissorMode(x: int,y: int,width: int,height: int);		//Begin scissor mode (define screen area for following drawing)
+extern void EndScissorMode();		//End scissor mode
+extern void BeginVrStereoMode(config: VrStereoConfig);		//Begin stereo rendering (requires VR simulator)
+extern void EndVrStereoMode();		//End stereo rendering (requires VR simulator)
+extern VrStereoConfig LoadVrStereoConfig(device: VrDeviceInfo);		//Load VR stereo config for VR simulator device parameters
+extern void UnloadVrStereoConfig(config: VrStereoConfig);		//Unload VR stereo config
+extern Shader LoadShader(vsFileName: * int8 ,fsFileName: * int8 );		//Load shader from files and bind default locations
+extern Shader LoadShaderFromMemory(vsCode: * int8 ,fsCode: * int8 );		//Load shader from code strings and bind default locations
+extern int GetShaderLocation(shader: Shader,uniformName: * int8 );		//Get shader uniform location
+extern int GetShaderLocationAttrib(shader: Shader,attribName: * int8 );		//Get shader attribute location
+extern void SetShaderValue(shader: Shader,locIndex: int,value: *uint8,uniformType: int);		//Set shader uniform value
+extern void SetShaderValueV(shader: Shader,locIndex: int,value: *uint8,uniformType: int,count: int);		//Set shader uniform value vector
+extern void SetShaderValueMatrix(shader: Shader,locIndex: int,mat: Matrix);		//Set shader uniform value (matrix 4x4)
+extern void SetShaderValueTexture(shader: Shader,locIndex: int,texture: Texture);		//Set shader uniform value for texture (sampler2d)
+extern void UnloadShader(shader: Shader);		//Unload shader from GPU memory (VRAM)
+extern Ray GetMouseRay(mousePosition: Vector2,Camera3D: Camera3D);		//Get a ray trace from mouse position
+extern Matrix GetCameraMatrix(Camera3D: Camera3D);		//Get Camera3D transform matrix (view matrix)
+extern Matrix GetCameraMatrix2D(Camera3D: Camera2D);		//Get Camera3D 2d transform matrix
+extern Vector2 GetWorldToScreen(position: Vector3,Camera3D: Camera3D);		//Get the screen space position for a 3d world space position
+extern Vector2 GetWorldToScreenEx(position: Vector3,Camera3D: Camera3D,width: int,height: int);		//Get size position for a 3d world space position
+extern Vector2 GetWorldToScreen2D(position: Vector2,Camera3D: Camera2D);		//Get the screen space position for a 2d Camera3D world space position
+extern Vector2 GetScreenToWorld2D(position: Vector2,Camera3D: Camera2D);		//Get the world space position for a 2d Camera3D screen space position
+extern void SetTargetFPS(fps: int);		//Set target FPS (maximum)
+extern int GetFPS();		//Get current FPS
+extern float GetFrameTime();		//Get time in seconds for last frame drawn (delta time)
+extern double GetTime();		//Get elapsed time in seconds since InitWindow()
+extern int GetRandomValue(min: int,max: int);		//Get a random value between min and max (both included)
+extern void TakeScreenshot(fileName: * int8 );		//Takes a screenshot of current screen (filename extension defines format)
+extern void SetConfigFlags(flags: uint32);		//Setup init configuration flags (view FLAGS)
+extern void SetTraceLogLevel(logLevel: int);		//Set the current threshold (minimum) log level
+extern *uint8  MemAlloc(size: int);		//Internal memory allocator
+extern *uint8  MemRealloc(ptr: *uint8 ,size: int);		//Internal memory reallocator
+extern void MemFree(ptr: *uint8 );		//Internal memory free
+extern *uint8  LoadFileData(fileName: * int8 ,bytesRead: *uint32 );		//Load file data as byte array (read)
+extern void UnloadFileData(data: *uint8 );		//Unload file data allocated by LoadFileData()
+extern bool SaveFileData(fileName: * int8 ,data: *uint8 ,bytesToWrite: uint32);		//Save data to file from byte array (write), returns true on success
+extern *int8  LoadFileText(fileName: * int8 );		//Load text data from file (read), returns a ' 0' terminated string
+extern void UnloadFileText(text: *int8 );		//Unload file text data allocated by LoadFileText()
+extern bool SaveFileText(fileName: * int8 ,text: *int8 );		//Save text data to file (write), string must be ' 0' terminated, returns true on success
+extern bool FileExists(fileName: * int8 );		//Check if file exists
+extern bool DirectoryExists(dirPath: * int8 );		//Check if a directory path exists
+extern bool IsFileExtension(fileName: * int8 ,ext: * int8 );		//Check file extension (including point: .png, .wav)
+extern * int8  GetFileExtension(fileName: * int8 );		//Get pointer to extension for a filename string (includes dot: '.png')
+extern * int8  GetFileName(filePath: * int8 );		//Get pointer to filename for a path string
+extern * int8  GetFileNameWithoutExt(filePath: * int8 );		//Get filename string without extension (uses static string)
+extern * int8  GetDirectoryPath(filePath: * int8 );		//Get full path for a given fileName with path (uses static string)
+extern * int8  GetPrevDirectoryPath(dirPath: * int8 );		//Get previous directory path for a given path (uses static string)
+extern * int8  GetWorkingDirectory();		//Get current working directory (uses static string)
+extern *int8 GetDirectoryFiles(dirPath: * int8 ,count: *int );		//Get filenames in a directory path (memory should be freed)
+extern void ClearDirectoryFiles();		//Clear directory files paths buffers (free memory)
+extern bool ChangeDirectory(dir: * int8 );		//Change working directory, return true on success
+extern bool IsFileDropped();		//Check if a file has been dropped into window
+extern void ClearDroppedFiles();		//Clear dropped files paths buffer (free memory)
+extern long GetFileModTime(fileName: * int8 );		//Get file modification time (last write time)
+extern *uint8  CompressData(data: *uint8 ,dataLength: int,compDataLength: *int );		//Compress data (DEFLATE algorithm)
+extern *uint8  DecompressData(compData: *uint8 ,compDataLength: int,dataLength: *int );		//Decompress data (DEFLATE algorithm)
+extern bool SaveStorageValue(position: uint32,value: int);		//Save integer value to storage file (to defined position), returns true on success
+extern int LoadStorageValue(position: uint32);		//Load integer value from storage file (from defined position)
+extern void OpenURL(url: * int8 );		//Open URL with default system browser (if available)
+extern bool IsKeyPressed(key: int);		//Check if a key has been pressed once
+extern bool IsKeyDown(key: int);		//Check if a key is being pressed
+extern bool IsKeyReleased(key: int);		//Check if a key has been released once
+extern bool IsKeyUp(key: int);		//Check if a key is NOT being pressed
+extern void SetExitKey(key: int);		//Set a custom key to exit program (default is ESC)
+extern int GetKeyPressed();		//Get key pressed (keycode), call it multiple times for keys queued
+extern int GetCharPressed();		//Get char pressed (unicode), call it multiple times for chars queued
+extern bool IsGamepadAvailable(gamepad: int);		//Check if a gamepad is available
+extern bool IsGamepadName(gamepad: int,name: * int8 );		//Check gamepad name (if available)
+extern * int8  GetGamepadName(gamepad: int);		//Get gamepad internal name id
+extern bool IsGamepadButtonPressed(gamepad: int,button: int);		//Check if a gamepad button has been pressed once
+extern bool IsGamepadButtonDown(gamepad: int,button: int);		//Check if a gamepad button is being pressed
+extern bool IsGamepadButtonReleased(gamepad: int,button: int);		//Check if a gamepad button has been released once
+extern bool IsGamepadButtonUp(gamepad: int,button: int);		//Check if a gamepad button is NOT being pressed
+extern int GetGamepadButtonPressed();		//Get the last gamepad button pressed
+extern int GetGamepadAxisCount(gamepad: int);		//Get gamepad axis count for a gamepad
+extern float GetGamepadAxisMovement(gamepad: int,axis: int);		//Get axis movement value for a gamepad axis
+extern int SetGamepadMappings(mappings: * int8 );		//Set internal gamepad mappings (SDL_GameControllerDB)
+extern bool IsMouseButtonPressed(button: int);		//Check if a mouse button has been pressed once
+extern bool IsMouseButtonDown(button: int);		//Check if a mouse button is being pressed
+extern bool IsMouseButtonReleased(button: int);		//Check if a mouse button has been released once
+extern bool IsMouseButtonUp(button: int);		//Check if a mouse button is NOT being pressed
+extern int GetMouseX();		//Get mouse position X
+extern int GetMouseY();		//Get mouse position Y
+extern Vector2 GetMousePosition();		//Get mouse position XY
+extern void SetMousePosition(x: int,y: int);		//Set mouse position XY
+extern void SetMouseOffset(offsetX: int,offsetY: int);		//Set mouse offset
+extern void SetMouseScale(scaleX: float,scaleY: float);		//Set mouse scaling
+extern float GetMouseWheelMove();		//Get mouse wheel movement Y
+extern void SetMouseCursor(cursor: int);		//Set mouse cursor
+extern int GetTouchX();		//Get touch position X for touch point 0 (relative to screen size)
+extern int GetTouchY();		//Get touch position Y for touch point 0 (relative to screen size)
+extern Vector2 GetTouchPosition(index: int);		//Get touch position XY for a touch point index (relative to screen size)
+extern void SetGesturesEnabled(flags: uint32);		//Enable a set of gestures using flags
+extern bool IsGestureDetected(gesture: int);		//Check if a gesture have been detected
+extern int GetGestureDetected();		//Get latest detected gesture
+extern int GetTouchPointsCount();		//Get touch points count
+extern float GetGestureHoldDuration();		//Get gesture hold time in milliseconds
+extern Vector2 GetGestureDragVector();		//Get gesture drag vector
+extern float GetGestureDragAngle();		//Get gesture drag angle
+extern Vector2 GetGesturePinchVector();		//Get gesture pinch delta
+extern float GetGesturePinchAngle();		//Get gesture pinch angle
+extern void SetCameraMode(Camera3D: Camera3D,mode: int);		//Set Camera3D mode (multiple Camera3D modes available)
+extern void UpdateCamera(Camera3D: *Camera3D );		//Update Camera3D position for selected mode
+extern void SetCameraPanControl(keyPan: int);		//Set Camera3D pan key to combine with mouse movement (free Camera3D)
+extern void SetCameraAltControl(keyAlt: int);		//Set Camera3D alt key to combine with mouse movement (free Camera3D)
+extern void SetCameraSmoothZoomControl(keySmoothZoom: int);		//Set Camera3D smooth zoom key to combine with mouse (free Camera3D)
+extern void SetCameraMoveControls(keyFront: int,keyBack: int,keyRight: int,keyLeft: int,keyUp: int,keyDown: int);		//Set Camera3D move controls (1st person and 3rd person cameras)
+extern void SetShapesTexture(texture: Texture,source: Rectangle);		//Set texture and rectangle to be used on shapes drawing
+extern void DrawPixel(posX: int,posY: int,color: Color);		//Draw a pixel
+extern void DrawPixelV(position: Vector2,color: Color);		//Draw a pixel (Vector version)
+extern void DrawLine(startPosX: int,startPosY: int,endPosX: int,endPosY: int,color: Color);		//Draw a line
+extern void DrawLineV(startPos: Vector2,endPos: Vector2,color: Color);		//Draw a line (Vector version)
+extern void DrawLineEx(startPos: Vector2,endPos: Vector2,thick: float,color: Color);		//Draw a line defining thickness
+extern void DrawLineBezier(startPos: Vector2,endPos: Vector2,thick: float,color: Color);		//Draw a line using cubic-bezier curves in-out
+extern void DrawLineBezierQuad(startPos: Vector2,endPos: Vector2,controlPos: Vector2,thick: float,color: Color);		//raw line using quadratic bezier curves with a control point
+extern void DrawLineStrip(points: *Vector2 ,pointsCount: int,color: Color);		//Draw lines sequence
+extern void DrawCircle(centerX: int,centerY: int,radius: float,color: Color);		//Draw a color-filled circle
+extern void DrawCircleSector(center: Vector2,radius: float,startAngle: float,endAngle: float,segments: int,color: Color);		//Draw a piece of a circle
+extern void DrawCircleSectorLines(center: Vector2,radius: float,startAngle: float,endAngle: float,segments: int,color: Color);		//Draw circle sector outline
+extern void DrawCircleGradient(centerX: int,centerY: int,radius: float,color1: Color,color2: Color);		//Draw a gradient-filled circle
+extern void DrawCircleV(center: Vector2,radius: float,color: Color);		//Draw a color-filled circle (Vector version)
+extern void DrawCircleLines(centerX: int,centerY: int,radius: float,color: Color);		//Draw circle outline
+extern void DrawEllipse(centerX: int,centerY: int,radiusH: float,radiusV: float,color: Color);		//Draw ellipse
+extern void DrawEllipseLines(centerX: int,centerY: int,radiusH: float,radiusV: float,color: Color);		//Draw ellipse outline
+extern void DrawRing(center: Vector2,innerRadius: float,outerRadius: float,startAngle: float,endAngle: float,segments: int,color: Color);		//Draw ring
+extern void DrawRingLines(center: Vector2,innerRadius: float,outerRadius: float,startAngle: float,endAngle: float,segments: int,color: Color);		//Draw ring outline
+extern void DrawRectangle(posX: int,posY: int,width: int,height: int,color: Color);		//Draw a color-filled rectangle
+extern void DrawRectangleV(position: Vector2,size: Vector2,color: Color);		//Draw a color-filled rectangle (Vector version)
+extern void DrawRectangleRec(rec: Rectangle,color: Color);		//Draw a color-filled rectangle
+extern void DrawRectanglePro(rec: Rectangle,origin: Vector2,rotation: float,color: Color);		//Draw a color-filled rectangle with pro parameters
+extern void DrawRectangleGradientV(posX: int,posY: int,width: int,height: int,color1: Color,color2: Color);		//Draw a vertical-gradient-filled rectangle
+extern void DrawRectangleGradientH(posX: int,posY: int,width: int,height: int,color1: Color,color2: Color);		//Draw a horizontal-gradient-filled rectangle
+extern void DrawRectangleGradientEx(rec: Rectangle,col1: Color,col2: Color,col3: Color,col4: Color);		//Draw a gradient-filled rectangle with custom vertex colors
+extern void DrawRectangleLines(posX: int,posY: int,width: int,height: int,color: Color);		//Draw rectangle outline
+extern void DrawRectangleLinesEx(rec: Rectangle,lineThick: float,color: Color);		//Draw rectangle outline with extended parameters
+extern void DrawRectangleRounded(rec: Rectangle,roundness: float,segments: int,color: Color);		//Draw rectangle with rounded edges
+extern void DrawRectangleRoundedLines(rec: Rectangle,roundness: float,segments: int,lineThick: float,color: Color);		//Draw rectangle with rounded edges outline
+extern void DrawTriangle(v1: Vector2,v2: Vector2,v3: Vector2,color: Color);		//Draw a color-filled triangle (vertex in counter-clockwise order!)
+extern void DrawTriangleLines(v1: Vector2,v2: Vector2,v3: Vector2,color: Color);		//Draw triangle outline (vertex in counter-clockwise order!)
+extern void DrawTriangleFan(points: *Vector2 ,pointsCount: int,color: Color);		//Draw a triangle fan defined by points (first vertex is the center)
+extern void DrawTriangleStrip(points: *Vector2 ,pointsCount: int,color: Color);		//Draw a triangle strip defined by points
+extern void DrawPoly(center: Vector2,sides: int,radius: float,rotation: float,color: Color);		//Draw a regular polygon (Vector version)
+extern void DrawPolyLines(center: Vector2,sides: int,radius: float,rotation: float,color: Color);		//Draw a polygon outline of n sides
+extern void DrawPolyLinesEx(center: Vector2,sides: int,radius: float,rotation: float,lineThick: float,color: Color);		//Draw a polygon outline of n sides with extended parameters
+extern bool CheckCollisionRecs(rec1: Rectangle,rec2: Rectangle);		//Check collision between two rectangles
+extern bool CheckCollisionCircles(center1: Vector2,radius1: float,center2: Vector2,radius2: float);		//Check collision between two circles
+extern bool CheckCollisionCircleRec(center: Vector2,radius: float,rec: Rectangle);		//Check collision between circle and rectangle
+extern bool CheckCollisionPointRec(point: Vector2,rec: Rectangle);		//Check if point is inside rectangle
+extern bool CheckCollisionPointCircle(point: Vector2,center: Vector2,radius: float);		//Check if point is inside circle
+extern bool CheckCollisionPointTriangle(point: Vector2,p1: Vector2,p2: Vector2,p3: Vector2);		//Check if point is inside a triangle
+extern bool CheckCollisionLines(startPos1: Vector2,endPos1: Vector2,startPos2: Vector2,endPos2: Vector2,collisionPoint: *Vector2 );		//Check the collision between two lines defined by two points each, returns collision point by reference
+extern Rectangle GetCollisionRec(rec1: Rectangle,rec2: Rectangle);		//Get collision rectangle for two rectangles collision
+extern Image LoadImage(fileName: * int8 );		//Load image from file into CPU memory (RAM)
+extern Image LoadImageRaw(fileName: * int8 ,width: int,height: int,format: int,headerSize: int);		//Load image from RAW file data
+extern Image LoadImageAnim(fileName: * int8 ,frames: *int );		//Load image sequence from file (frames appended to image.data)
+extern Image LoadImageFromMemory(fileType: * int8 ,fileData: * uint8 ,dataSize: int);		//Load image from memory buffer, fileType refers to extension: i.e. '.png'
+extern void UnloadImage(image: Image);		//Unload image from CPU memory (RAM)
+extern bool ExportImage(image: Image,fileName: * int8 );		//Export image data to file, returns true on success
+extern bool ExportImageAsCode(image: Image,fileName: * int8 );		//Export image as code file defining an array of bytes, returns true on success
+extern Image GenImageColor(width: int,height: int,color: Color);		//Generate image: plain color
+extern Image GenImageGradientV(width: int,height: int,top: Color,bottom: Color);		//Generate image: vertical gradient
+extern Image GenImageGradientH(width: int,height: int,left: Color,right: Color);		//Generate image: horizontal gradient
+extern Image GenImageGradientRadial(width: int,height: int,density: float,inner: Color,outer: Color);		//Generate image: radial gradient
+extern Image GenImageChecked(width: int,height: int,checksX: int,checksY: int,col1: Color,col2: Color);		//Generate image: checked
+extern Image GenImageWhiteNoise(width: int,height: int,factor: float);		//Generate image: white noise
+extern Image GenImagePerlinNoise(width: int,height: int,offsetX: int,offsetY: int,scale: float);		//Generate image: perlin noise
+extern Image GenImageCellular(width: int,height: int,tileSize: int);		//Generate image: cellular algorithm. Bigger tileSize means bigger cells
+extern Image ImageCopy(image: Image);		//Create an image duplicate (useful for transformations)
+extern Image ImageFromImage(image: Image,rec: Rectangle);		//Create an image from another image piece
+extern Image ImageText(text: * int8 ,fontSize: int,color: Color);		//Create an image from text (default font)
+extern Image ImageTextEx(font: Font,text: * int8 ,fontSize: float,spacing: float,tint: Color);		//Create an image from text (custom sprite font)
+extern void ImageFormat(image: *Image ,newFormat: int);		//Convert image data to desired format
+extern void ImageToPOT(image: *Image ,fill: Color);		//Convert image to POT (power-of-two)
+extern void ImageCrop(image: *Image ,crop: Rectangle);		//Crop an image to a defined rectangle
+extern void ImageAlphaCrop(image: *Image ,threshold: float);		//Crop image depending on alpha value
+extern void ImageAlphaClear(image: *Image ,color: Color,threshold: float);		//Clear alpha channel to desired color
+extern void ImageAlphaMask(image: *Image ,alphaMask: Image);		//Apply alpha mask to image
+extern void ImageAlphaPremultiply(image: *Image );		//Premultiply alpha channel
+extern void ImageResize(image: *Image ,newWidth: int,newHeight: int);		//Resize image (Bicubic scaling algorithm)
+extern void ImageResizeNN(image: *Image ,newWidth: int,newHeight: int);		//Resize image (Nearest-Neighbor scaling algorithm)
+extern void ImageResizeCanvas(image: *Image ,newWidth: int,newHeight: int,offsetX: int,offsetY: int,fill: Color);		//Resize canvas and fill with color
+extern void ImageMipmaps(image: *Image );		//Compute all mipmap levels for a provided image
+extern void ImageDither(image: *Image ,rBpp: int,gBpp: int,bBpp: int,aBpp: int);		//Dither image data to 16bpp or lower (Floyd-Steinberg dithering)
+extern void ImageFlipVertical(image: *Image );		//Flip image vertically
+extern void ImageFlipHorizontal(image: *Image );		//Flip image horizontally
+extern void ImageRotateCW(image: *Image );		//Rotate image clockwise 90deg
+extern void ImageRotateCCW(image: *Image );		//Rotate image counter-clockwise 90deg
+extern void ImageColorTint(image: *Image ,color: Color);		//Modify image color: tint
+extern void ImageColorInvert(image: *Image );		//Modify image color: invert
+extern void ImageColorGrayscale(image: *Image );		//Modify image color: grayscale
+extern void ImageColorContrast(image: *Image ,contrast: float);		//Modify image color: contrast (-100 to 100)
+extern void ImageColorBrightness(image: *Image ,brightness: int);		//Modify image color: brightness (-255 to 255)
+extern void ImageColorReplace(image: *Image ,color: Color,replace: Color);		//Modify image color: replace color
+extern *Color  LoadImageColors(image: Image);		//Load color data from image as a Color array (RGBA - 32bit)
+extern *Color  LoadImagePalette(image: Image,maxPaletteSize: int,colorsCount: *int );		//Load colors palette from image as a Color array (RGBA - 32bit)
+extern void UnloadImageColors(colors: *Color );		//Unload color data loaded with LoadImageColors()
+extern void UnloadImagePalette(colors: *Color );		//Unload colors palette loaded with LoadImagePalette()
+extern Rectangle GetImageAlphaBorder(image: Image,threshold: float);		//Get image alpha border rectangle
+extern void ImageClearBackground(dst: *Image ,color: Color);		//Clear image background with given color
+extern void ImageDrawPixel(dst: *Image ,posX: int,posY: int,color: Color);		//Draw pixel within an image
+extern void ImageDrawPixelV(dst: *Image ,position: Vector2,color: Color);		//Draw pixel within an image (Vector version)
+extern void ImageDrawLine(dst: *Image ,startPosX: int,startPosY: int,endPosX: int,endPosY: int,color: Color);		//Draw line within an image
+extern void ImageDrawLineV(dst: *Image ,start: Vector2,end: Vector2,color: Color);		//Draw line within an image (Vector version)
+extern void ImageDrawCircle(dst: *Image ,centerX: int,centerY: int,radius: int,color: Color);		//Draw circle within an image
+extern void ImageDrawCircleV(dst: *Image ,center: Vector2,radius: int,color: Color);		//Draw circle within an image (Vector version)
+extern void ImageDrawRectangle(dst: *Image ,posX: int,posY: int,width: int,height: int,color: Color);		//Draw rectangle within an image
+extern void ImageDrawRectangleV(dst: *Image ,position: Vector2,size: Vector2,color: Color);		//Draw rectangle within an image (Vector version)
+extern void ImageDrawRectangleRec(dst: *Image ,rec: Rectangle,color: Color);		//Draw rectangle within an image
+extern void ImageDrawRectangleLines(dst: *Image ,rec: Rectangle,thick: int,color: Color);		//Draw rectangle lines within an image
+extern void ImageDraw(dst: *Image ,src: Image,srcRec: Rectangle,dstRec: Rectangle,tint: Color);		//Draw a source image within a destination image (tint applied to source)
+extern void ImageDrawText(dst: *Image ,text: * int8 ,posX: int,posY: int,fontSize: int,color: Color);		//Draw text (using default font) within an image (destination)
+extern void ImageDrawTextEx(dst: *Image ,font: Font,text: * int8 ,position: Vector2,fontSize: float,spacing: float,tint: Color);		//Draw text (custom sprite font) within an image (destination)
+extern Texture LoadTexture(fileName: * int8 );		//Load texture from file into GPU memory (VRAM)
+extern Texture LoadTextureFromImage(image: Image);		//Load texture from image data
+extern RenderTexture LoadRenderTexture(width: int,height: int);		//Load texture for rendering (framebuffer)
+extern void UnloadTexture(texture: Texture);		//Unload texture from GPU memory (VRAM)
+extern void UnloadRenderTexture(target: RenderTexture);		//Unload render texture from GPU memory (VRAM)
+extern void UpdateTexture(texture: Texture,pixels: *uint8);		//Update GPU texture with new data
+extern void UpdateTextureRec(texture: Texture,rec: Rectangle,pixels: *uint8);		//Update GPU texture rectangle with new data
+extern Image GetTextureData(texture: Texture);		//Get pixel data from GPU texture and return an Image
+extern Image GetScreenData();		//Get pixel data from screen buffer and return an Image (screenshot)
+extern void GenTextureMipmaps(texture: *Texture );		//Generate GPU mipmaps for a texture
+extern void SetTextureFilter(texture: Texture,filter: int);		//Set texture scaling filter mode
+extern void SetTextureWrap(texture: Texture,wrap: int);		//Set texture wrapping mode
+extern void DrawTexture(texture: Texture,posX: int,posY: int,tint: Color);		//Draw a Texture
+extern void DrawTextureV(texture: Texture,position: Vector2,tint: Color);		//Draw a Texture with position defined as Vector2
+extern void DrawTextureEx(texture: Texture,position: Vector2,rotation: float,scale: float,tint: Color);		//Draw a Texture with extended parameters
+extern void DrawTextureRec(texture: Texture,source: Rectangle,position: Vector2,tint: Color);		//Draw a part of a texture defined by a rectangle
+extern void DrawTextureQuad(texture: Texture,tiling: Vector2,offset: Vector2,quad: Rectangle,tint: Color);		//Draw texture quad with tiling and offset parameters
+extern void DrawTextureTiled(texture: Texture,source: Rectangle,dest: Rectangle,origin: Vector2,rotation: float,scale: float,tint: Color);		//Draw part of a texture (defined by a rectangle) with rotation and scale tiled into dest.
+extern void DrawTexturePro(texture: Texture,source: Rectangle,dest: Rectangle,origin: Vector2,rotation: float,tint: Color);		//Draw a part of a texture defined by a rectangle with 'pro' parameters
+extern void DrawTextureNPatch(texture: Texture,nPatchInfo: NPatchInfo,dest: Rectangle,origin: Vector2,rotation: float,tint: Color);		//Draws a texture (or part of it) that stretches or shrinks nicely
+extern void DrawTexturePoly(texture: Texture,center: Vector2,points: *Vector2 ,texcoords: *Vector2 ,pointsCount: int,tint: Color);		//Draw a textured polygon
+extern Color Fade(color: Color,alpha: float);		//Get color with alpha applied, alpha goes from 0.0f to 1.0f
+extern int ColorToInt(color: Color);		//Get hexadecimal value for a Color
+extern Vector4 ColorNormalize(color: Color);		//Get Color normalized as float [0..1]
+extern Color ColorFromNormalized(normalized: Vector4);		//Get Color from normalized values [0..1]
+extern Vector3 ColorToHSV(color: Color);		//Get HSV values for a Color, hue [0..360], saturation/value [0..1]
+extern Color ColorFromHSV(hue: float,saturation: float,value: float);		//Get a Color from HSV values, hue [0..360], saturation/value [0..1]
+extern Color ColorAlpha(color: Color,alpha: float);		//Get color with alpha applied, alpha goes from 0.0f to 1.0f
+extern Color ColorAlphaBlend(dst: Color,src: Color,tint: Color);		//Get src alpha-blended into dst color with tint
+extern Color GetColor(hexValue: int);		//Get Color structure from hexadecimal value
+extern Color GetPixelColor(srcPtr: *uint8 ,format: int);		//Get Color from a source pixel pointer of certain format
+extern void SetPixelColor(dstPtr: *uint8 ,color: Color,format: int);		//Set color formatted into destination pixel pointer
+extern int GetPixelDataSize(width: int,height: int,format: int);		//Get pixel data size in bytes for certain format
+extern Font GetFontDefault();		//Get the default Font
+extern Font LoadFont(fileName: * int8 );		//Load font from file into GPU memory (VRAM)
+extern Font LoadFontEx(fileName: * int8 ,fontSize: int,fontChars: *int ,charsCount: int);		//Load font from file with extended parameters
+extern Font LoadFontFromImage(image: Image,key: Color,firstChar: int);		//Load font from Image (XNA style)
+extern void UnloadFontData(chars: *CharInfo ,charsCount: int);		//Unload font chars info data (RAM)
+extern void UnloadFont(font: Font);		//Unload Font from GPU memory (VRAM)
+extern void DrawFPS(posX: int,posY: int);		//Draw current FPS
+extern void DrawText(text: * int8 ,posX: int,posY: int,fontSize: int,color: Color);		//Draw text (using default font)
+extern void DrawTextEx(font: Font,text: * int8 ,position: Vector2,fontSize: float,spacing: float,tint: Color);		//Draw text using font and additional parameters
+extern void DrawTextRec(font: Font,text: * int8 ,rec: Rectangle,fontSize: float,spacing: float,wordWrap: bool,tint: Color);		//Draw text using font inside rectangle limits
+extern void DrawTextRecEx(font: Font,text: * int8 ,rec: Rectangle,fontSize: float,spacing: float,wordWrap: bool,tint: Color,selectStart: int,selectLength: int,selectTint: Color,selectBackTint: Color);		//Draw text using font inside rectangle limits with support for text selection
+extern void DrawTextCodepoint(font: Font,codepoint: int,position: Vector2,fontSize: float,tint: Color);		//Draw one character (codepoint)
+extern int MeasureText(text: * int8 ,fontSize: int);		//Measure string width for default font
+extern Vector2 MeasureTextEx(font: Font,text: * int8 ,fontSize: float,spacing: float);		//Measure string size for Font
+extern int GetGlyphIndex(font: Font,codepoint: int);		//Get index position for a unicode character on font
+extern int TextCopy(dst: *int8 ,src: * int8 );		//Copy one string to another, returns bytes copied
+extern bool TextIsEqual(text1: * int8 ,text2: * int8 );		//Check if two text string are equal
+extern uint32 TextLength(text: * int8 );		//Get text length, checks for ' 0' ending
+extern * int8  TextSubtext(text: * int8 ,position: int,length: int);		//Get a piece of a text string
+extern *int8  TextReplace(text: *int8 ,replace: * int8 ,by: * int8 );		//Replace text string (memory must be freed!)
+extern *int8  TextInsert(text: * int8 ,insert: * int8 ,position: int);		//Insert text in a position (memory must be freed!)

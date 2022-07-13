@@ -5,6 +5,7 @@
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DebugLoc.h"
 #include "llvm/IR/GlobalVariable.h"
+#include <unordered_map>
 
 class CGCompileUnit;
 
@@ -17,7 +18,8 @@ class CGDebugInfo {
       TypeCache;
 
   llvm::SmallVector<llvm::DIScope *, 4> ScopeStack;
-
+  std::unordered_map<unsigned, DIFile*> Files;
+  DIFile* Get_File(SMLoc Loc);
   llvm::DIScope *getScope();
   void openScope(llvm::DIScope *);
   unsigned getLineNumber(SMLoc Loc);

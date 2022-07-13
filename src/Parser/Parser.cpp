@@ -17,7 +17,7 @@ CompileUnitDeclaration *Parser::parse(StringRef Name) {
     SkipUntil(tok::eof);
     return nullptr;
   };
-  module = Actions.actOnCompileUnitDeclaration(SMLoc(), Name);
+  module = Actions.actOnCompileUnitDeclaration(SMLoc::getFromPointer(Lex.getBuffer().begin()), Name);
   // EnterDeclScope S(Actions, module);
   Actions.CurrentDecl = module;
   Actions.CurrentScope->P_Decl = module;
@@ -291,7 +291,7 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
   if (Tok.is(tok::equal)) {
     advance();
 
-    while (Tok.isNot(tok::semi)) {
+    do  {
       Expr* E;
       Locs.push_back(Tok.getLocation());
 
@@ -299,7 +299,7 @@ bool Parser::parseVarDecleration(DeclList &Decls, StmtList &Stmts) {
         return _errorhandler();
       };
       Es.push_back(E);
-    }
+    } while(Tok.is(tok::comma));
   }
   if (!type_D && (!Es.empty()) &&Es[0]) {
     type_D = Es[0]->getType();

@@ -3,9 +3,19 @@
 #include "llvm/IR/DataLayout.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
-
+DIFile* CGDebugInfo::Get_File(SMLoc Loc){
+  return Files[CGM.mgr.FindBufferContainingLoc(Loc)];
+}
 CGDebugInfo::CGDebugInfo(CGCompileUnit &CGM)
     : CGM(CGM), DBuilder(*CGM.getModule()) {
+  for (auto imported : CGM.getModuleDeclaration()->Imported_Module) {
+    llvm::SmallString<128> Path(imported->getName());
+    llvm::sys::fs::make_absolute(Path);
+
+    llvm::DIFile *File = DBuilder.createFile(
+        llvm::sys::path::filename(Path), llvm::sys::path::parent_path(Path));
+    Files[CGM.mgr.FindBufferContainingLoc(imported->Loc)] = File;
+  }
   llvm::SmallString<128> Path(
      CGM.Mod->getName());
   llvm::sys::fs::make_absolute(Path);
@@ -13,7 +23,7 @@ CGDebugInfo::CGDebugInfo(CGCompileUnit &CGM)
   llvm::DIFile *File = DBuilder.createFile(
       llvm::sys::path::filename(Path),
       llvm::sys::path::parent_path(Path));
-
+  Files[CGM.mgr.FindBufferContainingLoc(CGM.Mod->Loc)] = File;
   bool IsOptimzed = false;
   unsigned ObjCRunTimeVersion = 0;
   llvm::DICompileUnit::DebugEmissionKind EmissionKind =
@@ -70,7 +80,7 @@ CGDebugInfo::getPervasiveType(Integer_TypeDeclaration *Ty) {
 llvm::DIType *
 CGDebugInfo::getAliasType(Alias_TypeDeclaration *Ty) {
   return DBuilder.createTypedef(
-      getType(Ty->Realone), Ty->getName(), CU->getFile(),
+      getType(Ty->Realone), Ty->getName(), Get_File(Ty->Loc),
       getLineNumber(Ty->getLocation()), getScope());
 }
 
@@ -122,13 +132,13 @@ CGDebugInfo::getClassType(ClassDeclaration *Ty) {
       std::pair<unsigned, unsigned> LineAndColvar =
       CGM.mgr.getLineAndColumn(var->Loc);
       // Layout.g
-      mems.push_back(DBuilder.createMemberType(CU, mem->getName(), CU->getFile(),LineAndColvar.first,varSize,allingmentvar.value(),offest,{},ty));
+      mems.push_back(DBuilder.createMemberType(CU, mem->getName(), Get_File(Ty->Loc),LineAndColvar.first,varSize,allingmentvar.value(),offest,{},ty));
       index++;
     }
   }
   // getOrCreateArray 
   // llvm::DINodeArray
-  T = DBuilder.createClassType(getScope(), Ty->Name, CU->getFile(), LineAndCol.first, Size, allingment.value(),0,{},nullptr, DBuilder.getOrCreateArray(mems));
+  T = DBuilder.createClassType(getScope(), Ty->Name, Get_File(Ty->Loc), LineAndCol.first, Size, allingment.value(),0,{},nullptr, DBuilder.getOrCreateArray(mems));
  
   // T  = DBuilder.createUnspecifiedType(Ty->getName());
   return T;
@@ -188,7 +198,7 @@ void CGDebugInfo::emitGlobalVariable(
   llvm::DIGlobalVariableExpression *GV =
       DBuilder.createGlobalVariableExpression(
           getScope(), Decl->getName(), V->getName(),
-          CU->getFile(), getLineNumber(Decl->getLocation()),
+          Get_File(Decl->Loc), getLineNumber(Decl->getLocation()),
           getType(Decl->getType()), false);
   V->addDebugInfo(GV);
 }
@@ -198,7 +208,7 @@ void CGDebugInfo::emitFunction(FunctionDeclaration *Decl,
   llvm::DISubroutineType *SubT = getType(Decl);
   llvm::DISubprogram *Sub = DBuilder.createFunction(
       getScope(), Decl->getName(), Fn->getName(),
-      CU->getFile(), getLineNumber(Decl->getLocation()),
+      Get_File(Decl->Loc), getLineNumber(Decl->getLocation()),
       SubT, getLineNumber(Decl->getLocation()),
       llvm::DINode::FlagPrototyped,
       llvm::DISubprogram::SPFlagDefinition);
@@ -220,7 +230,7 @@ llvm::DILocalVariable *CGDebugInfo::emitParameterVariable(
          "No local scope");
   llvm::DILocalVariable *Var =
       DBuilder.createParameterVariable(
-          getScope(), FP->getName(), Idx, CU->getFile(),
+          getScope(), FP->getName(), Idx, Get_File(FP->Loc),
           getLineNumber(FP->getLocation()),
           getType(FP->getType()));
   DBuilder.insertDbgValueIntrinsic(
@@ -235,7 +245,7 @@ void CGDebugInfo::emitValue(llvm::Value *Val,
                             llvm::BasicBlock *BB) {
   llvm::DebugLoc DLoc = getDebugLoc(Loc);
   llvm::DILocalVariable *DbgLocalVar =
- DBuilder.createAutoVariable(getScope(), Var->getName(), CU->getFile(),
+ DBuilder.createAutoVariable(getScope(), Var->getName(), Get_File(Var->Loc),
  7, getType(Var->getType()));
   llvm::Instruction *Instr =
       DBuilder.insertDbgAddrIntrinsic(

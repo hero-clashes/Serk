@@ -48,7 +48,7 @@ class CGFunction{
 
   llvm::Value *emitInfixExpr(InfixExpression *E);
   llvm::Value *emitPrefixExpr(PrefixExpression *E);
-  llvm::Value *emitExpr(Expr *E);
+  llvm::Value *emitExpr(Expr *E,bool want_value = true);
   virtual llvm::Value *emitFunccall(FunctionCallExpr *E);
   llvm::Value *emitMethcall(MethodCallExpr *E);
   llvm::Value *emitCast(CastExpr *E);

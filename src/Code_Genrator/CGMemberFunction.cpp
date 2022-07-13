@@ -142,8 +142,16 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
   llvm::Value *Alloca = Builder.CreateAlloca(classPointer->getType());
   auto ar = Builder.CreateStore(classPointer, Alloca);
   writeLocalVariable(Curr, CGC.Class, Alloca);
-  if (CGDebugInfo *Dbg = CGM.getDbgInfo())
-    Dbg->emitParameterVariable(new ParameterDeclaration(new PointerTypeDeclaration(nullptr,CGC.Class->Loc,"",(TypeDeclaration *)CGC.Class),Proc->Loc,"this",(TypeDeclaration*)CGC.Class,false),1,Alloca,Curr);
+  if (CGDebugInfo *Dbg = CGM.getDbgInfo()) {
+    auto placeholder =new ParameterDeclaration(
+            nullptr, CGC.Class->Loc, "this",
+            new PointerTypeDeclaration(nullptr, CGC.Class->Loc, "",
+                                       (TypeDeclaration *)CGC.Class),
+            false);
+    Dbg->emitParameterVariable(
+        placeholder,
+        1, classPointer, Curr);
+  }
   size_t Idx = 0;
   for (auto I = Fn->arg_begin() + 1, E = Fn->arg_end(); I != E; ++I, ++Idx) {
     llvm::Argument *Arg = I;
@@ -157,7 +165,7 @@ void CGMemberFunction::run(FunctionDeclaration *Proc) {
     writeLocalVariable(Curr, FP, Alloca);
     if (CGDebugInfo *Dbg = CGM.getDbgInfo())
       
-          Dbg->emitParameterVariable(FP, Idx + 1, Arg, BB);
+          Dbg->emitParameterVariable(FP, Idx + 2, Arg, BB);
   }
 
   InitDecls(Proc);

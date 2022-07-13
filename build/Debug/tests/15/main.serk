@@ -1,0 +1,13 @@
+import "raylib.serk"
+fn int main() {
+	SetWindowState(FLAG_VSYNC_HINT);
+	InitWindow(1280,720,"Raylib");
+	var white = Color(255,255,255,255);
+	while(!WindowShouldClose()){
+		BeginDrawing();
+		ClearBackground(white);
+		DrawFPS(1,1);
+		EndDrawing();
+	}
+	return 0;
+}

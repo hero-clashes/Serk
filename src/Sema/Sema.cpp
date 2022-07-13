@@ -193,7 +193,7 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
     }else if (Name == "nullptr") {
       return NullPtr;
     }else if (auto D = dyn_cast_or_null<ClassDeclaration>(CurrentScope->lookup(Name))){
-      auto s = new std::string(("Create"));
+      auto s = new std::string((Name + "_Create").str());
       if(auto F = dyn_cast_or_null<FunctionDeclaration>(CurrentScope->lookup(*s))){
         return F;
       }
