@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -43,6 +44,10 @@ CompileUnitDeclaration *Parser::parse(StringRef Name) {
       if (parseVarDecleration(Decls, Stmts)) {
         return _errorhandler();
       };
+      if(expect(tok::semi)){
+        return _errorhandler();
+      };
+      advance();
     }
     if (Tok.is(tok::kw_class)) {
       if (ParseClass(Decls)) {
@@ -180,7 +185,8 @@ bool Parser::ParseExternFunction(DeclList &ParentDecls){
   auto D =
       Actions.actOnFunctionDeclaration(Tok.getLocation(), Tok.getIdentifier());
   advance();                    // eat function_name identifer
-  // EnterDeclScope S(Actions, D); // added befor the parmeters so the parmeters
+  StmtList a;
+  EnterDeclScope S(Actions, D,a); // added befor the parmeters so the parmeters
                                 // get added to the function scope
   if (expect(tok::l_paren)) {
     return _errorhandler();
@@ -1412,9 +1418,11 @@ bool Parser::ParseImport(){
   auto str = Tok.getLiteralData();
   advance();
   
+  
   str.consume_back("\"");
   str.consume_front("\"");
-  if(imported.find(str) != imported.end()){
+  auto new_name = new std::string((module->Name.slice(0, module->Name.find_last_of("/\\") + 1) + str).str());
+  if(imported.find(*new_name) != imported.end()){
     module->Imported_Module.push_back(imported[str]);
     return false;
   }
@@ -1423,8 +1431,8 @@ bool Parser::ParseImport(){
     return _errorhandler();
   }
   auto new_parser = Parser(new_lex,Actions);
-  auto m = new_parser.parse(str);
-  imported[str] = m;
+  auto m = new_parser.parse(*new_name);
+  imported[*new_name] = m;
   module->Imported_Module.push_back(m);
   return false;
 }

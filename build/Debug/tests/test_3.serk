@@ -10,7 +10,7 @@ fn int main() {
       a = d(a);
     } else {
 	 a = d(a + 1);
-	}
-  }
+	};
+  };
   return a;
 }

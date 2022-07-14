@@ -4,7 +4,7 @@ enum {
     som = 546,
 }
 fn void foo(a:ref int){
-    a = 41
+    a = 41;
 }
 fn int main() {
   var n = one;

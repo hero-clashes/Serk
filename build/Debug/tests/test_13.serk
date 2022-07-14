@@ -1,7 +1,7 @@
 class A{
 var asd:int;
 }
-class I<T>{
+class I<type T>{
 var asd:T;
 }
 fn int main() {

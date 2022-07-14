@@ -29,13 +29,14 @@
 #include "llvm/Passes/PassPlugin.h" // New
 #include "llvm/Analysis/AliasAnalysis.h" // New
 #include "llvm/Analysis/TargetTransformInfo.h" // New
+#include "Testing.hpp"
 
 static llvm::cl::list<std::string>
     InputFiles(llvm::cl::Positional,
                llvm::cl::desc("<input-files>"));
 
 static cl::opt<bool>
-    Debug("emit Debug info",
+    Debug("g",
              cl::desc("emit Debug info"),
              cl::init(true));               
 TargetMachine *Create_TM() {
@@ -64,8 +65,6 @@ TargetMachine *Create_TM() {
 
 int main(int argc_, const char **argv_) {
   llvm::InitLLVM X(argc_, argv_);
-  llvm::SmallVector<const char *, 256> argv(argv_ + 1,
-     argv_ + argc_);
   LLVMInitializeX86TargetInfo();                                         
   LLVMInitializeNativeTarget();
   LLVMInitializeX86TargetMCA();
@@ -75,14 +74,20 @@ int main(int argc_, const char **argv_) {
   llvm::cl::ParseCommandLineOptions(argc_, argv_, "Serk Compiler");
 
   llvm::codegen::RegisterCodeGenFlags()	;
-  if(InputFiles.empty()) InputFiles.push_back("main.serk");
+  if(InputFiles.empty() && Files_Test.empty()){ 
+    InputFiles.push_back("main.serk");}
+  else if(InputFiles.empty()){
+    for (auto Test:Files_Test) InputFiles.push_back(Test);
+  }
   SourceMgr mgr;
+  std::vector<std::string> Dirs;
   for (auto File : InputFiles) {
-
+    auto base_filename = new std::string(File.substr(File.find_last_of("/\\") + 1));
+    auto new_f = new std::string(File);
     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> FileOrErr =
         llvm::MemoryBuffer::getFile(File);
-
-
+    Dirs.push_back(File.substr(0,File.size() - base_filename->size()));
+    mgr.setIncludeDirs(Dirs);
     mgr.AddNewSourceBuffer(std::move(*FileOrErr), llvm::SMLoc());
 
     DiagnosticsEngine dia{mgr};
@@ -91,8 +96,7 @@ int main(int argc_, const char **argv_) {
     Lexer lex{mgr, dia};
 
     Parser parser{lex, sema};
-    auto base_filename = new std::string(File.substr(File.find_last_of("/\\") + 1));
-    parser.parse(*base_filename);
+    parser.parse(*new_f);
     if (dia.nunErrors() > 0) {
       return 1;
     }
@@ -122,18 +126,15 @@ int main(int argc_, const char **argv_) {
       errs() << "TheTargetMachine can't emit a file of this type";
       return 1;
     }
-    // M->setTargetTriple(TargetTriple.getTriple());
     objs.push_back(filename);
     PM.run(*M);
 
     dest.close();
   }
-  // auto M = Genrator->run(outputast, "main.serk",mgr);
 
 
-  // auto a = "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.32.31326\\bin\\Hostx64\\x64\\Link.exe\" output.o /ENTRY:main /DEBUG:FULL";
   std::string a(R"(""C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\bin\Hostx64\x64\link.exe" "/DEBUG:FULL" /LARGEADDRESSAWARE:NO "-libpath:C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\lib\x64" "-libpath:C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.32.31326\atlmfc\lib\x64" "-libpath:C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0\ucrt\x64" "-libpath:C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0\um\x64" "-libpath:C:\Program Files\LLVM\lib\clang\13.0.0\lib\windows" "-nologo" A.lib winmm.lib opengl32.lib gdi32.lib user32.lib shell32.lib ole32.lib oleaut32.lib msvcrt.lib")");
-  std::reverse(objs.begin(),objs.end());
+  // std::reverse(objs.begin(),objs.end());
   for(auto ob:objs){
     a.append(" " + ob);
   }

@@ -644,7 +644,7 @@ ClassDeclaration *Sema::init_genric_class(DeclList &Decls,Decl *T,std::vector<st
   Class_Copy->Name=StringRef(*new_name);
 
 
-  CurrentScope->getParent()->insert(Class_Copy);
+  CurrentScope->getScopeAtDepth(0)->insert(Class_Copy);
   Decls.push_back(Class_Copy);
   return Class_Copy;
 }

@@ -159,7 +159,7 @@ void CGCompileUnit::run(CompileUnitDeclaration *Mod)
         llvm::GlobalVariable *V = new llvm::GlobalVariable(
             *M, convertType(Var->getType()),
             /*isConstant=*/false, llvm::GlobalValue::ExternalLinkage, nullptr,
-            mangleName(Var));
+            Var->Name );
         Globals[Var] = V;
       } else if (auto *Proc = llvm::dyn_cast<FunctionDeclaration>(Decl)) {
         CGFunction CGP(*this);
@@ -179,9 +179,9 @@ void CGCompileUnit::run(CompileUnitDeclaration *Mod)
       // Create global variables
       llvm::GlobalVariable *V = new llvm::GlobalVariable(
           *M, convertType(Var->getType()),
-          /*isConstant=*/false,
-          llvm::GlobalValue::PrivateLinkage, nullptr,
-          mangleName(Var));
+          /*isConstant=*/true,
+          llvm::GlobalValue::PrivateLinkage, llvm::Constant::getNullValue(convertType(Var->getType())),
+          Var->Name);
       Globals[Var] = V;
       if (CGDebugInfo *Dbg = getDbgInfo())
         Dbg->emitGlobalVariable(Var, V);

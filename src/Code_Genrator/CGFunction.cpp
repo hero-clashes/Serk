@@ -362,7 +362,7 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
     ArgsV.push_back(v);
     index++;
   };
-  for (auto a:ArgsV) a->dump();
+  // for (auto a:ArgsV) a->dump();
   auto placeholder = Builder.CreateCall(
       F, ArgsV, F->getReturnType()->isVoidTy() ? "" : "calltmp");
   if(auto dbg = CGM.getDbgInfo())
@@ -503,7 +503,7 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
     ArgsV.push_back(v);
     index++;
   };
-  for (auto a:ArgsV) a->dump();
+  // for (auto a:ArgsV) a->dump();
    Builder.CreateCall(F, ArgsV);
   if(auto dbg = CGM.getDbgInfo())
             dbg->SetLoc(&Curr->back(),Stmt->getLoc());

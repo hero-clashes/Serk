@@ -9,8 +9,8 @@ class A {
 	asd = 45;
 	}
   } 
-int main() {
-  A s;
-  int o =  s.s();
+fn int main() {
+  var s:A;
+  var o =  s.s();
   return o;
 }

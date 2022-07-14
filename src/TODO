@@ -21,3 +21,9 @@ TODO structured bindings
 TODO implment gernrcis checks
 TODO costum operators
 TODO implment new
+TODO implment switch
+TODO implment continue and break
+TODO implment compiletime Refelection
+TODO implment runtime Refelection
+TODO move genric checks to when it get initited 
+TODO add varaints
