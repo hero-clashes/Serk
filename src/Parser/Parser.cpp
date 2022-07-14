@@ -65,14 +65,22 @@ CompileUnitDeclaration *Parser::parse(StringRef Name) {
   imported[Name] = module;
   return module;
 };
-bool Parser::ParseConstructor(DeclList &ParentDecls,Decl *Class){
+bool Parser::ParseConstructorOrDecostructor(DeclList &ParentDecls,Decl *Class){
+  bool dest = false;
+  if(Tok.is(tok::tild)){
+    advance();
+    dest = true;
+  }
   auto _errorhandler = [this] { return SkipUntil({tok::r_parth}); };
-  auto function_name = new std::string("Create");
+  auto function_name = new std::string(dest ? "Delete":"Create");
   auto function_loc = Tok.getLocation();
   auto D =
       Actions.actOnFunctionDeclaration(Tok.getLocation(), *function_name);
-  advance();                    // eat function_name identifer
-  EnterDeclScope S(Actions, D); // added befor the parmeters so the parmeters
+  advance();
+  DeclList Decls;
+  StmtList Stmts;
+                      // eat function_name identifer
+  {EnterDeclScope S(Actions, D,Stmts); // added befor the parmeters so the parmeters
                                 // get added to the function scope
   if (expect(tok::l_paren)) {
     return _errorhandler();
@@ -88,12 +96,11 @@ bool Parser::ParseConstructor(DeclList &ParentDecls,Decl *Class){
   advance();
   Actions.actOnFunctionHeading(D, Params, Class);
 
-  DeclList Decls;
-  StmtList Stmts;
+  
 
   if (parseBlock(Decls, Stmts)) {
     return _errorhandler();
-  };
+  };}
 
   ParentDecls.push_back(D);
   Actions.actOnFunctionDeclaration(D, function_loc, *function_name, Decls,
@@ -117,13 +124,14 @@ bool Parser::ParseFuction(DeclList &ParentDecls) {
   if (expect(tok::identifier)) { // expect function name
     return _errorhandler();
   };
-
+  DeclList Decls;
+  StmtList Stmts;
   auto function_name = Tok.getIdentifier();
   auto function_loc = Tok.getLocation();
   auto D =
       Actions.actOnFunctionDeclaration(Tok.getLocation(), Tok.getIdentifier());
   advance();                    // eat function_name identifer
-  EnterDeclScope S(Actions, D); // added befor the parmeters so the parmeters
+  {EnterDeclScope S(Actions, D,Stmts); // added befor the parmeters so the parmeters
                                 // get added to the function scope
   if (expect(tok::l_paren)) {
     return _errorhandler();
@@ -139,12 +147,11 @@ bool Parser::ParseFuction(DeclList &ParentDecls) {
   advance();
   Actions.actOnFunctionHeading(D, Params, RetType);
 
-  DeclList Decls;
-  StmtList Stmts;
+ 
 
   if (parseBlock(Decls, Stmts)) {
     return _errorhandler();
-  };
+  };}
 
   ParentDecls.push_back(D);
   Actions.actOnFunctionDeclaration(D, function_loc, function_name, Decls,
@@ -173,7 +180,7 @@ bool Parser::ParseExternFunction(DeclList &ParentDecls){
   auto D =
       Actions.actOnFunctionDeclaration(Tok.getLocation(), Tok.getIdentifier());
   advance();                    // eat function_name identifer
-  EnterDeclScope S(Actions, D); // added befor the parmeters so the parmeters
+  // EnterDeclScope S(Actions, D); // added befor the parmeters so the parmeters
                                 // get added to the function scope
   if (expect(tok::l_paren)) {
     return _errorhandler();
@@ -862,7 +869,8 @@ bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
   StmtList IfStmts, ElseStmts;
   SMLoc Loc = Tok.getLocation();
   consume(tok::kw_if);
-  EnterDeclScope s(Actions);
+ { 
+  EnterDeclScope s(Actions,IfStmts);
   if(expect(tok::l_paren)){
     return _errorhandler();
   };
@@ -895,9 +903,11 @@ bool Parser::parseIfStatement(DeclList &Decls, StmtList &Stmts) {
         return _errorhandler();
     };
   }
+  }
 
   if (Tok.is(tok::kw_else)) {
     advance();
+    EnterDeclScope s(Actions,ElseStmts);
     if (Tok.isNot(tok::l_parth)) {
       if(parseStatement(Decls, ElseStmts)){
         return _errorhandler();
@@ -930,7 +940,7 @@ bool Parser::parseWhileStatement(DeclList &Decls, StmtList &Stmts) {
   StmtList WhileStmts;
   SMLoc Loc = Tok.getLocation();
   consume(tok::kw_while);
-  EnterDeclScope s(Actions);
+  {EnterDeclScope s(Actions,WhileStmts);
   if(expect(tok::l_paren)){
     return _errorhandler();
   };
@@ -959,7 +969,7 @@ bool Parser::parseWhileStatement(DeclList &Decls, StmtList &Stmts) {
 
   if(expect(tok::r_parth)){
     return _errorhandler();
-  };
+  };}
   advance();
   Actions.actOnWhileStatement(Stmts, Loc, E, WhileStmts);
   return false;
@@ -977,7 +987,7 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
 
   SMLoc Loc = Tok.getLocation();
   consume(tok::kw_for);
-  EnterDeclScope s(Actions);
+  EnterDeclScope s(Actions,Stmts);
   if(expect(tok::l_paren)){
     return _errorhandler();
   };
@@ -1053,8 +1063,8 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
     D = Actions.actOnClassDeclaration(Class_Name.getLocation(),
                                       Class_Name.getIdentifier(), false);
   };
-
-  EnterDeclScope S(Actions, D);
+  StmtList s;
+  EnterDeclScope S(Actions, D,s);
   DeclList Decls;
   StmtList StartStmt;
   if (Genric) {
@@ -1095,11 +1105,18 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
       if(Tok.getIdentifier() != Class_Name.getIdentifier()){
         //TODO error out
       } else {
-        if(ParseConstructor(Decls,D)){
+        if(ParseConstructorOrDecostructor(Decls,D)){
           return _errorhandler();
         }
         static_cast<ClassDeclaration*>(D)->has_constructor = true;
       }
+    } else if (Tok.is(tok::tild)) {
+
+        if(ParseConstructorOrDecostructor(Decls,D)){
+          return _errorhandler();
+        }
+        static_cast<ClassDeclaration*>(D)->has_constructor = true;
+      
     }
   }
   if(expect(tok::r_parth)){

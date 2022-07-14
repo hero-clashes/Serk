@@ -1,16 +1,18 @@
 #pragma once
+#include <vector>
 class Decl;
-
+class Stmt;
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 using namespace llvm;
 class Scope {
+  public:
   Scope *Parent;
   StringMap<Decl *> Symbols;
   unsigned Depth;
-public:
+  std::vector<Stmt *> &stmts; 
   Decl* P_Decl;
-  Scope(Decl* P_Decl,Scope *Parent = nullptr) : Parent(Parent),Depth(0),P_Decl(P_Decl) {
+  Scope(Decl* P_Decl,std::vector<Stmt *> &stmts,Scope *Parent = nullptr) : Parent(Parent),Depth(0),P_Decl(P_Decl),stmts(stmts) {
     if(Parent){
       Depth = Parent->Depth + 1;
     }

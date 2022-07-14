@@ -7,7 +7,7 @@
 
 class Sema {
 public:
-  void enterScope(Decl *);
+  void enterScope(Decl *,StmtList &stmts);
   void leaveScope();
   Scope *CurrentScope;
   Decl *CurrentDecl;
@@ -107,11 +107,11 @@ class EnterDeclScope {
   Sema &Semantics;
 
 public:
-  EnterDeclScope(Sema &Semantics, Decl *D) : Semantics(Semantics) {
-    Semantics.enterScope(D);
+  EnterDeclScope(Sema &Semantics, Decl *D,StmtList &stmts) : Semantics(Semantics) {
+    Semantics.enterScope(D,stmts);
   }
-  EnterDeclScope(Sema &Semantics) : Semantics(Semantics) {
-    Semantics.enterScope(Semantics.CurrentScope->P_Decl);
+  EnterDeclScope(Sema &Semantics,StmtList &stmts) : Semantics(Semantics) {
+    Semantics.enterScope(Semantics.CurrentScope->P_Decl,stmts);
   }
   ~EnterDeclScope() { Semantics.leaveScope(); }
 };

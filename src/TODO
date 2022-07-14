@@ -12,11 +12,12 @@ TODO add continuers
 DONE add malloc
 DONE implment paremters for constructrs
 DONE add error messeges for everything
-TODO port raylib
+DONE port raylib
 TODO implent inheritance and calling of member functions
 TODO implment VIrtual funcitons
-TODO implment destructors
+DONE implment destructors
 TODO add scopes 
 TODO structured bindings
 TODO implment gernrcis checks
 TODO costum operators
+TODO implment new

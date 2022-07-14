@@ -46,7 +46,7 @@ PUNCTUATOR(l_parth,             "{")
 PUNCTUATOR(r_parth,             "}")
 PUNCTUATOR(l_square,            "[")
 PUNCTUATOR(r_square,            "]")
-
+PUNCTUATOR(tild,                "~")
 KEYWORD(using                          , KEYALL)
 KEYWORD(enum                           , KEYALL)
 KEYWORD(ref                            , KEYALL)

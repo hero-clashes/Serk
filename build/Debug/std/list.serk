@@ -7,6 +7,9 @@ class list<type T>{
         _size = 0;
         reserved_size = 5;
     }
+    ~list(){
+        free(ptr);
+    }
     fn bool need_expanding(){
         return reserved_size == _size;
     }

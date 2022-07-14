@@ -27,13 +27,28 @@ bool Sema::isOperatorForType(tok::TokenKind Op,
   }
 }
 
-void Sema::enterScope(Decl *D) {
-  CurrentScope = new Scope(D,CurrentScope);
+void Sema::enterScope(Decl *D,StmtList &stmt) {
+  CurrentScope = new Scope(D,stmt,CurrentScope);
   CurrentDecl = D;
 }
 
 void Sema::leaveScope() {
   assert(CurrentScope && "Can't leave non-existing scope");
+  for (auto Val:CurrentScope->Symbols.keys()) {
+    auto Decl = CurrentScope->Symbols[Val];
+    if(auto Var = dyn_cast_or_null<VariableDeclaration>(Decl)){
+      if (auto Class = dyn_cast_or_null<ClassDeclaration>(Var->getType())) {
+        auto s = (Class->getName() + "_Delete").str();
+        auto F = (FunctionDeclaration*)CurrentScope->lookup(s);
+        if(F){
+          ExprList a{actOnDesignator(Var)};
+          ((Designator*)a[0])->Get_Adress = true;
+          CurrentScope->stmts.push_back(actOnFunctionCallStatemnt(CurrentScope->stmts.empty()? SMLoc(): CurrentScope->stmts.back()->getLoc(), F, a));
+        
+        }
+      }
+    }
+  }
   Scope *Parent = CurrentScope->getParent();
   delete CurrentScope;
   CurrentScope = Parent;
@@ -41,7 +56,8 @@ void Sema::leaveScope() {
 }
 
 void Sema::initialize() {
-  CurrentScope = new Scope(nullptr,nullptr);
+  std::vector<Stmt *> s;
+  CurrentScope = new Scope(nullptr,s,nullptr);
   CurrentDecl = nullptr;
   std::tuple<std::array<const char *,14>,std::array<int,14>,std::array<bool,14>> Int_types = {{"int","float","double","long", "byte", "int64", "int32","int16", "int8","uint64", "uint32","uint16", "uint8" ,"bool"},
                                                                                               {32,    32,        64,     64,     8,      64,     32,     16,      8     ,64,        32,      16,      8 ,       1},
@@ -82,6 +98,11 @@ void Sema::initialize() {
       new ParameterDeclaration(CurrentDecl, SMLoc(), "size", int64, false)};
   realloc->setFormalParams(b);
   realloc->setRetType(Get_Pointer_Type(ByteType));
+  FunctionDeclaration *free = (FunctionDeclaration *)Insert_Decl(
+      new FunctionDeclaration(CurrentDecl, SMLoc(), "free"));
+  ParamList d{ new ParameterDeclaration(CurrentDecl,SMLoc(),"ptr", Get_Pointer_Type(ByteType), false)};
+  free->setFormalParams(d);
+  free->setRetType((TypeDeclaration*)Void);
   TrueLiteral = new BooleanLiteral(true, BoolType);
   FalseLiteral = new BooleanLiteral(false, BoolType);
   TrueConst =
@@ -413,11 +434,14 @@ FunctionCallStatement *Sema::actOnFunctionCallStatemnt(SMLoc Loc, Decl *D,
    if (!D)
     return nullptr;
   if (auto *P = dyn_cast<FunctionDeclaration>(D)) {
+    if (!P->Name.endswith("Delete")) {
     checkFormalAndActualParameters(P,
         D->getLocation(), P->getFormalParams(), Params);
     if (!P->getRetType())
       Diags.report(D->getLocation(),
                    diag::err_function_call_on_nonfunction);
+    }
+    
     return new FunctionCallStatement(P, Params,Loc);
   }
   Diags.report(D->getLocation(),
