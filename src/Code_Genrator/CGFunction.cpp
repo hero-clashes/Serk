@@ -490,7 +490,7 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
   std::vector<Value *> ArgsV;
   int index = 0;
   for(auto expr:Stmt->getParams()){
-    auto v = emitExpr(expr);
+    auto v = emitExpr(expr,((Stmt->getProc()->getFormalParams().size() - 1)>= index)? !Stmt->getProc()->getFormalParams()[index]->IsPassedbyReference(): true);
     if(!F->isVarArg() && v->getType() != F->getArg(index)->getType()){
       v = emitExpr(expr,false);
       // v->dump();

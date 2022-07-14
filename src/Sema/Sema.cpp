@@ -692,7 +692,7 @@ void Sema::checkFormalAndActualParameters(FunctionDeclaration *F,
           Loc,
           diag::
               err_type_of_formal_and_actual_parameter_not_compatible);
-    if (F->IsPassedbyReference() && isa<Designator>(Arg))
+    if (F->IsPassedbyReference() && !isa<Designator>(Arg))
       Diags.report(Loc,
                    diag::err_var_parameter_requires_var);
   }
