@@ -225,6 +225,11 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
       }
     }
     Diags.report(Loc, diag::err_var_isnt_found, Name);
+    auto Results = CurrentScope->fuzzy_search(Name);
+    auto max = *std::max_element(Results.begin(),
+                             Results.end(),
+                             [](const std::pair<Decl *, int>& a,const std::pair<Decl *, int>& b) { return a.second < b.second; });
+    Diags.report(max.first->Loc, diag::note_did_you_mean, max.first->Name);
     return nullptr;
 }
 Expr *Sema::actOnDesignator(Decl *D) {
@@ -295,13 +300,13 @@ void Sema::actOnAssignment(StmtList& Stmts, SMLoc Loc, Expr* D, Expr* E)
 ;
 
 
-CompileUnitDeclaration *
+ModuleDeclaration  *
 Sema::actOnCompileUnitDeclaration(SMLoc Loc, StringRef Name) {
-  return new CompileUnitDeclaration(CurrentDecl, Loc, Name);
+  return new ModuleDeclaration (CurrentDecl, Loc, Name);
 }
 
 void Sema::actOnCompileUnitDeclaration(
-    CompileUnitDeclaration *ModDecl, SMLoc Loc, StringRef Name,
+    ModuleDeclaration  *ModDecl, SMLoc Loc, StringRef Name,
     DeclList &Decls, StmtList &Stmts) {
   if (Name != ModDecl->getName()) {
     // Diags.report(Loc,

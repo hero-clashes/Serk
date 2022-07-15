@@ -25,7 +25,7 @@
 class CodeGenerator {
 	llvm::LLVMContext& Ctx;
 	llvm::TargetMachine* TM;
-	CompileUnitDeclaration* CM;
+	ModuleDeclaration * CM;
 protected:
 	CodeGenerator(llvm::LLVMContext& Ctx, llvm::TargetMachine* TM)
 		: Ctx(Ctx),CM(nullptr),TM(TM) {}
@@ -33,5 +33,5 @@ protected:
 public:
 	static CodeGenerator* create(llvm::LLVMContext& Ctx, llvm::TargetMachine* TM);
 
-	std::unique_ptr<llvm::Module> run(CompileUnitDeclaration* CM, std::string FileName,SourceMgr& mgr,bool Debug);
+	std::unique_ptr<llvm::Module> run(ModuleDeclaration * CM, std::string FileName,SourceMgr& mgr,bool Debug);
 };

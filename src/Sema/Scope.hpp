@@ -19,7 +19,7 @@ class Scope {
   }
   bool insert(Decl *Declaration);
   Decl *lookup(StringRef Name);
-
+  std::vector<std::pair<Decl *,int>> fuzzy_search(StringRef Name);
   Scope *getParent() { return Parent; }
   Scope *getScopeAtDepth(unsigned D){
     auto *Ret = this;

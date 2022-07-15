@@ -10,7 +10,7 @@ CodeGenerator* CodeGenerator::create(llvm::LLVMContext& Ctx, llvm::TargetMachine
     return new CodeGenerator(Ctx,TM);
 }
 
-std::unique_ptr<llvm::Module> CodeGenerator::run(CompileUnitDeclaration* Mod, std::string FileName,SourceMgr& mgr ,bool Debug) {
+std::unique_ptr<llvm::Module> CodeGenerator::run(ModuleDeclaration * Mod, std::string FileName,SourceMgr& mgr ,bool Debug) {
     std::unique_ptr<llvm::Module> M = std::make_unique<llvm::Module>(FileName, Ctx);
     M->addModuleFlag(llvm::Module::Append,"CodeView", 1);
     M->addModuleFlag(llvm::Module::Append,"uwtable", 1);

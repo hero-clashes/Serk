@@ -2,7 +2,7 @@
 #define DIAG(ID, Level, Msg)
 #endif
 
-DIAG(err_expected, Error, "expected {0} but found {1}")
+DIAG(err_expected, Error, "expected {0} after it but found {1}")
 DIAG(err_symbold_declared, Error, "symbol {0} already declared")
 DIAG(err_hex_digit_in_decimal, Error, "decimal number contains hex digit")
 DIAG(err_unterminated_char_or_string, Error, "missing terminating character")
@@ -31,4 +31,5 @@ DIAG(err_class_not_genric, Error, "Passing Templete arg to non genric class")
 DIAG(err_not_class, Error, "Initing Base Type with Templete arg")
 DIAG(err_passing_type_to_non_type_templete_arg, Error, "Passing Type to non Type arg in genrics init")
 DIAG(err_passing_var_to_non_var_templete_arg, Error, "Passing Var to non Var arg in genrics init")
+DIAG(note_did_you_mean, Note, "Did you mean {0}")
 #undef DIAG

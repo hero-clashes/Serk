@@ -16,7 +16,7 @@ llvm::Module *M;
 SourceMgr& mgr;
 bool Debug;
 std::unique_ptr<CGDebugInfo> DebugInfo;
-CompileUnitDeclaration *Mod;
+ModuleDeclaration  *Mod;
 
 llvm::DenseMap<TypeDeclaration *, llvm::Type *> TypeCache;
 
@@ -42,12 +42,12 @@ public:
     return DebugInfo.get();
   }
   llvm::Module *getModule() { return M; }
-  CompileUnitDeclaration *getModuleDeclaration() { return Mod; }
+  ModuleDeclaration  *getModuleDeclaration() { return Mod; }
 
   llvm::Type *convertType(TypeDeclaration *Ty);
   std::string mangleName(Decl *D);
 
   llvm::GlobalObject *getGlobal(Decl *);
   std::unique_ptr<llvm::legacy::FunctionPassManager> FPM;
-  void run(CompileUnitDeclaration *Mod);
+  void run(ModuleDeclaration  *Mod);
 };

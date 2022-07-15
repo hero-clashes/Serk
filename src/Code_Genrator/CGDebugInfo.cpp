@@ -272,7 +272,7 @@ void CGDebugInfo::SetLoc(llvm::Instruction *Inst,SMLoc Loc){
   //     DILocation::get(Scope->getContext(), AST->getLine(), AST->getCol(), Scope));
 
 };
-void CGDebugInfo::set_file(CompileUnitDeclaration* M){
+void CGDebugInfo::set_file(ModuleDeclaration * M){
    llvm::SmallString<128> Path(
       M->getName());
   llvm::sys::fs::make_absolute(Path);

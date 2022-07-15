@@ -13,7 +13,7 @@ Parser::Parser(Lexer &Lex, Sema &Actions) : Lex(Lex), Actions(Actions) {
   Lex.next(Tok);
 };
 
-CompileUnitDeclaration *Parser::parse(StringRef Name) {
+ModuleDeclaration  *Parser::parse(StringRef Name) {
   auto _errorhandler = [this] {
     SkipUntil(tok::eof);
     return nullptr;

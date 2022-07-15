@@ -55,5 +55,5 @@ public:
   llvm::DebugLoc getDebugLoc(SMLoc Loc);
   void SetLoc(llvm::Instruction *Inst,SMLoc Loc);
   void finalize();
-  void set_file(CompileUnitDeclaration* M);
+  void set_file(ModuleDeclaration * M);
 };

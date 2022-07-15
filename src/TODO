@@ -8,7 +8,7 @@ DONE add debug info
 DONE add pointers support
 DONE move all type parsing to one funcition
 TODO add genrators
-TODO add continuers
+TODO add continuers{vector :done, hashmap:todo}
 DONE add malloc
 DONE implment paremters for constructrs
 DONE add error messeges for everything
@@ -16,7 +16,7 @@ DONE port raylib
 TODO implent inheritance and calling of member functions
 TODO implment VIrtual funcitons
 DONE implment destructors
-TODO add scopes 
+TODO add scopes partaily done
 TODO structured bindings
 TODO implment gernrcis checks
 TODO costum operators

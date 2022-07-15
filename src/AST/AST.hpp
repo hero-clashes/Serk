@@ -63,17 +63,17 @@ public:
   Decl *getEnclosingDecl() { return EnclosingDecL; }
 };
 
-class CompileUnitDeclaration : public Decl {
+class ModuleDeclaration  : public Decl {
   DeclList Decls;
   StmtList Stmts;
 
 public:
-  std::vector<CompileUnitDeclaration*> Imported_Module;
-  CompileUnitDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+  std::vector<ModuleDeclaration *> Imported_Module;
+  ModuleDeclaration (Decl *EnclosingDecL, SMLoc Loc,
                     StringRef Name)
       : Decl(DK_CompileUnit, EnclosingDecL, Loc, Name) {}
 
-  CompileUnitDeclaration(Decl *EnclosingDecL, SMLoc Loc,
+  ModuleDeclaration (Decl *EnclosingDecL, SMLoc Loc,
                     StringRef Name, DeclList &Decls,
                     StmtList &Stmts)
       : Decl(DK_CompileUnit, EnclosingDecL, Loc, Name),

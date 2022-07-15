@@ -43,7 +43,7 @@ void CGFunction::run(FunctionDeclaration *Proc) {
 
   if(Proc->getName() == "main"){
     Proc->getEnclosingDecl()->getName();
-    emit(dyn_cast_or_null<CompileUnitDeclaration>(Proc->getEnclosingDecl())->getStmts());
+    emit(dyn_cast_or_null<ModuleDeclaration >(Proc->getEnclosingDecl())->getStmts());
   }
   auto Block = Proc->getStmts();
   emit(Proc->getStmts());
@@ -490,7 +490,7 @@ void CGFunction::emitStmt(FunctionCallStatement *Stmt) {
   std::vector<Value *> ArgsV;
   int index = 0;
   for(auto expr:Stmt->getParams()){
-    auto v = emitExpr(expr,((Stmt->getProc()->getFormalParams().size() - 1)>= index)? !Stmt->getProc()->getFormalParams()[index]->IsPassedbyReference(): true);
+    auto v = emitExpr(expr,((Stmt->getProc()->getFormalParams().size() - 1)>= index && !Stmt->getProc()->getFormalParams().empty())? !Stmt->getProc()->getFormalParams()[index]->IsPassedbyReference(): true);
     if(!F->isVarArg() && v->getType() != F->getArg(index)->getType()){
       v = emitExpr(expr,false);
       // v->dump();

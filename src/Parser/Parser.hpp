@@ -4,16 +4,20 @@
 #include "Sema/Sema.hpp"
 #include "AST/AST.hpp"
 #include <set>
-inline StringMap<CompileUnitDeclaration*> imported;
+inline StringMap<ModuleDeclaration *> imported;
 class Parser {
   Lexer &Lex;
 
   Sema &Actions;
 
   Token Tok;
+  Token Prev_Tok;
   DiagnosticsEngine &getDiagnostics() const { return Lex.getDiagnostics(); }
 
-  void advance() { Lex.next(Tok); }
+  void advance() { 
+    Prev_Tok = Tok;
+    Lex.next(Tok); 
+  }
 
   bool expect(tok::TokenKind ExpectedTok) {
     if (Tok.is(ExpectedTok)) {
@@ -24,7 +28,7 @@ class Parser {
     if (!Expected)
       Expected = tok::getKeywordSpelling(ExpectedTok);
     llvm::StringRef Actual(Tok.getLocation().getPointer(), Tok.getLength());
-    getDiagnostics().report(Tok.getLocation(), diag::err_expected, Expected,
+    getDiagnostics().report(Prev_Tok.getLocation(), diag::err_expected, Expected,
                             Actual);
     return true;
   }
@@ -39,8 +43,8 @@ class Parser {
 
 public:
   Parser(Lexer &Lex, Sema &Actions);
-  CompileUnitDeclaration *module = nullptr;
-  CompileUnitDeclaration *parse(StringRef Name);
+  ModuleDeclaration  *module = nullptr;
+  ModuleDeclaration  *parse(StringRef Name);
   bool ParseFuction(DeclList &ParentDecls);
   bool ParseExternFunction(DeclList &ParentDecls);
   bool parseParameters(DeclList &ParentDecls, ParamList &Params);

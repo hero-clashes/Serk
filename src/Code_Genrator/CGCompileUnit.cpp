@@ -148,7 +148,7 @@ llvm::GlobalObject* CGCompileUnit::getGlobal(Decl *D)
   return Globals[D];
 }
 
-void CGCompileUnit::run(CompileUnitDeclaration *Mod)
+void CGCompileUnit::run(ModuleDeclaration  *Mod)
 {
   this->Mod = Mod;
   if (Debug)

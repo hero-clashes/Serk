@@ -44,9 +44,9 @@ public:
 
   void actOnAssignment(StmtList &Stmts, SMLoc Loc, Expr *D, Expr *E);
 
-  CompileUnitDeclaration *actOnCompileUnitDeclaration(SMLoc Loc,
+  ModuleDeclaration  *actOnCompileUnitDeclaration(SMLoc Loc,
                                                       StringRef Name);
-  void actOnCompileUnitDeclaration(CompileUnitDeclaration *ModDecl, SMLoc Loc,
+  void actOnCompileUnitDeclaration(ModuleDeclaration  *ModDecl, SMLoc Loc,
                                    StringRef Name, DeclList &Decls,
                                    StmtList &Stmts);
 
