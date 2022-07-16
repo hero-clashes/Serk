@@ -74,6 +74,8 @@ void Sema::initialize() {
   }
   IntegerType = (TypeDeclaration *)CurrentScope->lookup("int");
   BoolType = (Integer_TypeDeclaration *)CurrentScope->lookup("bool");
+  DoubleType = (Integer_TypeDeclaration *)CurrentScope->lookup("double");
+  FloatType = (Integer_TypeDeclaration *)CurrentScope->lookup("float");
   auto int64 = (Integer_TypeDeclaration *)CurrentScope->lookup("uint64");
 
   auto Void =
@@ -278,6 +280,16 @@ Expr* Sema::actOnIntegerLiteral(SMLoc Loc, int Literal)
     llvm::APInt Value(32, Literal, Radix);
     return new IntegerLiteral(Loc, llvm::APSInt(Value, false),
         IntegerType);
+}
+Expr* Sema::actOnFloatLiteral(SMLoc Loc, StringRef Literal)
+{
+  if(Literal.endswith_insensitive("f")){
+    Literal = Literal.drop_back();
+    return new FloatLiteral(Loc, llvm::APFloat(std::stof(Literal.str())), FloatType);
+  }
+
+  return new FloatLiteral(Loc, llvm::APFloat(std::stod(Literal.str())), DoubleType);
+  
 }
 void Sema::actOnAssignment(StmtList& Stmts, SMLoc Loc, Expr* D, Expr* E)
 {

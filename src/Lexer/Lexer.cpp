@@ -147,7 +147,18 @@ void Lexer::number(Token &Result) {
   const char *End = CurPtr + 1;
   tok::TokenKind Kind = tok::unknown;
   bool IsHex = false;
+  bool IsFloat = false;
   while (*End) {
+    if(*End == '.')
+    {
+      IsFloat = true;
+      End++;
+      continue;
+    }
+    if(*End == 'f'){
+      End++;
+      continue;
+    }
     if (!charinfo::isHexDigit(*End))
       break;
     if (!charinfo::isDigit(*End))
@@ -162,7 +173,7 @@ void Lexer::number(Token &Result) {
   default: /* decimal number */
     if (IsHex)
       Diags.report(getLoc(), diag::err_hex_digit_in_decimal);
-    Kind = tok::integer_literal;
+    Kind = IsFloat ? tok::float_literal : tok::integer_literal;
     break;
   }
   formToken(Result, End, Kind);

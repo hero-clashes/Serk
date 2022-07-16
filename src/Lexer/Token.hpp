@@ -52,7 +52,7 @@ public:
 
   StringRef getLiteralData() {
     assert(isOneOf(tok::integer_literal,
-                   tok::string_literal) &&
+                   tok::string_literal,tok::float_literal) &&
            "Cannot get literal data of non-literal");
     return StringRef(Ptr, Length);
   }

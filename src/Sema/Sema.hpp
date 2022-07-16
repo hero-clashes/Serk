@@ -14,6 +14,8 @@ public:
   DiagnosticsEngine &Diags;
 
   TypeDeclaration *IntegerType;
+  TypeDeclaration *DoubleType;
+  TypeDeclaration *FloatType;
   TypeDeclaration *BoolType;
   TypeDeclaration *ByteType;
   BooleanLiteral *TrueLiteral;
@@ -53,6 +55,7 @@ public:
   Expr *actOnDesignator(Decl *D);
   Expr *actOnIntegerLiteral(SMLoc Loc, StringRef Literal);
   Expr *actOnIntegerLiteral(SMLoc Loc, int Literal);
+  Expr *actOnFloatLiteral(SMLoc Loc, StringRef Literal);
   Expr *actOnExpression(Expr *Left, Expr *Right, const OperatorInfo &Op);
   Expr *actOnSimpleExpression(Expr *Left, Expr *Right, const OperatorInfo &Op);
   Expr *actOnTerm(Expr *Left, Expr *Right, const OperatorInfo &Op);

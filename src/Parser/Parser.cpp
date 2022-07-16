@@ -616,7 +616,10 @@ bool Parser::parseFactor(Expr *&E) {
          tok::lessequal, tok::equal, tok::greater, tok::greaterequal, tok::And,
          tok::kw_else, tok::r_parth, tok::Or, tok::r_square});
   };
-  if (Tok.is(tok::integer_literal)) {
+  if (Tok.is(tok::float_literal)) {
+    E = Actions.actOnFloatLiteral(Tok.getLocation(), Tok.getLiteralData());
+    advance();
+  } else if (Tok.is(tok::integer_literal)) {
     E = Actions.actOnIntegerLiteral(Tok.getLocation(), Tok.getLiteralData());
     advance();
   } else if (Tok.is(tok::identifier)) {

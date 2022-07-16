@@ -7,6 +7,7 @@ DONE add Var in templetes
 DONE add debug info
 DONE add pointers support
 DONE move all type parsing to one funcition
+DONE add float literles
 TODO add genrators
 TODO add continuers{vector :done, hashmap:todo}
 DONE add malloc
@@ -27,3 +28,4 @@ TODO implment compiletime Refelection
 TODO implment runtime Refelection
 TODO move genric checks to when it get initited 
 TODO add varaints
+TODO check all error messeges and make them clearer

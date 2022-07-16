@@ -306,6 +306,9 @@ llvm::Value *CGFunction::emitExpr(Expr *E,bool want_value){
   } else if (auto *IntLit = llvm::dyn_cast<IntegerLiteral>(E)) {
     return llvm::ConstantInt::get(CGM.Int32Ty,
                                   IntLit->getValue());
+  } else if (auto *floaLit = llvm::dyn_cast<FloatLiteral>(E)) {
+    return llvm::ConstantFP::get(CGM.getLLVMCtx(),
+                                  floaLit->getValue());
   } else if (auto *BoolLit = llvm::dyn_cast<BooleanLiteral>(E)) {
     return llvm::ConstantInt::get(CGM.Int1Ty,
                                   BoolLit->getValue());

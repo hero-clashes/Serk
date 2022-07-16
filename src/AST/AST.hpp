@@ -3,6 +3,7 @@
 #include "llvm/Support/SMLoc.h"
 #include "Lexer/TokenKinds.hpp"
 #include "llvm/ADT/APSInt.h"
+#include "llvm/ADT/APFloat.h"
 #include <optional>
 #include <vector>
 #include "Lexer/Lexer.hpp"
@@ -327,6 +328,7 @@ public:
     EK_Infix,
     EK_Prefix,
     EK_Int,
+    EK_Float,
     EK_Bool,
     EK_Designator,
     EK_Const,
@@ -494,6 +496,20 @@ public:
 
   static bool classof(const Expr *E) {
     return E->getKind() == EK_Int;
+  }
+};
+class FloatLiteral : public Expr {
+  SMLoc Loc;
+  llvm::APFloat Value;
+
+public:
+  FloatLiteral(SMLoc Loc, const llvm::APFloat &Value,
+                 TypeDeclaration *Ty)
+      : Expr(EK_Float, Ty, true), Loc(Loc), Value(Value) {}
+  llvm::APFloat &getValue() { return Value; }
+
+  static bool classof(const Expr *E) {
+    return E->getKind() == EK_Float;
   }
 };
 
