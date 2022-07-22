@@ -39,7 +39,31 @@ static llvm::cl::list<std::string>
 static cl::opt<bool>
     Debug("g",
              cl::desc("emit Debug info"),
-             cl::init(true));               
+             cl::init(true));
+
+
+static cl::opt<signed char> OptLevel(
+    cl::desc("Setting the optimization level:"),
+    cl::ZeroOrMore,
+    cl::values(
+        clEnumValN(3, "O", "Equivalent to -O3"),
+        clEnumValN(0, "O0", "Optimization level 0"),
+        clEnumValN(1, "O1", "Optimization level 1"),
+        clEnumValN(2, "O2", "Optimization level 2"),
+        clEnumValN(3, "O3", "Optimization level 3"),
+        clEnumValN(-1, "Os",
+                   "Like -O2 with extra optimizations "
+                   "for size"),
+        clEnumValN(
+            -2, "Oz",
+            "Like -Os but reduces code size further")),
+    cl::init(0));
+
+static cl::opt<bool>
+    EmitLLVM("emit-llvm",
+             cl::desc("Emit IR code instead of assembler"),
+             cl::init(false));
+
 TargetMachine *Create_TM() {
   llvm::Triple TargetTriple = llvm::Triple(LLVM_DEFAULT_TARGET_TRIPLE);
 
@@ -143,11 +167,20 @@ int main(int argc_, const char **argv_) {
   
   ModulePassManager MPM;
 
+  StringRef DefaultPass;
+    switch (OptLevel) {
+    case 0: DefaultPass = "default<O0>"; break;
+    case 1: DefaultPass = "default<O1>"; break;
+    case 2: DefaultPass = "default<O2>"; break;
+    case 3: DefaultPass = "default<O3>"; break;
+    case -1: DefaultPass = "default<Os>"; break;
+    case -2: DefaultPass = "default<Oz>"; break;
+    }
   if (auto Err = PB.parsePassPipeline(
-            MPM, "default<O0>")) {
-      WithColor::error(errs())
-          << toString(std::move(Err)) << "\n";
-      return 1;
+          MPM, DefaultPass)) {
+    WithColor::error(errs())
+        << toString(std::move(Err)) << "\n";
+    return 1;
   }
     legacy::PassManager PM;
     PM.add(createTargetTransformInfoWrapperPass(
