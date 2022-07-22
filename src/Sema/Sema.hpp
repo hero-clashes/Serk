@@ -42,6 +42,7 @@ public:
   VariableDeclaration *actOnVarDeceleration(SMLoc Loc, StringRef Name,
                                             Decl *Type, bool is_initlezed);
   void actOnReturnStatement(StmtList &Stmts, SMLoc Loc, Expr *RetVal);
+  void actOnyieldStatement(StmtList &Stmts, SMLoc Loc, Expr *RetVal);
   Decl *actOnVarRefernce(SMLoc Loc, StringRef Name);
 
   void actOnAssignment(StmtList &Stmts, SMLoc Loc, Expr *D, Expr *E);

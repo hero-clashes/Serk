@@ -30,7 +30,7 @@ ModuleDeclaration  *Parser::parse(StringRef Name) {
         return _errorhandler();
       };
     };
-    if (Tok.is(tok::kw_fn)) {
+    if (Tok.isOneOf(tok::kw_fn,tok::kw_genrator)) {
       if (ParseFuction(Decls)) {
         return _errorhandler();
       };
@@ -118,6 +118,10 @@ bool Parser::ParseConstructorOrDecostructor(DeclList &ParentDecls,Decl *Class){
 };
 bool Parser::ParseFuction(DeclList &ParentDecls) {
   auto _errorhandler = [this] { return SkipUntil({tok::r_parth}); };
+  bool genrator = false;
+  if(Tok.is(tok::kw_genrator)){
+    genrator = true;
+  }
   advance(); // eat fn
 
   TypeDeclaration *RetType;
@@ -135,6 +139,9 @@ bool Parser::ParseFuction(DeclList &ParentDecls) {
   auto function_loc = Tok.getLocation();
   auto D =
       Actions.actOnFunctionDeclaration(Tok.getLocation(), Tok.getIdentifier());
+  if(genrator){
+    D->Type = FunctionDeclaration::Genrator;
+  }
   advance();                    // eat function_name identifer
   {EnterDeclScope S(Actions, D,Stmts); // added befor the parmeters so the parmeters
                                 // get added to the function scope
@@ -362,6 +369,7 @@ bool Parser::parseTemepleteList(DeclList & Decls,TypeDeclaration* &type_D,std::v
 bool Parser::parseStatement(DeclList &Decls, StmtList &Stmts) {
   auto _errorhandler = [this] { return SkipUntil({tok::semi,tok::kw_else,tok::r_parth}); };
   switch (Tok.getKind()) {
+  case tok::kw_yield:
   case tok::kw_return:
     if(parseReturnStatement(Decls, Stmts)){
       return _errorhandler();
@@ -460,13 +468,20 @@ bool Parser::parseReturnStatement(DeclList &Decls, StmtList &Stmts) {
   auto _errorhandler = [this] { return SkipUntil({tok::semi}); };
   Expr *E = nullptr;
   SMLoc Loc = Tok.getLocation();
-  consume(tok::kw_return);
+  bool yield = false;
+  if(Tok.is(tok::kw_yield)){
+    yield = true;
+  }
+  advance();
   if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
                   tok::integer_literal,tok::star)) {
     if(parseExpression(E)){
       return _errorhandler();
     };
   }
+  if(yield)
+  Actions.actOnyieldStatement(Stmts, Loc, E);
+  else
   Actions.actOnReturnStatement(Stmts, Loc, E);
   // if(expect(tok::semi)){
   //   return _errorhandler();
@@ -991,6 +1006,7 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
 
   Expr *E = nullptr;
   StmtList Start_Val;
+  Decl* Val;
   StmtList ForStepStmts;
   StmtList ForBodyStmts;
 
@@ -1001,31 +1017,51 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
     return _errorhandler();
   };
   advance();
-  
-  if(parseVarDecleration(Decls, Start_Val)){
-    return _errorhandler();
-  };
-  if(expect(tok::semi)){
-    return _errorhandler();
-  };
+  if (Lex.peak(1).is(tok::colon)) {
+    if (expect(tok::kw_var)) {
+      return _errorhandler();
+    }
+    advance();
+    if (expect(tok::identifier)) {
+      return _errorhandler();
+    }
+    auto var_name = Tok;
+    advance();
+    if(expect(tok::colon)){
+      return _errorhandler();
+    }
+    advance();
+    if (parseExpression(E)) {
+      return _errorhandler();
+    }
+    Decls.push_back(Actions.actOnVarDeceleration(var_name.getLocation(), var_name.getIdentifier(), E->getType(), true));
+    Val = Decls.back();
+  }
+  else {
+    if(parseVarDecleration(Decls, Start_Val)) { return _errorhandler(); };
 
-  advance();
-  if(parseExpression(E)){
-    return _errorhandler();
-  };
+    if (expect(tok::semi)) {
+      return _errorhandler();
+    };
 
-  if(expect(tok::semi)){
-    return _errorhandler();
-  };
-  advance();
+    advance();
+    if (parseExpression(E)) {
+      return _errorhandler();
+    };
 
-  if(parseStatementSequence(Decls, ForStepStmts)){
-    return _errorhandler();
-  };
+    if (expect(tok::semi)) {
+      return _errorhandler();
+    };
+    advance();
 
-  if(expect(tok::r_paren)){
-    return _errorhandler();
-  };
+    if (parseStatementSequence(Decls, ForStepStmts)) {
+      return _errorhandler();
+    };
+
+  }
+  if (expect(tok::r_paren)) {
+      return _errorhandler();
+    };
   advance();
 
   if(expect(tok::l_parth)){
@@ -1043,6 +1079,7 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
   advance();
   Actions.actOnForStatement(Stmts, Loc, E, Start_Val, ForStepStmts,
                             ForBodyStmts);
+  ((ForStatement*)Stmts.back())->Val = Val;
   return false;
 }
 bool Parser::ParseClass(DeclList &ParentDecls) {

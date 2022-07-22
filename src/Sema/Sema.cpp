@@ -17,6 +17,11 @@ bool Sema::isOperatorForType(tok::TokenKind Op,
   case tok::star:
   case tok::slash:
   case tok::Reminder:
+  case tok::shiftleft:
+  case tok::shiftlright:
+  case tok::tild:
+  case tok::Bit_Or:
+  case tok::Bit_Xor:
     return isa<Integer_TypeDeclaration>(Ty);
   case tok::And:
   case tok::Or:
@@ -199,6 +204,14 @@ void Sema::actOnReturnStatement(StmtList& Stmts, SMLoc Loc, Expr* RetVal)
 
     Stmts.push_back(new ReturnStatement(RetVal,Loc));
 }
+void Sema::actOnyieldStatement(StmtList &Stmts, SMLoc Loc, Expr *RetVal){
+  if(auto f = dyn_cast_or_null<FunctionDeclaration>(CurrentDecl)){
+    if(f->Type != FunctionDeclaration::Genrator){
+      //TODO error out
+    }
+  }
+  actOnReturnStatement(Stmts, Loc, RetVal);
+};
 Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
 {
     if (auto D = dyn_cast_or_null<VariableDeclaration>(CurrentScope->lookup(Name))) {

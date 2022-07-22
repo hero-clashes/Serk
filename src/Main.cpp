@@ -30,6 +30,7 @@
 #include "llvm/Analysis/AliasAnalysis.h" // New
 #include "llvm/Analysis/TargetTransformInfo.h" // New
 #include "Testing.hpp"
+#include "llvm/Transforms/Coroutines.h"
 
 static llvm::cl::list<std::string>
     InputFiles(llvm::cl::Positional,
@@ -110,7 +111,51 @@ int main(int argc_, const char **argv_) {
     if (!val)
       return 1;
     auto M = Genrator->run(val, key.str(), mgr, Debug);
+    
+    PassBuilder PB(TM);
+    LoopAnalysisManager LAM;
+    FunctionAnalysisManager FAM;
+    CGSCCAnalysisManager CGAM;
+    ModuleAnalysisManager MAM;
+
+    // Register the AA manager first so that our version
+  // is the one used.
+  FAM.registerPass(
+      [&] { return PB.buildDefaultAAPipeline(); });
+
+  // Register all the basic analyses with the managers.
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+  PB.registerPipelineStartEPCallback(
+      [&PB](ModulePassManager &PM, OptimizationLevel Op){
+        // if (auto Err = PB.parsePassPipeline(
+        //         PM, "")) {
+        //   WithColor::error(errs())
+        //       << "Could not parse pipeline "
+        //       << "PipelineStartEPPipeline.ArgStr" << ": "
+        //       << toString(std::move(Err)) << "\n";
+        // }
+      });
+  
+  ModulePassManager MPM;
+
+  if (auto Err = PB.parsePassPipeline(
+            MPM, "default<O0>")) {
+      WithColor::error(errs())
+          << toString(std::move(Err)) << "\n";
+      return 1;
+  }
     legacy::PassManager PM;
+    PM.add(createTargetTransformInfoWrapperPass(
+      TM->getTargetIRAnalysis()));
+    PM.add(createCoroEarlyLegacyPass());
+    // PM.add(createCoroSplitLegacyPass());
+    // PM.add(createCoroElideLegacyPass());
+    PM.add(createCoroCleanupLegacyPass());
     std::error_code EC;
     key.consume_back(".serk");
     auto filename = (key + ".obj").str();
@@ -127,6 +172,7 @@ int main(int argc_, const char **argv_) {
       return 1;
     }
     objs.push_back(filename);
+    MPM.run(*M, MAM);
     PM.run(*M);
 
     dest.close();

@@ -5,6 +5,7 @@
 #include "llvm/IR/Constants.h"
 #include "CGFunction.hpp"
 #include "CGClass.hpp"
+#include "CGGenratorFunction.hpp"
 CGCompileUnit::CGCompileUnit(llvm::Module *M,SourceMgr& mgr,bool Debug): M(M),mgr(mgr),Debug(Debug) {
   initialize();
     
@@ -188,8 +189,14 @@ void CGCompileUnit::run(ModuleDeclaration  *Mod)
     } else if (auto *Proc =
                    llvm::dyn_cast<FunctionDeclaration>(
                        Decl)) {
-      CGFunction CGP(*this);
-      CGP.run(Proc);
+      if (Proc->Type == FunctionDeclaration::Genrator) {
+        CGGenratorFunction CGC(*this);
+        CGC.run(Proc);
+      } else
+      {
+        CGFunction CGP(*this);
+        CGP.run(Proc);
+      }
     } else if(auto *Proc =
                    llvm::dyn_cast<ClassDeclaration>(
                        Decl)){

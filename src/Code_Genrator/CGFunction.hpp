@@ -49,6 +49,9 @@ class CGFunction{
   llvm::Value *emitInfixExpr(InfixExpression *E);
   llvm::Value *emitPrefixExpr(PrefixExpression *E);
   llvm::Value *emitExpr(Expr *E,bool want_value = true);
+  virtual llvm::Value *emitSpecialExpr(Expr *E,bool want_value){
+    return nullptr;
+  };
   virtual llvm::Value *emitFunccall(FunctionCallExpr *E);
   llvm::Value *emitMethcall(MethodCallExpr *E);
   llvm::Value *emitCast(CastExpr *E);
@@ -59,6 +62,9 @@ class CGFunction{
   void emitStmt(WhileStatement *Stmt);
   void emitStmt(ReturnStatement *Stmt);
   void emitStmt(ForStatement *Stmt);
+  virtual bool emitSpecialStmt(Stmt *S){
+    return false;
+  };
   void emit(const StmtList &Stmts);
 
   void InitDecls(FunctionDeclaration *Proc);

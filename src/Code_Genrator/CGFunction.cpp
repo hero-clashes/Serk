@@ -161,7 +161,11 @@ llvm::Type *CGFunction::mapType(Decl *Decl) {
 void CGFunction::emit(const StmtList &Stmts){
   for (auto *S : Stmts) {
     stmt_loc = S->getLoc();
-    if (auto *Stmt = llvm::dyn_cast<AssignmentStatement>(S))
+    if (emitSpecialStmt(S))
+    {
+
+    } 
+    else if (auto *Stmt = llvm::dyn_cast<AssignmentStatement>(S))
       emitStmt(Stmt);
     else if (auto *Stmt =
                  llvm::dyn_cast<FunctionCallStatement>(S))
@@ -254,7 +258,9 @@ void CGFunction::emitStmt(AssignmentStatement *Stmt){
             dbg->SetLoc(&Curr->back(),Stmt->getLoc());
 };
 llvm::Value *CGFunction::emitExpr(Expr *E,bool want_value){
-  if (auto *Infix = llvm::dyn_cast<InfixExpression>(E)) {
+  if (auto S_Expr = emitSpecialExpr(E, want_value)) {
+    return S_Expr;
+  } else if (auto *Infix = llvm::dyn_cast<InfixExpression>(E)) {
     return emitInfixExpr(Infix);
   } else if (auto *Prefix =
                  llvm::dyn_cast<PrefixExpression>(E)) {
@@ -594,11 +600,22 @@ CGFunction::emitInfixExpr(InfixExpression *E) {
   case tok::greaterequal:
     Result = Builder.CreateICmpSGE(Left, Right);
     break;
+  case tok::Amper:
   case tok::And:
     Result = Builder.CreateAnd(Left, Right);
     break;
+  case tok::Bit_Or:
   case tok::Or:
     Result = Builder.CreateOr(Left, Right);
+    break;
+  case tok::Bit_Xor:
+    Result = Builder.CreateXor(Left,Right);
+    break;
+  case tok::shiftleft:
+    Result = Builder.CreateShl(Left,Right);
+    break;
+  case tok::shiftlright:
+    Result = Builder.CreateLShr(Left,Right);
     break;
   default:
     llvm_unreachable("Wrong operator");
@@ -617,6 +634,7 @@ CGFunction::emitPrefixExpr(PrefixExpression *E) {
     Result = Builder.CreateNeg(Result);
     break;
   case tok::Not:
+  case tok::tild:
     Result = Builder.CreateNot(Result);
     break;
   default:
@@ -714,27 +732,56 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     llvm::BasicBlock *StepFor = createBasicBlock("For.Step");
 
     ForCondBB = createBasicBlock("For.Cond");
-
+    bool genrator = false;
+    if(Stmt->Start_Val.empty() && Stmt->Step.empty()){
+      genrator = true;
+    }
     Builder.CreateBr(ForIntailBB);
     setCurr(ForIntailBB);
-    emit(Stmt->Start_Val);// emit each statment as the starting point
+    llvm::Value* hdl = nullptr;
+    if (genrator) {
+      auto F = CGM.M->getFunction(((FunctionCallExpr*)Stmt->Cond)->geDecl()->Name);
+      hdl = Builder.CreateCall(F);
+    }
+    else
+      emit(Stmt->Start_Val);// emit each statment as the starting point
     Builder.CreateBr(ForCondBB);
 
     setCurr(ForCondBB);
-    llvm::Value *Cond = emitExpr(Stmt->getCond());
+    llvm::Value *Cond;
+    if(genrator){
+      Cond = Builder.CreateNot(Builder.CreateIntrinsic(Intrinsic::coro_done,{},{hdl}));
+    }
+    else
+      Cond = emitExpr(Stmt->getCond());
     Builder.CreateCondBr(Cond, ForBodyBB, AfterForBB);
     if(auto dbg = CGM.getDbgInfo())
             dbg->SetLoc(&Curr->back(),Stmt->getLoc());
 
     setCurr(ForBodyBB);
+    if(genrator){
+      auto a = CGM.M->getDataLayout().getABITypeAlign(mapType(Stmt->Cond->getType()));
+      auto Raw = Builder.CreateIntrinsic(Intrinsic::coro_promise,{},{hdl,ConstantInt::get(CGM.Int32Ty, a.value(),false),ConstantInt::getFalse(CGM.getLLVMCtx())},nullptr,"Raw_Promise");
+      Raw->dump();
+      auto Ptr = Builder.CreatePointerCast(Raw, mapType(Stmt->Cond->getType())->getPointerTo());
+      auto Val = Builder.CreateLoad(Ptr);
+      writeVariable(Curr, Stmt->Val, Val);
+    }
     emit(Stmt->Body);
     Builder.CreateBr(StepFor);
   
     setCurr(StepFor);
+    if(genrator){
+      Builder.CreateIntrinsic(Intrinsic::coro_resume,{},{hdl});
+      
+    }
+    else
     emit(Stmt->Step);
     Builder.CreateBr(ForCondBB);
 
     setCurr(AfterForBB);
+    Builder.CreateIntrinsic(Intrinsic::coro_destroy,{},{hdl});
+    
   }
   void CGFunction::InitDecls(FunctionDeclaration *Proc){
     for (auto *D : Proc->getDecls()) {

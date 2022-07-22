@@ -747,6 +747,7 @@ public:
 class ForStatement : public Stmt {
 public:
     StmtList Start_Val;
+    Decl *Val;
     Expr* Cond;
     StmtList Step;
 

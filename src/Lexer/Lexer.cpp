@@ -82,6 +82,8 @@ void Lexer::next(Token &Result) {
       case '|':
       if (*(CurPtr + 1) == '|')
         formToken(Result, CurPtr + 2, tok::Or);
+      else
+        formToken(Result, CurPtr + 2, tok::Bit_Or);
       break;
       case '&':
       if (*(CurPtr + 1) == '&')
@@ -113,16 +115,21 @@ void Lexer::next(Token &Result) {
       CASE(']', tok::r_square);
       CASE('%', tok::Reminder);
       CASE('~', tok::tild);
+      CASE('^', tok::Bit_Xor);
 #undef CASE
     case '<':
       if (*(CurPtr + 1) == '=')
         formToken(Result, CurPtr + 2, tok::lessequal);
+      else if(*(CurPtr + 1) == '<')
+        formToken(Result, CurPtr + 2, tok::shiftleft);
       else
         formToken(Result, CurPtr + 1, tok::less);
       break;
     case '>':
       if (*(CurPtr + 1) == '=')
         formToken(Result, CurPtr + 2, tok::greaterequal);
+      else if(*(CurPtr + 1) == '>')
+        formToken(Result, CurPtr + 2, tok::shiftlright);
       else
         formToken(Result, CurPtr + 1, tok::greater);
       break;
