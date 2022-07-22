@@ -59,10 +59,10 @@ void CGGenratorFunction::run(FunctionDeclaration *Proc){
   setCurr(f_s);
   auto v = Builder.CreateIntrinsic(Intrinsic::coro_suspend,{},{ConstantTokenNone::get(CGM.getLLVMCtx()),ConstantInt::getTrue(CGM.getLLVMCtx())});
   auto sw = Builder.CreateSwitch(v,s);
-  auto bb = createBasicBlock("after_yield");
-  sw->addCase(llvm::ConstantInt::get(dyn_cast<IntegerType>(CGM.Int8Ty), 0, true), bb);
+  // auto bb = createBasicBlock("after_yield");
+  // sw->addCase(llvm::ConstantInt::get(dyn_cast<IntegerType>(CGM.Int8Ty), 0, true), bb);
   sw->addCase(llvm::ConstantInt::get(dyn_cast<IntegerType>(CGM.Int8Ty), 1, true), c);
-  Builder.CreateBr(s);
+  // Builder.CreateBr(s);
 
 
 
