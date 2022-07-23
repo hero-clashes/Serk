@@ -8,7 +8,7 @@ DONE add debug info
 DONE add pointers support
 DONE move all type parsing to one funcition
 DONE add float literles
-TODO add genrators //put on hold
+DONE add genrators
 TODO add continuers{vector :done, hashmap:todo}
 DONE add malloc
 DONE implment paremters for constructrs

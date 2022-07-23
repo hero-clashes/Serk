@@ -1,5 +1,6 @@
 #include "CGClass.hpp"
 #include "CGMemberFunction.hpp"
+#include "CGGenratorMemberFunction.hpp"
 StructType *CGClass::run_imported(ClassDeclaration *Class) {
   this->Class = Class;
   Type = StructType::getTypeByName(CGM.getLLVMCtx(),Class->Name);
@@ -29,8 +30,13 @@ StructType *CGClass::run(ClassDeclaration *Class) {
 
   for (auto *Decl : Class->Decls) {
     if (auto *Proc = llvm::dyn_cast<FunctionDeclaration>(Decl)) {
+      if(Proc->Type == FunctionDeclaration::Genrator){
+        CGGenratorMemberFunction CGP(CGM, *this);
+        CGP.run(Proc);
+      }else {
         CGMemberFunction CGP(CGM, *this);
         CGP.run(Proc);
+      }
     }
   }
   if(!CGM.getModule()->getFunction(Class->getName().str() + "_" + "Create") && !Class->Stmts.empty()){

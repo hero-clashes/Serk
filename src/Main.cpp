@@ -31,7 +31,7 @@
 #include "llvm/Analysis/TargetTransformInfo.h" // New
 #include "Testing.hpp"
 #include "llvm/Transforms/Coroutines.h"
-
+#include "llvm/IR/Verifier.h"
 static llvm::cl::list<std::string>
     InputFiles(llvm::cl::Positional,
                llvm::cl::desc("<input-files>"));
@@ -205,6 +205,7 @@ int main(int argc_, const char **argv_) {
       return 1;
     }
     objs.push_back(filename);
+    auto R = verifyModule(*M,&errs());
     MPM.run(*M, MAM);
     PM.run(*M);
 

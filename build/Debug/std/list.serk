@@ -27,5 +27,10 @@ class list<type T>{
     }
     fn T get(index:int64){
         return ptr[index];
+    }
+    genrator T iterator(){
+        for(var i:int64 = 0;i<_size; i = i + 1;){
+            yield ptr[i];
+        };
     }    
 }

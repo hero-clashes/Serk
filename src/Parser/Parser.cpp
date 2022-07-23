@@ -1006,9 +1006,10 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
 
   Expr *E = nullptr;
   StmtList Start_Val;
-  Decl* Val;
   StmtList ForStepStmts;
   StmtList ForBodyStmts;
+  bool genrator = false;
+  Token var_name;
 
   SMLoc Loc = Tok.getLocation();
   consume(tok::kw_for);
@@ -1017,7 +1018,8 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
     return _errorhandler();
   };
   advance();
-  if (Lex.peak(1).is(tok::colon)) {
+  if (Lex.peak(1).is(tok::colon)  && !Lex.peak(3).is(tok::equal)) {
+    genrator = true;
     if (expect(tok::kw_var)) {
       return _errorhandler();
     }
@@ -1025,7 +1027,7 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
     if (expect(tok::identifier)) {
       return _errorhandler();
     }
-    auto var_name = Tok;
+    var_name = Tok;
     advance();
     if(expect(tok::colon)){
       return _errorhandler();
@@ -1034,8 +1036,7 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
     if (parseExpression(E)) {
       return _errorhandler();
     }
-    Decls.push_back(Actions.actOnVarDeceleration(var_name.getLocation(), var_name.getIdentifier(), E->getType(), true));
-    Val = Decls.back();
+    Actions.actOnForStatement(Stmts,Loc,Decls,E,var_name);
   }
   else {
     if(parseVarDecleration(Decls, Start_Val)) { return _errorhandler(); };
@@ -1077,9 +1078,13 @@ bool Parser::parseForStatement(DeclList &Decls, StmtList &Stmts) {
     return _errorhandler();
   };
   advance();
+  if (genrator) 
+  {
+    ((ForStatement*)Stmts.back())->Body = ForBodyStmts;
+  }
+  else
   Actions.actOnForStatement(Stmts, Loc, E, Start_Val, ForStepStmts,
                             ForBodyStmts);
-  ((ForStatement*)Stmts.back())->Val = Val;
   return false;
 }
 bool Parser::ParseClass(DeclList &ParentDecls) {
@@ -1132,7 +1137,7 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
   };
   advance();
   while (Tok.isNot(tok::r_parth)) {
-    if (Tok.is(tok::kw_fn)) {
+    if (Tok.isOneOf(tok::kw_fn,tok::kw_genrator)) {
       // handle function decleration
       //
       if (ParseFuction(Decls)) {

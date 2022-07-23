@@ -1,0 +1,17 @@
+genrator int do(){
+	var num = 4;
+	yield num;
+	num = 5
+	
+	yield num;
+	num = 6;
+
+	yield num;
+}
+
+fn int main(){
+	for(var i : do()){
+	printf("%d",i);
+	};
+	return 0;
+}

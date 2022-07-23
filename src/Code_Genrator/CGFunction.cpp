@@ -740,8 +740,9 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     setCurr(ForIntailBB);
     llvm::Value* hdl = nullptr;
     if (genrator) {
-      auto F = CGM.M->getFunction(((FunctionCallExpr*)Stmt->Cond)->geDecl()->Name);
-      hdl = Builder.CreateCall(F);
+      // auto F = CGM.M->getFunction(((FunctionCallExpr*)Stmt->Cond)->geDecl()->Name);
+      hdl = emitExpr(Stmt->Cond);
+      hdl->dump();
     }
     else
       emit(Stmt->Start_Val);// emit each statment as the starting point
@@ -780,6 +781,7 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
     Builder.CreateBr(ForCondBB);
 
     setCurr(AfterForBB);
+    if(genrator)
     Builder.CreateIntrinsic(Intrinsic::coro_destroy,{},{hdl});
     
   }

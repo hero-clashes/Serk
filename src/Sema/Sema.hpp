@@ -78,6 +78,8 @@ public:
                         Expr *Cond, StmtList &WhileStmts);
   void actOnForStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts);
+  void actOnForStatement(StmtList &Stmts,SMLoc Loc, DeclList &Decl,
+                        Expr *E, Token Var_Name);                      
   ClassDeclaration *actOnClassDeclaration(SMLoc Loc, StringRef Name,bool Is_Genric);
   void actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start);
   Expr *actOnStringLiteral(SMLoc Loc, StringRef Literal);

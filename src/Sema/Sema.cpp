@@ -546,6 +546,35 @@ void Sema::actOnWhileStatement(StmtList &Stmts, SMLoc Loc,
 
     Stmts.push_back(new WhileStatement(Cond,WhileStmts,Loc));
                         };
+
+
+void Sema::actOnForStatement(StmtList &Stmts,SMLoc Loc, DeclList &Decl,
+                        Expr *E, Token var_name){
+  StmtList  Start_Val, ForStepStmts,ForBodyStmts;//empty ones
+  Expr *Call = nullptr;   
+
+  
+
+  if(auto F_Call = dyn_cast_or_null<FunctionCallExpr>(E)){
+    Call = F_Call;
+  } else if(auto Desg = dyn_cast_or_null<Designator>(E)){
+    auto d = dyn_cast_or_null<VariableDeclaration>(Desg->getDecl());
+    auto ty = d->getType();
+    // auto name = (ty->Name + "_iterator").str();
+    // auto F = actOnVarRefernce(SMLoc(), name);
+    ExprList a;
+    Call = actOnMethodCallExpr(Loc, Desg->getDecl(), "iterator", a);
+  } else{
+    //TODO error out
+  }
+  auto Val = actOnVarDeceleration(
+        var_name.getLocation(), var_name.getIdentifier(), Call->getType(), true);
+  Decl.push_back(Val);      
+  auto S = new ForStatement(Call,Start_Val,ForStepStmts,ForBodyStmts,Loc);
+  S->Val = Val;
+  Stmts.push_back(S);                       
+};  
+                        
 void Sema::actOnForStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &Start_Val,StmtList &ForStepStmts, StmtList &ForBodyStmts){
       Stmts.push_back(new ForStatement(Cond,Start_Val,ForStepStmts,ForBodyStmts,Loc));

@@ -1,0 +1,16 @@
+import "std/list.serk"
+genrator int range(end:int){
+	for(var i = 0;i<end;i = i +1;){
+		yield i;
+	};
+}
+fn int main(){
+	var v:list<int>;
+	for(var i:range(5)){
+		v.push_back(i);
+	};
+	for(var i : v){
+	printf("%d",i);
+	};
+	return 0;
+}
