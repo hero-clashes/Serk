@@ -495,8 +495,7 @@ bool Parser::parseReturnStatement(DeclList &Decls, StmtList &Stmts) {
 bool Parser::parseFunctionCallStatment(StmtList &Stmts) {
   auto _errorhandler = [this] { return SkipUntil({tok::semi}); };
   ExprList Exprs;
-  Decl *D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
-  auto loc = Tok.getLocation();
+  auto F = Tok;
   advance();
   if(expect(tok::l_paren)){
     return _errorhandler();
@@ -512,7 +511,10 @@ bool Parser::parseFunctionCallStatment(StmtList &Stmts) {
   if(expect(tok::r_paren)){
     return _errorhandler();
   };
-  auto Statment = Actions.actOnFunctionCallStatemnt(loc, D, Exprs);
+  Decl *D = Actions.actOnFunctionRefernce(F.getLocation(), F.getIdentifier(),Exprs);
+  if(!D)
+    return _errorhandler();
+  auto Statment = Actions.actOnFunctionCallStatemnt(F.getLocation(), D, Exprs);
   Stmts.push_back(Statment);
   advance();
   
@@ -639,36 +641,39 @@ bool Parser::parseFactor(Expr *&E) {
     advance();
   } else if (Tok.is(tok::identifier)) {
     Decl *D;
-    ExprList Exprs;
-    //   if (parseQualident(D))//TODO add this again with support for name spaces
-    //     goto _error;
-    auto call = Tok;
-    D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
-    advance();
-    if (Tok.is(tok::l_paren)) {
-      // here function calls handling
+    if (Lex.peak(0).is(tok::l_paren)) {
+      // handle Functions calls
+      ExprList Exprs;
+      auto call = Tok;
       advance();
-        if(parseExpList(Exprs)){
-          return _errorhandler();
+      // here it is l_paren
+      advance();
+      if (parseExpList(Exprs)) {
+        return _errorhandler();
       }
-      if(expect(tok::r_paren)){
+      if (expect(tok::r_paren)) {
         return _errorhandler();
       };
-      if(D->getName().endswith("Create"))
-      E = Actions.actOnConstructorCallExpr(call.getLocation(), D, Exprs);
-      else
-      E = Actions.actOnFunctionCallExpr(call.getLocation(), D, Exprs);
       advance();
+      D = Actions.actOnFunctionRefernce(call.getLocation(), call.getIdentifier(), Exprs);
+      if(!D){
+        return _errorhandler();
+      }
+      if (D->getName().endswith("Create"))
+        E = Actions.actOnConstructorCallExpr(call.getLocation(), D, Exprs);
+      else
+        E = Actions.actOnFunctionCallExpr(call.getLocation(), D, Exprs);
     } else {
+      D = Actions.actOnVarRefernce(Tok.getLocation(), Tok.getIdentifier());
       E = Actions.actOnDesignator(D);
-
-      if(parseSelectors(E)){
+      advance();
+      if (parseSelectors(E)) {
         return _errorhandler();
       };
 
       if (Tok.is(tok::period)) {
         advance();
-        if(expect(tok::identifier)){
+        if (expect(tok::identifier)) {
           return _errorhandler();
         }
         auto Method_name = Tok;
@@ -678,15 +683,16 @@ bool Parser::parseFactor(Expr *&E) {
           advance();
           if (Tok.isOneOf(tok::l_paren, tok::plus, tok::minus, tok::identifier,
                           tok::integer_literal)) {
-            if(parseExpList(Exprs)){
+            if (parseExpList(Exprs)) {
               return _errorhandler();
             };
           }
-          if(expect(tok::r_paren)){
+          if (expect(tok::r_paren)) {
             return _errorhandler();
           };
           advance();
-          E = Actions.actOnMethodCallExpr(Method_name.getLocation(), D, Method_name.getIdentifier(), Exprs);
+          E = Actions.actOnMethodCallExpr(Method_name.getLocation(), D,
+                                          Method_name.getIdentifier(), Exprs);
         }
       }
     }
@@ -695,7 +701,7 @@ bool Parser::parseFactor(Expr *&E) {
       advance();
       TypeDeclaration *T;
       DeclList a;
-      if(ParseType(a,T)){
+      if (ParseType(a, T)) {
         return _errorhandler();
       }
       if (expect(tok::r_paren)) {
@@ -703,7 +709,7 @@ bool Parser::parseFactor(Expr *&E) {
       }
       advance();
       Expr *EE;
-      if(parseExpression(EE)){
+      if (parseExpression(EE)) {
         return _errorhandler();
       };
       E = Actions.Cast(EE, T);
@@ -753,7 +759,7 @@ bool Parser::parseFactor(Expr *&E) {
     if(parseSelectors(E)){
       return _errorhandler();
     };
-    dyn_cast<Designator>(E)->Derfernced();    
+    dyn_cast<Designator>(E)->Derfernced();
   } else if (Tok.is(tok::kw_sizeof)) {
     advance();
     TypeDeclaration* Ty_G = nullptr;
@@ -1118,6 +1124,7 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
   EnterDeclScope S(Actions, D,s);
   DeclList Decls;
   StmtList StartStmt;
+  TypeDeclaration* Parent = nullptr;
   if (Genric) {
     for (auto D : List) {
       switch (std::get<0>(D)) {
@@ -1131,7 +1138,13 @@ bool Parser::ParseClass(DeclList &ParentDecls) {
       }
     }
   }
-
+  if(Tok.is(tok::colon)){
+    advance();
+    if(ParseType(ParentDecls, Parent)){
+      return _errorhandler();
+    }
+    Actions.actOnClassParentDeclaration((ClassDeclaration*)D,Parent);
+  }
   if(expect(tok::l_parth)){
     return _errorhandler();
   };

@@ -12,9 +12,11 @@ CodeGenerator* CodeGenerator::create(llvm::LLVMContext& Ctx, llvm::TargetMachine
 
 std::unique_ptr<llvm::Module> CodeGenerator::run(ModuleDeclaration * Mod, std::string FileName,SourceMgr& mgr ,bool Debug) {
     std::unique_ptr<llvm::Module> M = std::make_unique<llvm::Module>(FileName, Ctx);
-    M->addModuleFlag(llvm::Module::Append,"CodeView", 1);
-    M->addModuleFlag(llvm::Module::Append,"uwtable", 1);
-    M->addModuleFlag(llvm::Module::Append,"Debug Info Version", 3);
+    M->addModuleFlag(llvm::Module::Override,"CodeView", 1);
+    M->addModuleFlag(llvm::Module::Override,"uwtable", 1);
+    M->addModuleFlag(llvm::Module::Override,"Debug Info Version", 3);
+    M->setPICLevel(PICLevel::BigPIC);
+    // M->setUwtable()
     M->setDataLayout(TM->createDataLayout());
     M->setTargetTriple(LLVM_DEFAULT_TARGET_TRIPLE);
     CGCompileUnit CGM(M.get(),mgr,Debug);

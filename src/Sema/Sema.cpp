@@ -218,8 +218,6 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
         return D;
     } else  if (auto D = dyn_cast_or_null<ParameterDeclaration>(CurrentScope->lookup(Name))) {
         return D;
-    } else if (auto D =dyn_cast_or_null<FunctionDeclaration>(CurrentScope->lookup(Name))){
-      return D;
     } else if (auto D =dyn_cast_or_null<ConstantDeclaration>(CurrentScope->lookup(Name))){
       return D;
     }else if (Name == "true") {
@@ -247,6 +245,14 @@ Decl* Sema::actOnVarRefernce(SMLoc Loc, StringRef Name)
     Diags.report(max.first->Loc, diag::note_did_you_mean, max.first->Name);
     return nullptr;
 }
+Decl *Sema::actOnFunctionRefernce(SMLoc Loc, StringRef Name,ExprList &Params){
+  auto D = CurrentScope->lookup(Name);
+  if(!D)
+  Diags.report(Loc, diag::err_var_isnt_found, Name);
+  else
+   return D;
+  return nullptr;
+};
 Expr *Sema::actOnDesignator(Decl *D) {
   if (!D)
     return nullptr;
@@ -515,6 +521,19 @@ Expr *Sema::actOnMethodCallExpr(SMLoc Loc, Decl *D, StringRef Method_Name,
                                 ExprList &Params){
   auto name = (((VariableDeclaration*)D)->getType()->getName() + "_" + Method_Name).str();
   auto M = CurrentScope->lookup(name);
+  if(!M){
+    auto P = (ClassDeclaration*)((ClassDeclaration*)((VariableDeclaration*)D)->getType())->Parent;
+    while(P){
+
+    name = (((ClassDeclaration*)((ClassDeclaration*)((VariableDeclaration*)D)->getType())->Parent)->Name + "_" + Method_Name).str();
+    M = CurrentScope->lookup(name);
+    
+    P = (ClassDeclaration *)P->Parent;
+    if(M){
+      break;
+    }
+    }
+  }
   if(!M ||!isa<FunctionDeclaration>(M)){
     Diags.report(D->getLocation(),
                    diag::err_function_call_on_nonfunction);
@@ -523,7 +542,7 @@ Expr *Sema::actOnMethodCallExpr(SMLoc Loc, Decl *D, StringRef Method_Name,
     checkFormalAndActualParameters(P,
         Loc, P->getFormalParams(), Params);
   }
-  return new MethodCallExpr((VariableDeclaration*)D,Method_Name,Params,((FunctionDeclaration*)M)->getRetType());                 
+  return new MethodCallExpr((VariableDeclaration*)D,(FunctionDeclaration*)M,Params,((FunctionDeclaration*)M)->getRetType());                 
 };
 void Sema::actOnIfStatement(StmtList &Stmts, SMLoc Loc,
                         Expr *Cond, StmtList &IfStmts,
@@ -587,9 +606,26 @@ ClassDeclaration *Sema::actOnClassDeclaration(SMLoc Loc, StringRef Name,bool Is_
   return P;
 };
 
+void Sema::actOnClassParentDeclaration(ClassDeclaration *D,TypeDeclaration *Parent){
+  //TODO add check for non class inhertaince
+  D->Parent = Parent;
+  auto P = dyn_cast<ClassDeclaration>(Parent);
+  for (auto Dec:P->Decls){
+    if(auto F = dyn_cast_or_null<FunctionDeclaration>(Dec)){
+      auto New_F = new FunctionDeclaration(*F);
+      New_F->Type = FunctionDeclaration::Extern;
+      D->Decls.push_back(New_F);
+      CurrentScope->insert(New_F);
+    } else{
+      D->Decls.push_back(Dec);
+      CurrentScope->insert(Dec);
+    }
+  }
+};
 void Sema::actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start){
   auto classd = dyn_cast_or_null<ClassDeclaration>(D);
-  classd->Decls = Decls;
+  if(!Decls.empty())
+    classd->Decls.insert(classd->Decls.end(),Decls.begin(),Decls.end());
   classd->Stmts = Start;
 };
 Expr *Sema::actOnStringLiteral(SMLoc Loc, StringRef Literal){

@@ -16,7 +16,7 @@ StructType *CGClass::run(ClassDeclaration *Class) {
   this->Class = Class;
   if(StructType::getTypeByName(CGM.getLLVMCtx(),Class->Name)) return StructType::getTypeByName(CGM.getLLVMCtx(),Class->Name);
   for (auto *Decl : Class->Decls) {
-    if (auto *Var = llvm::dyn_cast<VariableDeclaration>(Decl)) {
+    if (auto *Var = llvm::dyn_cast_or_null<VariableDeclaration>(Decl)) {
         Members.push_back(Var);
     }
   }
@@ -33,7 +33,7 @@ StructType *CGClass::run(ClassDeclaration *Class) {
       if(Proc->Type == FunctionDeclaration::Genrator){
         CGGenratorMemberFunction CGP(CGM, *this);
         CGP.run(Proc);
-      }else {
+      }else if(Proc->Type != FunctionDeclaration::Extern){
         CGMemberFunction CGP(CGM, *this);
         CGP.run(Proc);
       }

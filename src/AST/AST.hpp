@@ -288,6 +288,7 @@ public:
 
 class ClassDeclaration: public Decl{
   public:
+  Decl *Parent = nullptr;
   std::vector<Decl*> Decls;
   StmtList Stmts;
   bool is_genric;
@@ -560,13 +561,13 @@ public:
 class MethodCallExpr :public Expr{
    public:
   VariableDeclaration *Var;
-  StringRef Function_Name;
+  FunctionDeclaration* Function;
   ExprList Params;
 
-  MethodCallExpr(VariableDeclaration *Var, StringRef Function_Name,
+  MethodCallExpr(VariableDeclaration *Var, FunctionDeclaration* Function,
                    ExprList Params, TypeDeclaration* Ty)
       : Expr(EK_Meth, Ty , false),Var(Var),
-        Function_Name(Function_Name), Params(Params) {}
+        Function(Function), Params(Params) {}
 
   // FunctionDeclaration *geDecl() { return Proc; }
   const ExprList &getParams() { return Params; }

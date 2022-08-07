@@ -63,7 +63,9 @@ static cl::opt<bool>
     EmitLLVM("emit-llvm",
              cl::desc("Emit IR code instead of assembler"),
              cl::init(false));
-
+static cl::opt<std::string>
+    OutputFile("output",
+            cl::desc("file out name"));
 TargetMachine *Create_TM() {
   llvm::Triple TargetTriple = llvm::Triple(LLVM_DEFAULT_TARGET_TRIPLE);
 
@@ -218,6 +220,15 @@ int main(int argc_, const char **argv_) {
   for(auto ob:objs){
     a.append(" " + ob);
   }
+  a.append(" /OUT:");
+  if(OutputFile.empty())
+  {
+    auto N = StringRef(InputFiles[0]);
+    N.consume_back(".serk");
+    a.append((N + ".exe").str());
+  }
+  else
+    a.append(OutputFile);
   system(a.c_str());
   return 0;
 

@@ -129,7 +129,7 @@ llvm::Type* CGCompileUnit::convertType(TypeDeclaration *Ty)
 
 std::string CGCompileUnit::mangleName(Decl *D)
 {
-    std::string Mangled;
+  std::string Mangled;
   llvm::SmallString<16> Tmp;
   while (D) {
     llvm::StringRef Name = D->getName();

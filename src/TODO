@@ -9,12 +9,14 @@ DONE add pointers support
 DONE move all type parsing to one funcition
 DONE add float literles
 DONE add genrators
+TODO add name mangling which allow function overloading
+TODO remove the need for ; after statments that ends in }
 TODO add continuers{vector :done, hashmap:todo}
 DONE add malloc
 DONE implment paremters for constructrs
 DONE add error messeges for everything
 DONE port raylib
-TODO implent inheritance and calling of member functions
+DONE implent inheritance and DONE calling of member functions
 TODO implment VIrtual funcitons
 DONE implment destructors
 TODO add scopes partaily done
@@ -29,6 +31,4 @@ TODO implment runtime Refelection
 TODO move genric checks to when it get initited 
 TODO add varaints
 TODO check all error messeges and make them clearer
-TODO add name mangling
 TODO implment custom operators
-TODO remove the need for ; after statments that ends in }

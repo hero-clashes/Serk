@@ -44,7 +44,7 @@ public:
   void actOnReturnStatement(StmtList &Stmts, SMLoc Loc, Expr *RetVal);
   void actOnyieldStatement(StmtList &Stmts, SMLoc Loc, Expr *RetVal);
   Decl *actOnVarRefernce(SMLoc Loc, StringRef Name);
-
+  Decl *actOnFunctionRefernce(SMLoc Loc, StringRef Name,ExprList &Params);
   void actOnAssignment(StmtList &Stmts, SMLoc Loc, Expr *D, Expr *E);
 
   ModuleDeclaration  *actOnCompileUnitDeclaration(SMLoc Loc,
@@ -81,6 +81,7 @@ public:
   void actOnForStatement(StmtList &Stmts,SMLoc Loc, DeclList &Decl,
                         Expr *E, Token Var_Name);                      
   ClassDeclaration *actOnClassDeclaration(SMLoc Loc, StringRef Name,bool Is_Genric);
+  void actOnClassParentDeclaration(ClassDeclaration *D,TypeDeclaration *Parent);
   void actOnClassBody(Decl* D,DeclList &Decls,StmtList &Start);
   Expr *actOnStringLiteral(SMLoc Loc, StringRef Literal);
   void actOnConstantDeclaration(DeclList &Decls,
@@ -107,6 +108,7 @@ public:
   Decl *Insert_Decl(Decl *D);
   Expr *Cast(Expr *E,TypeDeclaration* Dest);
   Expr *actOnSizeof(TypeDeclaration* Ty_G,TypeDeclaration* Ty_P);
+  std::string Mangle_Name(Decl* D);
 };
 
 class EnterDeclScope {

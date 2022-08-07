@@ -122,7 +122,7 @@ CGDebugInfo::getClassType(ClassDeclaration *Ty) {
   auto allingment = Layout->getAlignment();
   llvm::SmallVector<Metadata*> mems;
   int index = 0;
-  for(auto mem:Ty->Decls){
+  for(auto *mem:Ty->Decls){
     if(auto var = dyn_cast_or_null<VariableDeclaration>(mem)){
       auto Type = CGM.convertType(var->getType());
       auto ty = getType(var->getType());

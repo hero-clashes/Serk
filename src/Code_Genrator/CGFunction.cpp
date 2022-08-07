@@ -323,7 +323,7 @@ llvm::Value *CGFunction::emitExpr(Expr *E,bool want_value){
   } else if (auto *MethCall = llvm::dyn_cast<MethodCallExpr>(E)) {
     return emitMethcall(MethCall);
   } else if (auto *ConstructorCall = llvm::dyn_cast<ConstructorCallExpr>(E)) {
-    auto m = new MethodCallExpr((VariableDeclaration *)Current_Var_Decl,"Create",ConstructorCall->getParams(),ConstructorCall->getType());
+    auto m = new MethodCallExpr((VariableDeclaration *)Current_Var_Decl, ConstructorCall->Func ,ConstructorCall->getParams(),ConstructorCall->getType());
     return emitMethcall(m);
   } else if (auto *Str = llvm::dyn_cast<String_Literal>(E)) {
     Str->Value.consume_back("\"");
@@ -352,7 +352,7 @@ llvm::Value *CGFunction::emitExpr(Expr *E,bool want_value){
 llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
    auto *F = CGM.getModule()->getFunction(E->geDecl()->getName());
   std::vector<Value *> ArgsV;
-  if(E->getParams().empty() && !F->empty()){
+  if(E->getParams().empty() && !F->arg_empty()){// Workaround for Constructors
     Value* v = Current_Var_Decl ? readVariable(Curr, Current_Var_Decl,false): Current_Var_Value;
     ArgsV.push_back(v);
   }
@@ -380,12 +380,11 @@ llvm::Value *CGFunction::emitFunccall(FunctionCallExpr *E){
   // llvm::report_fatal_error("not implemented");
 };
 llvm::Value *CGFunction::emitMethcall(MethodCallExpr *E){
-   std::string Method_Name = E->Var->getType()->getName().str() + "_" + E->Function_Name.str();
-  auto *F = CGM.getModule()->getFunction(Method_Name);
+  auto *F = CGM.getModule()->getFunction(E->Function->Name);
   // CGM.getModule()->dump();
   // auto o = F->arg_size();
   std::vector<Value *> ArgsV;
-  ArgsV.push_back(Defs[E->Var]);
+  ArgsV.push_back(Builder.CreateBitCast(Defs[E->Var],F->getArg(0)->getType()));
   for(auto expr:E->getParams()){
     ArgsV.push_back(emitExpr(expr));
   };
@@ -817,6 +816,8 @@ void CGFunction::emitStmt(ReturnStatement *Stmt) {
         CGM.TypeCache[dyn_cast_or_null<TypeDeclaration>(classs)] = Ty;
       }
     }
+    Fn->addFnAttr("target-cpu","x86-64");
+    Fn->addFnAttr("tune-cpu","generic");
   }
   llvm::Value *CGFunction::emitCast(CastExpr *E){
     auto val = emitExpr(E->E);
