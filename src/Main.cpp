@@ -70,12 +70,12 @@ TargetMachine *Create_TM() {
   llvm::Triple TargetTriple = llvm::Triple(LLVM_DEFAULT_TARGET_TRIPLE);
 
   std::string Error;
-  auto Targeet =
+  auto Target =
       llvm::TargetRegistry::lookupTarget(TargetTriple.getTriple(), Error);
   // Print an error and exit if we couldn't find the requested target.
   // This generally occurs if we've forgotten to initialise the
   // TargetRegistry or we have a bogus target triple.
-  if (!Targeet) {
+  if (!Target) {
     errs() << Error;
     return nullptr;
   }
@@ -84,7 +84,7 @@ TargetMachine *Create_TM() {
   std::string CPUStr = llvm::codegen::getCPUStr();
   std::string FeatureStr = llvm::codegen::getFeaturesStr();
 
-  llvm::TargetMachine *TM = Targeet->createTargetMachine(
+  llvm::TargetMachine *TM = Target->createTargetMachine(
       TargetTriple.getTriple(), CPUStr, FeatureStr, Options,
       llvm::Optional<llvm::Reloc::Model>(codegen::getRelocModel()));
   return TM;
